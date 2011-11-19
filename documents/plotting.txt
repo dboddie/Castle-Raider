@@ -1,0 +1,60 @@
+Tile size for plotting: 8 x 8
+Step size for scrolling: 4 pixels
+
+### ###
+# ### ##
+
+Two banks, one is one scroll step ahead of the other. Each bank scrolls by two
+scroll steps.
+
+1: .... ....  .... ....
+2: .... ....  .... ++++
+
+1: .... ....  ++++ ++++ (two cells to update)
+2: .... ++++  ++++ ++++ (two cells to update)
+
+1: ++++ ++++  ++++ ++++ (two cells to update)
+2: ++++ ++++  ++++ .... (two cells to update - one off to the left)
+
+We only plot the edges between tiles, so the bank swapping has to produce the
+effect of scrolling spans of tiles. If we only used one bank, the tiles would
+have to be uniform in colour to avoid giving the effect that spans of tiles are
+static.
+
+In principle, other scroll steps could be used.
+
+Tile size for plotting: 8 x 8
+Step size for scrolling: 2 pixels
+
+1: .... ....
+2: .... ..++
+
+1: .... ++++ (one cell to update)
+2: ..++ ++++ (two cells to update)
+
+1: ++++ ++++ (one cell to update)
+2: ++++ ++.. (two cells to update - one off to the left)
+
+Smoother scrolling means fewer cells to update for bank 1.
+
+Tile size for plotting: 8 x 8
+Step size for scrolling: 1 pixel
+
+1: ....
+2: ...+
+
+1: ..++
+2: .+++
+
+1: ++++
+2: +++.
+
+If there is no need to write to a cell to "finalise" it as part of a span, as
+there is in games like Moon Raider that use EOR to paint the tile that makes up
+a hill until it becomes a solid block of colour, then each cell only needs to
+be updated once in each bank.
+
+However, since there are only two banks, the pattern used must be repeated for
+twice the number of pixels in each scroll step, so a single pixel scroll
+results in tiles with 2 pixel wide patterns, typically resulting in 2 x 2 sized
+patterns.

@@ -1,0 +1,73 @@
+.org $1900
+
+init:
+
+    lda #22         ; MODE 5
+    jsr $ffee
+    lda #5
+    jsr $ffee
+
+    lda #23         ; disable flashing cursor
+    jsr $ffee
+    lda #1
+    jsr $ffee
+    ldx #7
+    cursor_loop:
+        lda #0
+        jsr $ffee
+        dex
+        bpl cursor_loop
+
+    lda #$80
+    sta $70
+    lda #$6c
+    sta $71
+
+    lda #1
+    ldy #63
+    plot_loop1:
+    
+        sta ($70),y
+        dey
+        bpl plot_loop1
+
+    lda #$80
+    sta $70
+    lda #$44
+    sta $71
+
+    lda #2
+    ldy #63
+    plot_loop2:
+    
+        sta ($70),y
+        dey
+        bpl plot_loop2
+
+main:
+
+    lda #19
+    jsr $fff4
+    jsr show_bank1
+
+    lda #19
+    jsr $fff4
+    jsr show_bank2
+
+    jmp main
+
+show_bank1:
+
+    lda #$00
+    sta $fe02
+    lda #$18
+    sta $fe03
+    rts
+
+show_bank2:
+
+    lda #$00
+    sta $fe02
+    lda #$2c
+    sta $fe03
+    rts
