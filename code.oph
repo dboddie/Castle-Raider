@@ -1,4 +1,4 @@
-.org $1900
+.org $0e00
 
 init:
 
@@ -18,43 +18,67 @@ init:
         dex
         bpl cursor_loop
 
-    lda #$80
-    sta $70
-    lda #$6c
-    sta $71
-
-    lda #1
-    ldy #63
-    plot_loop1:
-    
-        sta ($70),y
-        dey
-        bpl plot_loop1
-
-    lda #$80
-    sta $70
-    lda #$44
-    sta $71
-
-    lda #2
-    ldy #63
-    plot_loop2:
-    
-        sta ($70),y
-        dey
-        bpl plot_loop2
-
 main:
 
+    jsr clear_bank1
+    
     lda #19
     jsr $fff4
     jsr show_bank1
+    
+    jsr init_scrolling
+    
+    lda #39
+    sta $80
+    pre_scroll_loop:
+    
+        jsr plot_bank1
+        jsr pre_scroll_right
+        dec $80
+        bpl pre_scroll_loop
+    
+    lda #0
+    sta $80
+    
+    scroll_loop:
+    
+        jsr scroll_right
+        jsr plot_bank1
+        lda $80
+        adc #1
+        sta $80
+        cmp #24
+        bmi scroll_loop
+    
+    clc
+    rts
 
-    lda #19
-    jsr $fff4
-    jsr show_bank2
+clear_bank1:
 
-    jmp main
+    lda #$00
+    sta $70
+    lda #$30
+    sta $71
+    ldy #0
+    
+    clear_bank1_loop:
+    
+        lda #0
+        sta ($70),y
+        
+        lda $70
+        adc #1
+        sta $70
+        lda $71
+        adc #0
+        sta $71
+        clc
+        
+        cmp #$58
+        bne clear_bank1_loop
+    
+    clc
+    rts
 
 show_bank1:
 
@@ -74,16 +98,16 @@ show_bank2:
 
 .alias scroll_left_offset   $80
 .alias scroll_right_offset  $81
-.alias row_indices          $1fe0
-.alias row_offsets          $1ff0
-.alias level_data           $2000
+.alias row_indices          $1fd0
+.alias initial_row_offsets  $1fe0
+.alias row_table            $1ff0
 .alias level_data_low       $00
 .alias level_data_high      $20
 
-bank1_rows_low:     $00,$40,$80,$c0,$00,$40,$80,$c0,$00,$40,$80,$c0,$00,$40,$80,$c0
-bank1_rows_high:    $3a,$3b,$3c,$3d,$3f,$40,$41,$42,$44,$45,$46,$47,$49,$4a,$4b,$4c
-bank2_rows_low:     $00,$40,$80,$c0,$00,$40,$80,$c0,$00,$40,$80,$c0,$00,$40,$80,$c0
-bank2_rows_high:    $62,$63,$64,$65,$67,$68,$69,$6a,$6c,$6d,$6e,$6f,$71,$72,$73,$74
+bank1_rows_low:  .byte  $00,$40,$80,$c0,$00,$40,$80,$c0,$00,$40,$80,$c0,$00,$40,$80,$c0
+bank1_rows_high: .byte  $3a,$3b,$3c,$3d,$3f,$40,$41,$42,$44,$45,$46,$47,$49,$4a,$4b,$4c
+bank2_rows_low:  .byte  $00,$40,$80,$c0,$00,$40,$80,$c0,$00,$40,$80,$c0,$00,$40,$80,$c0
+bank2_rows_high: .byte  $62,$63,$64,$65,$67,$68,$69,$6a,$6c,$6d,$6e,$6f,$71,$72,$73,$74
 
 .alias sprite_area_low      $00
 .alias sprite_area_high     $28
@@ -91,15 +115,14 @@ bank2_rows_high:    $62,$63,$64,$65,$67,$68,$69,$6a,$6c,$6d,$6e,$6f,$71,$72,$73,
 init_scrolling:
 
     ldx #15
-    lda #0
     init_banks_loop:
     
-        sta row_offsets,x
+        lda #0
+        sta row_indices,x
+        lda #39
+        sta initial_row_offsets,x
         dex
         bpl init_banks_loop
-    
-    sta scroll_left_offset
-    sta scroll_right_offset
     
     clc
     rts
@@ -110,78 +133,111 @@ plot_bank1:
     
     plot_bank1_row_loop:
     
-        lda row_offsets,x   ; Load entry b from the table
-        lsl                 ; and multiply it by 2 to get b*2.
-        adc #level_data_low ; Add b*2 to the data start address
-                            ; to get the row start address, B.
+        ; ---
+        
+        lda #0
+        sta $71
+        
+        lda row_table,x     ; Load entry a from the table
+        asl                 ; and multiply it by 2 to get a*2.
+        
+        bcc plot_bank1_row_loop_table_lookup
+        tay
+        lda #1
+        sta $71
+        tya
+        clc
+        
+        plot_bank1_row_loop_table_lookup:
+        
+        adc #level_data_low ; Add a*2 to the data start address
+                            ; to get the row start address, A.
         sta $76
         lda #level_data_high
-        adc #0
-        sta $77             ; B ($76,$77)
+        adc $71
+        sta $77             ; A ($76,$77)
         clc
         
         lda row_indices,x   ; Load index i from the indices;
-        lsl                 ; and multiply it by 2 to get i*2.
-        adc $76             ; Add i*2 to B to get the address, I, of the
-        sta $76             ; starting offset, o, and type.
+        asl                 ; and multiply it by 2 to get i*2.
+        adc $76             ; Add i*2 to A to get the address, I, of the
+        sta $76             ; starting offset and type.
         lda $77
         adc #0
         sta $77             ; I ($76,$77)
         clc
         
-        ldy #1
-        lda ($76),y         ; Load the type, T.
-        lsl                 ; Otherwise, multiply T by 8
-        lsl
-        lsl
-        adc #sprite_area_low    ; and add to S to get S0.
-        sta $78
-        lda $77
-        adc #0
-        sta $79             ; S0 ($78,$79)
+        ; ---
+        
+        lda #0
+        sta $71
+        
+        lda initial_row_offsets,x   ; Load the initial row offset, o.
+        sta $74
+        asl                     ; Multiply o by 8
+        asl
+        asl
+        bcc plot_bank1_row_loop_set_row_address
+        
+        tay
+        lda #1
+        sta $71
+        tya
         clc
+        
+        plot_bank1_row_loop_set_row_address:
+        
+        adc bank1_rows_low,x    ; Add to the screen start address for the
+        sta $72                 ; row, R, to get x.
+        lda bank1_rows_high,x
+        adc $71
+        sta $73                 ; x ($72,$73)
+        clc
+        
+        lda $74
+        cmp #40
+        bpl plot_bank1_offset_endloop
         
         plot_bank1_offset_loop:
         
             ldy #0
-            lda ($76),y             ; Load the offset, o.
-            cmp scroll_right_offset ; Compare the offset to the right scroll
-                                    ; offset, sr.
-            
-            bpl plot_bank1_offset_endloop   ; If greater than or equal to it, break.
-            sec
-            sbc scroll_left_offset  ; Subtract the left scroll offset, sl from
-                                    ; the offset, o, to get o'.
-            
-            lsl     ; Multiply o' by 8 to obtain the row address offset, X.
-            lsl
-            lsl
-            adc bank1_rows_low,x    ; Add X to the screen start address for the
-            sta $72                 ; row, R, to get x.
-            lda bank1_rows_high,x
-            adc #0
-            sta $73                 ; x ($72,$73)
-            clc
-            
-            ldy #1
-            lda ($76),y             ; Load the type, t.
-            lsl                     ; Otherwise, multiply t by 8
-            lsl
-            lsl
-            adc #sprite_area_low    ; and add to S to get S1.
+            lda ($76),y             ; Load the type number, t,
+            asl                     ; multiply by 8 to get t*8.
+            asl
+            asl
+            adc #sprite_area_low    ; add to S to get S1.
             sta $70
             lda #sprite_area_high
             adc #0
-            sta $71
+            sta $71                 ; S1 ($78,$79)
             clc
             
-            jsr plot_tile
+            jsr plot_tile_bank1
             
-            lda $72     ; For bank 1, plot the sprite S1 at x.
+            ldy #1
+            lda ($76),y         ; Load the number of tiles, n.
+            tay
+            adc $74             ; Add n to o.
+            cmp #40
+            bpl plot_bank1_offset_endloop
+            sta $74
             
-            lda $76
+            tya
+            asl
+            asl
+            asl                 ; n*8
+            adc $72
+            sta $72
+            lda $73
+            adc #0
+            sta $73             ; x ($72,$73)
+            clc
+            
+            lda $76             ; Add 2 to I.
             adc #2
             sta $76
+            bcc plot_bank1_offset_loop
+            
             lda $77
             adc #0
             sta $77
@@ -190,9 +246,106 @@ plot_bank1:
             jmp plot_bank1_offset_loop
         
         plot_bank1_offset_endloop:
+        clc
         
         dex
-        bpl plot_bank1_row_loop
+        bmi plot_bank1_row_endloop
+        jmp plot_bank1_row_loop
+    
+    plot_bank1_row_endloop:
+    clc
+    rts
+
+plot_tile_bank1:    ; $70,$71 source address
+                    ; $72,$73 screen address
+
+    ldy #7
+    plot_tile_bank1_loop:
+    
+        lda ($70),y
+        sta ($72),y
+        dey
+        bpl plot_tile_bank1_loop
+    
+    clc
+    rts
+
+pre_scroll_right:
+
+    ldx #15
+    pre_scroll_right_loop:
+    
+        lda initial_row_offsets,x
+        cmp #0
+        beq pre_scroll_right_loop_not_next_offset
+        
+        dec initial_row_offsets,x
+        
+        pre_scroll_right_loop_not_next_offset:
+        dex
+        bpl pre_scroll_right_loop
+    
+    clc
+    rts
+
+scroll_right:
+
+    ldx #15
+    scroll_right_loop:
+    
+        lda initial_row_offsets,x
+        cmp #0
+        bne scroll_right_loop_not_next_offset
+        
+        ; ---
+        
+        lda #0
+        sta $71
+        
+        lda row_table,x     ; Load entry a from the table
+        asl                 ; and multiply it by 2 to get a*2.
+        
+        bcc scroll_right_table_lookup
+        tay
+        lda #1
+        sta $71
+        tya
+        clc
+        
+        scroll_right_table_lookup:
+        
+        adc #level_data_low ; Add a*2 to the data start address
+                            ; to get the row start address, A.
+        sta $76
+        lda #level_data_high
+        adc $71
+        sta $77             ; A ($76,$77)
+        clc
+        
+        lda row_indices,x   ; Load index i from the indices;
+        asl                 ; and multiply it by 2 to get i*2.
+        adc $76             ; Add i*2 to A to get the address, I, of the
+        sta $76             ; starting offset and type.
+        lda $77
+        adc #0
+        sta $77             ; I ($76,$77)
+        clc
+        
+        ; ---
+        
+        inc row_indices,x   ; increment the index
+        
+        ldy #1
+        lda ($76),y         ; load the number of tiles left in the current span
+        
+        scroll_right_loop_not_next_offset:
+        
+        sec
+        sbc #1
+        sta initial_row_offsets,x
+        
+        dex
+        bpl scroll_right_loop
     
     clc
     rts

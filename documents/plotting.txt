@@ -151,63 +151,45 @@ to find the current starting element for each row.
 Left scroll offset: x
 Right scroll offset: x + 40
 
-Table:   a, b, c, ...
-Indices: i, j, k, ...
+Table:   a0, a1, a2, ...
+Indices: i0, i1, i2, ...
+Initial row offsets: o0, o1, o2, ...
 
-Data:    (offset,type), (offset,type), (offset,type), ...
-         (offset,type), ...
-         (offset,type), (offset,type), ...
+Data:    (type,number), (type,number), (type,number), ...
+         (type,number), ...
+         (type,number), (type,number), ...
          ...
 
-Initially, we have this:
+To plot each row:
 
-Left scroll offset: 0
-Right scroll offset: 40
-
-Table:   a, b, c, ...
-Indices: 0, 0, 0, ...
-
-Plotting:
-
-R is the screen start address for the row.
-S is the sprite area address.
-sl is the left scroll offset.
-sr is the right scroll offset.
-
-For row 2 (for example):
-
-    Load entry b from the table and multiply it by 2 to get b*2.
-    Add b*2 to the data start address to get the row start address, B.
+    Load the table entry, a, and multiply it by 2 to get a*2.
+    Add a*2 to the data start address to get the row start address, A.
+    
     Load index i from the indices and multiply it by 2 to get i*2.
-    Add i*2 to B to get the address, I, of the starting offset, o, and type.
-    Load the type, T.
-    If we are using the type as an offset, add T to S to get S0.
-        Otherwise, multiply T by 8 and add to S to get S0.
+    Add i*2 to A to get the address, I, of the starting offset and type.
     
-    For bank 2, add 1 to both the left and right scroll offsets, sl and sr.
+    Load the initial row offset for the row, o.
     
-    For each offset, o, and type, t:
+    Loop:
     
-        Compare the offset to the right scroll offset, sr.
-        If greater than or equal to it, break.
-        Subtract the left scroll offset, sl from the offset, o, to get o'.
+        If o >= 40, break.
+        Multiply o by 8, and add to R to get x.
         
-        Multiply o' by 8 to obtain the row address offset, X.
-        Add X to the screen start address for the row, R, to get x.
-        Load the type, t.
-        If we are using the type as an offset, add t to S to get S1.
-            Otherwise, multiply t by 8 and add to S to get S1.
-        For bank 1, plot the sprite S1 at x.
-        For bank 2, plot the sprite S0 at x, add 8 to x and plot S1.
+        Load the type number, t, multiply by 8 to get t*8.
+        Add t*8 to the sprite area address S to get S1.
         
-        For bank2, store S1 in S0.
-        Add 2 to I to move to the next offset and type.
+        Plot S1 at x.
+        
+        Load the number of tiles from I+1, n.
+        Add n to o.
+        Add 2 to I.
         Iterate again.
 
 Scrolling:
 
-To scroll, increase the left and right scroll offsets by 1.
-Iterate over each row:
+To scroll right, for each row:
 
-    Increase the row index if the item after the current item has an offset
-    that is equal to the left scroll offset.
+    If the initial row offset is non-zero, decrease it by 1.
+    Otherwise, load the number of tiles in the span for the current span,
+    subtract 1 and store that as the new initial row offset.
+    Add 1 to the index for the row.

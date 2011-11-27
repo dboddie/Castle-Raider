@@ -118,14 +118,14 @@ if __name__ == "__main__":
     files = []
     
     data, merged_tiles = makelevels.create_levels()
-    files.append(("LEVELS", 0x5000, 0x5000, data))
+    files.append(("LEVELS", 0x1ff0, 0x1ff0, data))
     
     data = makesprites.read_sprites(tiles, merged_tiles)
-    files.append(("TILES", 0x5400, 0x5400, data))
+    files.append(("TILES", 0x2800, 0x2800, data))
     
     system("ophis code.oph CODE")
     code = open("CODE").read()
-    code_start = 0x1900
+    code_start = 0x0e00
     files.append(("CODE", code_start, code_start, code))
     
     u = UEFfile.UEFfile(creator = 'build.py '+version)
