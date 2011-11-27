@@ -104,7 +104,7 @@ def decode_text(data, lookup):
     return words[:-1]
 
 
-tiles = ["images/blank.png", "images/brick.png", "images/grass.png"]
+tiles = ["images/blank.png", "images/brick.png", "images/grass.png", "images/ground.png"]
 
 if __name__ == "__main__":
 
