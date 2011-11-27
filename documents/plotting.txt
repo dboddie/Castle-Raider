@@ -58,3 +58,156 @@ However, since there are only two banks, the pattern used must be repeated for
 twice the number of pixels in each scroll step, so a single pixel scroll
 results in tiles with 2 pixel wide patterns, typically resulting in 2 x 2 sized
 patterns.
+
+We will use a scroll step size of 2 pixels to allow for repeating patterns 4
+pixels wide.
+
+1: .... ....
+2: .... ..++
+
+1: .... ++++ (one cell to update)
+2: ..++ ++++ (two cells to update)
+
+1: ++++ ++++ (one cell to update)
+2: ++++ ++.. (two cells to update - one off to the left)
+
+On bank 1 we plot the cells that change when the screen scrolls by two steps:
+
+1: .... ++++ ++++ ####
+1: ++++ ++++ #### ####
+   ^^^^      ^^^^
+
+On bank 2 we plot the cells that show the interfaces between tiles of different
+types, and plot the cells that change when the screen scrolls by two steps:
+
+2: .... ..++ ++++ ++##
+2: ..++ ++++ ++## ####
+   ^^^^ ^^^^ ^^^^ ^^^^
+
+Since twice the number of cells will need to be updated on bank 2, we should
+perform other tasks when we redraw bank 1.
+
+Initial plot:
+
+All the tiles are plotted in bank 1 for the starting point in the level. In
+bank 2, all the scrolled tiles are plotted in preparation for scrolling.
+
+Level format:
+
+It would be wasteful to store a 2D array of tile numbers, especially since we
+are only interested in knowing where spans of tiles begin and end.
+
+We record an offset into the level. For each row of tiles, we record which
+offset into the tile data we must begin from.
+
+  ####......#####...    0,# 4,. 10,# 15,.
+  ^ ^ ^  ^ ^  ^  ^
+  0 0 1  1 1  2  3
+
+For bank 1, we read the offset from the tile data and plot a tile if the offset
+equals the level offset. We then read the next offset in the tile data and plot
+the appropriate tile if it is on-screen.
+
+For bank 2, we plot tile interfaces when the tile offset is one greater than
+the level offset when scrolling right.
+
+Since each tile is quite small (4 pixels), and a level format that uses one
+byte for the tile offset is restricted to a width of less than 256 tiles (about
+five MODE 5 screens wide), we might want to consider making each tile span at
+least two cells wide. This extends the potential level width and simplifies the
+algorithm to plot changes in bank 2:
+
+2: .... ..++ ++## ####
+2: ..++ ++## #### ####
+        ^^^^
+        Must look ahead to decide if this cell could be ++++ or another
+        interface between tile types.
+
+Instead, we now have:
+
+2: .... ..++ ++++ ++##
+2: ..++ ++++ ++## ####
+        ^^^^
+        Can guarantee that the cell following a tile change is always a single
+        tile type.
+
+With spans of two cells, we can potentially fake single cell tiles by using
+tile interfaces as regular tiles in bank 1 and different tile interfaces in
+bank 2.
+
+1: .... ++## ....
+2: ..++ ##.. ....
+
+However, the data required to store this information might be excessive.
+
+Indexing the rows:
+
+We need to access each row of spans in turn to be able to update them. To do
+this, we create a look-up table that refers to each row of data and store a
+list of indices into the row to keep track of where in the row we are
+displaying. Dereferencing the pointers in the table, we can then add the index
+to find the current starting element for each row.
+
+Left scroll offset: x
+Right scroll offset: x + 40
+
+Table:   a, b, c, ...
+Indices: i, j, k, ...
+
+Data:    (offset,type), (offset,type), (offset,type), ...
+         (offset,type), ...
+         (offset,type), (offset,type), ...
+         ...
+
+Initially, we have this:
+
+Left scroll offset: 0
+Right scroll offset: 40
+
+Table:   a, b, c, ...
+Indices: 0, 0, 0, ...
+
+Plotting:
+
+R is the screen start address for the row.
+S is the sprite area address.
+sl is the left scroll offset.
+sr is the right scroll offset.
+
+For row 2 (for example):
+
+    Load entry b from the table and multiply it by 2 to get b*2.
+    Add b*2 to the data start address to get the row start address, B.
+    Load index i from the indices and multiply it by 2 to get i*2.
+    Add i*2 to B to get the address, I, of the starting offset, o, and type.
+    Load the type, T.
+    If we are using the type as an offset, add T to S to get S0.
+        Otherwise, multiply T by 8 and add to S to get S0.
+    
+    For bank 2, add 1 to both the left and right scroll offsets, sl and sr.
+    
+    For each offset, o, and type, t:
+    
+        Compare the offset to the right scroll offset, sr.
+        If greater than or equal to it, break.
+        Subtract the left scroll offset, sl from the offset, o, to get o'.
+        
+        Multiply o' by 8 to obtain the row address offset, X.
+        Add X to the screen start address for the row, R, to get x.
+        Load the type, t.
+        If we are using the type as an offset, add t to S to get S1.
+            Otherwise, multiply t by 8 and add to S to get S1.
+        For bank 1, plot the sprite S1 at x, add 8 to x and plot S1 again.
+        For bank 2, plot the sprite S0 at x, add 8 to x and plot S1.
+        
+        For bank2, store S1 in S0.
+        Add 2 to I to move to the next offset and type.
+        Iterate again.
+
+Scrolling:
+
+To scroll, increase the left and right scroll offsets by 1.
+Iterate over each row:
+
+    Increase the row index if the item after the current item has an offset
+    that is equal to the left scroll offset.
