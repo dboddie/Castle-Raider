@@ -197,7 +197,7 @@ For row 2 (for example):
         Load the type, t.
         If we are using the type as an offset, add t to S to get S1.
             Otherwise, multiply t by 8 and add to S to get S1.
-        For bank 1, plot the sprite S1 at x, add 8 to x and plot S1 again.
+        For bank 1, plot the sprite S1 at x.
         For bank 2, plot the sprite S0 at x, add 8 to x and plot S1.
         
         For bank2, store S1 in S0.

@@ -20,6 +20,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import os, struct, sys
 import UEFfile
 
+from tools import makelevels, makesprites
+
 version = "0.1"
 
 def system(command):
@@ -102,6 +104,8 @@ def decode_text(data, lookup):
     return words[:-1]
 
 
+tiles = ["images/blank.png", "images/brick.png", "images/grass.png"]
+
 if __name__ == "__main__":
 
     if len(sys.argv) != 2:
@@ -112,6 +116,12 @@ if __name__ == "__main__":
     out_uef_file = sys.argv[1]
     
     files = []
+    
+    data, merged_tiles = makelevels.create_levels()
+    files.append(("LEVELS", 0x5000, 0x5000, data))
+    
+    data = makesprites.read_sprites(tiles, merged_tiles)
+    files.append(("TILES", 0x5400, 0x5400, data))
     
     system("ophis code.oph CODE")
     code = open("CODE").read()
