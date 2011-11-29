@@ -175,13 +175,34 @@ To plot each row:
         If o >= 40, break.
         Multiply o by 8, and add to R to get x.
         
-        Load the type number, t, multiply by 8 to get t*8.
-        Add t*8 to the sprite area address S to get S1.
+        For bank 1:
+            Load the type number, t, mask off the top 4 bits and multiply by 8
+            to get t1.
+            Add t1 to the sprite area address S to get S1.
+            
+            Plot S1 at x.
         
-        Plot S1 at x.
+        For bank 2:
+            Load the type number, t, masking off the bottom 4 bits, and
+            divide by 2 to get t2.
+            If 
+            Subtract 
+            Add t2 to the merged sprite area address S to get S2.
+            
+            Plot S2 at x.
         
-        Load the number of tiles from I+1, n.
-        Add n to o.
+        Load the number of tiles minus 1 from I+1, n.
+        
+        For bank 2:
+            If n is greater than 0:
+                Load the type number, t, mask off the top 4 bits and multiply
+                by 8 to get t1.
+                Add t1 to the rotated sprite area address S to get S3.
+                Add 8 to x.
+                
+                Plot S3 at x.
+        
+        Add n + 1 to o.
         Add 2 to I.
         Iterate again.
 
@@ -190,6 +211,6 @@ Scrolling:
 To scroll right, for each row:
 
     If the initial row offset is non-zero, decrease it by 1.
-    Otherwise, load the number of tiles in the span for the current span,
-    subtract 1 and store that as the new initial row offset.
+    Otherwise, load the number of tiles (minus 1) in the span for the current
+    span and store that as the new initial row offset.
     Add 1 to the index for the row.

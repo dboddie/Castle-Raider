@@ -120,8 +120,31 @@ if __name__ == "__main__":
     data, merged_tiles = makelevels.create_levels()
     files.append(("LEVELS", 0x1ff0, 0x1ff0, data))
     
+    sprite_area_address = 0x2800
     data = makesprites.read_sprites(tiles, merged_tiles)
-    files.append(("TILES", 0x2800, 0x2800, data))
+    files.append(("TILES", sprite_area_address, sprite_area_address, data))
+    
+    sprite_area_low = sprite_area_address & 0xff
+    sprite_area_high = sprite_area_address >> 8
+    merged_sprites = sprite_area_address + (len(tiles) * 8)
+    merged_sprites_low = merged_sprites & 0xff
+    merged_sprites_high = merged_sprites >> 8
+    rotated_sprites = merged_sprites + ((len(merged_tiles) + 1) * 8)
+    rotated_sprites_low = rotated_sprites & 0xff
+    rotated_sprites_high = rotated_sprites >> 8
+    
+    open("constants.oph", "w").write(
+        ".alias sprite_area_low      $%02x\n"
+        ".alias sprite_area_high     $%02x\n"
+        ".alias merged_sprites_low   $%02x\n"
+        ".alias merged_sprites_high  $%02x\n"
+        ".alias rotated_sprites_low   $%02x\n"
+        ".alias rotated_sprites_high  $%02x\n" % (
+            sprite_area_low, sprite_area_high,
+            merged_sprites_low, merged_sprites_high,
+            rotated_sprites_low, rotated_sprites_high
+            )
+        )
     
     system("ophis code.oph CODE")
     code = open("CODE").read()
