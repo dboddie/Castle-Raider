@@ -51,31 +51,50 @@ main:
         dec $80
         bpl pre_scroll_loop
     
-    clc
-    rts
     lda #0
     sta $80
     
     scroll_loop:
     
         jsr scroll_right
+        
         jsr plot_bank2
         lda #19
         jsr $fff4
         jsr show_bank2
+        
+        ;wait_loop1:
+        ;    ldx #157
+        ;    jsr check_key
+        ;    cpy #255
+        ;    bne wait_loop1
+        ;clc
         
         jsr plot_bank1
         lda #19
         jsr $fff4
         jsr show_bank1
         
+        ;wait_loop2:
+        ;    ldx #157
+        ;    jsr check_key
+        ;    cpy #255
+        ;    beq wait_loop2
+        ;clc
+        
         lda $80
         adc #1
         sta $80
-        cmp #24
+        cmp #88
         bmi scroll_loop
     
     clc
+    rts
+
+check_key:      ; x=key code
+    lda #129    ; returns y=255 or 0
+    ldy #255
+    jsr $fff4
     rts
 
 clear_bank1:
@@ -138,6 +157,7 @@ show_bank1:
     sta $fe02
     lda #$18
     sta $fe03
+    clc
     rts
 
 show_bank2:
@@ -146,6 +166,7 @@ show_bank2:
     sta $fe02
     lda #$2c
     sta $fe03
+    clc
     rts
 
 set_core_palette:
@@ -182,11 +203,10 @@ set_palette:
     jsr $fff1
     rts
 
-.alias scroll_left_offset   $80
-.alias scroll_right_offset  $81
-.alias row_indices          $1fd0
-.alias initial_row_offsets  $1fe0
-.alias row_table            $1ff0
+.alias row_indices          $1fc0
+.alias initial_row_offsets  $1fd0
+.alias row_table_low        $1fe0
+.alias row_table_high       $1ff0
 .alias level_data_low       $00
 .alias level_data_high      $20
 
@@ -218,26 +238,13 @@ plot_bank1:
     
         ; ---
         
-        lda #0
-        sta $71
+        lda row_table_low,x     ; Load entry a from the table.
         
-        lda row_table,x     ; Load entry a from the table
-        asl                 ; and multiply it by 2 to get a*2.
-        
-        bcc plot_bank1_row_loop_table_lookup
-        tay
-        lda #1
-        sta $71
-        tya
-        clc
-        
-        plot_bank1_row_loop_table_lookup:
-        
-        adc #level_data_low ; Add a*2 to the data start address
-                            ; to get the row start address, A.
+        adc #level_data_low     ; Add a to the data start address
+                                ; to get the row start address, A.
         sta $76
-        lda #level_data_high
-        adc $71
+        lda row_table_high,x
+        adc #level_data_high
         sta $77             ; A ($76,$77)
         clc
         
@@ -293,7 +300,7 @@ plot_bank1:
             sta $70
             lda #sprite_area_high
             adc #0
-            sta $71                 ; S1 ($78,$79)
+            sta $71                 ; S1 ($70,$71)
             clc
             
             jsr plot_tile_bank
@@ -382,9 +389,7 @@ scroll_right:
         cmp #0
         beq scroll_right_loop_next_offset
         
-        sec
-        sbc #1
-        sta initial_row_offsets,x
+        dec initial_row_offsets,x
         
         dex
         bpl scroll_right_loop
@@ -393,29 +398,17 @@ scroll_right:
         rts
         
         scroll_right_loop_next_offset:
+        clc
         
         ; ---
         
-        lda #0
-        sta $71
+        lda row_table_low,x     ; Load entry a from the table.
         
-        lda row_table,x     ; Load entry a from the table
-        asl                 ; and multiply it by 2 to get a*2.
-        
-        bcc scroll_right_table_lookup
-        tay
-        lda #1
-        sta $71
-        tya
-        clc
-        
-        scroll_right_table_lookup:
-        
-        adc #level_data_low ; Add a*2 to the data start address
-                            ; to get the row start address, A.
+        adc #level_data_low     ; Add a to the data start address
+                                ; to get the row start address, A.
         sta $76
-        lda #level_data_high
-        adc $71
+        lda row_table_high,x
+        adc #level_data_high
         sta $77             ; A ($76,$77)
         clc
         
@@ -433,7 +426,7 @@ scroll_right:
         inc row_indices,x   ; increment the index
         
         ldy #1              ; load the number of tiles left in the current span
-        lda ($76),y         ; minus 1 (n)
+        lda ($76),y         ; minus 1 (n - 1)
         sta initial_row_offsets,x
         
         dex
@@ -450,26 +443,13 @@ plot_bank2:
     
         ; ---
         
-        lda #0
-        sta $71
+        lda row_table_low,x     ; Load entry a from the table.
         
-        lda row_table,x     ; Load entry a from the table
-        asl                 ; and multiply it by 2 to get a*2.
-        
-        bcc plot_bank2_row_loop_table_lookup
-        tay
-        lda #1
-        sta $71
-        tya
-        clc
-        
-        plot_bank2_row_loop_table_lookup:
-        
-        adc #level_data_low ; Add a*2 to the data start address
-                            ; to get the row start address, A.
+        adc #level_data_low     ; Add a to the data start address
+                                ; to get the row start address, A.
         sta $76
-        lda #level_data_high
-        adc $71
+        lda row_table_high,x
+        adc #level_data_high
         sta $77             ; A ($76,$77)
         clc
         
@@ -517,30 +497,40 @@ plot_bank2:
         
             ldy #0
             lda ($76),y                 ; Load the type number, t,
-            sta $78         ; temp
+            sta $78         ; temp (t)
             and #$f0                    ; mask off the bottom 4 bits,
             lsr                         ; divide by 2 to get t2.
             adc #merged_sprites_low     ; add to S to get S2.
             sta $70
             lda #merged_sprites_high
             adc #0
-            sta $71                     ; S2 ($78,$79)
+            sta $71                     ; S2 ($70,$71)
             clc
             
             jsr plot_tile_bank
             
+            lda $74
+            cmp #39
+            bpl plot_bank2_offset_endloop   ; break if the screen edge is reached
+
             ldy #1
-            lda ($76),y         ; Load the number of tiles minus 1, n.
-            adc #1              ; n + 1
-            sta $79         ; temp (n + 1)
-            adc $74             ; Add n to o.
-            cmp #40
-            bpl plot_bank2_offset_endloop
-            sta $74
+            lda ($76),y             ; Load the number of tiles minus 1, n - 1.
+            adc #1                  ; n
+            sta $79         ; temp (n)
+            adc $74                 ; Add n to o.
+            sta $74                 ; Store the new offset
             
-            lda $79         ; temp (n + 1)
+            lda $72                 ; move to the next cell
+            adc #8
+            sta $72
+            lda $73
+            adc #0
+            sta $73
+            clc
+            
+            lda $79         ; temp (n)
             cmp #1
-            beq plot_bank2_row_loop_no_following_tile
+            beq plot_bank2_row_loop_single_tile
             
             lda $78         ; temp (t)
             and #$0f
@@ -551,23 +541,14 @@ plot_bank2:
             sta $70
             lda #rotated_sprites_high
             adc #0
-            sta $71                 ; S3 ($78,$79)
-            clc
-            
-            lda $72                 ; plot in the next cell
-            adc #8
-            sta $72
-            lda $73
-            adc #0
-            sta $73
+            sta $71                 ; S3 ($70,$71)
             clc
             
             jsr plot_tile_bank
             
-            dec $79     ; temp (n + 1)
-            lda $79     ; temp (n)
+            dec $79     ; temp (n -> n - 1)
+            lda $79     ; temp (n - 1)
             
-            plot_bank2_row_loop_no_following_tile:
             asl
             asl
             asl                 ; n*8
@@ -578,6 +559,13 @@ plot_bank2:
             sta $73             ; x ($72,$73)
             clc
             
+            plot_bank2_row_loop_single_tile:
+            clc
+            
+            lda $74
+            cmp #40
+            bpl plot_bank2_offset_endloop   ; break if the screen edge is reached
+
             lda $76             ; Add 2 to I.
             adc #2
             sta $76

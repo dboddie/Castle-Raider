@@ -103,8 +103,51 @@ def decode_text(data, lookup):
     
     return words[:-1]
 
+def address_length_end(address, data):
+
+    address_low = address & 0xff
+    address_high = address >> 8
+    length = len(data)
+    length_low = length & 0xff
+    length_high = length >> 8
+    end = address + length
+    end_low = end & 0xff
+    end_high = end >> 8
+    return address_low, address_high, length_low, length_high, end_low, end_high
+
 
 tiles = ["images/blank.png", "images/brick.png", "images/grass.png", "images/ground.png"]
+
+constants_oph = \
+""".alias sprite_area_low              $%02x
+.alias sprite_area_high             $%02x
+.alias sprite_area_length_low       $%02x
+.alias sprite_area_length_high      $%02x
+.alias sprite_area_end_low          $%02x
+.alias sprite_area_end_high         $%02x
+.alias merged_sprites_low           $%02x
+.alias merged_sprites_high          $%02x
+.alias rotated_sprites_low          $%02x
+.alias rotated_sprites_high         $%02x
+
+.alias levels_address_low           $%02x
+.alias levels_address_high          $%02x
+.alias levels_length_low            $%02x
+.alias levels_length_high           $%02x
+.alias levels_end_low               $%02x
+.alias levels_end_high              $%02x
+"""
+
+extras_oph = \
+"""
+.alias code_start_address           $%02x
+.alias code_start_low               $%02x
+.alias code_start_high              $%02x
+.alias code_length_low              $%02x
+.alias code_length_high             $%02x
+.alias code_end_low                 $%02x
+.alias code_end_high                $%02x
+"""
 
 if __name__ == "__main__":
 
@@ -117,15 +160,14 @@ if __name__ == "__main__":
     
     files = []
     
-    data, merged_tiles = makelevels.create_levels()
-    files.append(("LEVELS", 0x1ff0, 0x1ff0, data))
+    levels_address = 0x1fe0
+    level_data, merged_tiles = makelevels.create_levels()
+    files.append(("LEVELS", levels_address, levels_address, level_data))
     
     sprite_area_address = 0x2800
-    data = makesprites.read_sprites(tiles, merged_tiles)
-    files.append(("TILES", sprite_area_address, sprite_area_address, data))
+    sprite_data = makesprites.read_sprites(tiles, merged_tiles)
+    files.append(("TILES", sprite_area_address, sprite_area_address, sprite_data))
     
-    sprite_area_low = sprite_area_address & 0xff
-    sprite_area_high = sprite_area_address >> 8
     merged_sprites = sprite_area_address + (len(tiles) * 8)
     merged_sprites_low = merged_sprites & 0xff
     merged_sprites_high = merged_sprites >> 8
@@ -133,23 +175,28 @@ if __name__ == "__main__":
     rotated_sprites_low = rotated_sprites & 0xff
     rotated_sprites_high = rotated_sprites >> 8
     
-    open("constants.oph", "w").write(
-        ".alias sprite_area_low      $%02x\n"
-        ".alias sprite_area_high     $%02x\n"
-        ".alias merged_sprites_low   $%02x\n"
-        ".alias merged_sprites_high  $%02x\n"
-        ".alias rotated_sprites_low   $%02x\n"
-        ".alias rotated_sprites_high  $%02x\n" % (
-            sprite_area_low, sprite_area_high,
+    code_start = 0x0e00
+    
+    values = address_length_end(sprite_area_address, sprite_data) + (
             merged_sprites_low, merged_sprites_high,
             rotated_sprites_low, rotated_sprites_high
-            )
-        )
+            ) + address_length_end(levels_address, level_data)
+    
+    open("constants.oph", "w").write(constants_oph % values)
     
     system("ophis code.oph CODE")
     code = open("CODE").read()
-    code_start = 0x0e00
     files.append(("CODE", code_start, code_start, code))
+    
+    loader_start = 0x1900
+    
+    values = values + (code_start,) + address_length_end(code_start, code)
+    
+    open("constants.oph", "w").write((constants_oph + extras_oph) % values)
+    
+    system("ophis loader.oph LOADER")
+    loader_code = open("LOADER").read()
+    files.insert(0, ("LOADER", loader_start, loader_start, loader_code))
     
     u = UEFfile.UEFfile(creator = 'build.py '+version)
     u.minor = 6
