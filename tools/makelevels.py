@@ -97,6 +97,9 @@ def create_levels():
             
             for (previous, current), number in row:
             
+                if number > 256:
+                    raise LevelError, "Level %i: Row %i has a span longer than 256 tiles.\n" % (l, r)
+                
                 try:
                     merged_index = merged_tiles.index((previous, current)) + 1
                 except ValueError:

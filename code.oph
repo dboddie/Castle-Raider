@@ -27,8 +27,6 @@ main:
     jsr clear_bank1
     jsr clear_bank2
     
-    lda #19
-    jsr $fff4
     jsr show_bank1
     
     jsr init_scrolling
@@ -59,24 +57,24 @@ main:
     
     scroll_loop:
     
-        wait_loop1:
-            ldx #157
-            jsr check_key
-            cpy #255
-            bne wait_loop1
-        clc
-        
-        jsr plot_bank2
-        lda #19
-        jsr $fff4
-        jsr show_bank2
+        ldx #157
+        jsr check_key
+        cpy #255
+        bne after_wait
         
         wait_loop2:
             ldx #157
             jsr check_key
             cpy #255
             beq wait_loop2
+        
+        after_wait:
         clc
+        
+        jsr plot_bank2
+        lda #19
+        jsr $fff4
+        jsr show_bank2
         
         jsr scroll_right
         
@@ -239,33 +237,24 @@ plot_bank1:
     
     plot_bank1_row_loop:
     
-        ; ---
-        
-        lda row_table_low,x     ; Load entry a from the table.
-        
-        adc #level_data_low     ; Add a to the data start address
-                                ; to get the row start address, A.
-        sta $76
-        lda row_table_high,x
-        adc #level_data_high
-        sta $77             ; A ($76,$77)
         clc
-        
-        lda row_indices,x   ; Load index i from the indices;
-        asl                 ; and multiply it by 2 to get i*2.
-        adc $76             ; Add i*2 to A to get the address, I, of the
-        sta $76             ; starting offset and type.
-        lda $77
-        adc #0
-        sta $77             ; I ($76,$77)
-        clc
-        
-        ; ---
+        jsr read_row_address
         
         lda #0
         sta $71
         
         lda initial_row_offsets,x   ; Load the initial row offset, o.
+
+        cmp #40
+        bmi plot_bank1_row_loop_calculate_row_address
+        
+        dex
+        bpl plot_bank1_row_loop
+        clc
+        rts
+        
+        plot_bank1_row_loop_calculate_row_address:
+        
         sta $74
         asl                     ; Multiply o by 8
         asl
@@ -287,10 +276,6 @@ plot_bank1:
         sta $73                 ; x ($72,$73)
         clc
         
-        lda $74
-        cmp #40
-        bpl plot_bank1_offset_endloop
-        
         plot_bank1_offset_loop:
         
             ldy #0
@@ -309,22 +294,32 @@ plot_bank1:
             jsr plot_tile_bank
             
             ldy #1
-            lda ($76),y         ; Load the number of tiles, n.
-            adc #1              ; n + 1
-            tay         ; temp
+            lda ($76),y         ; Load the number of tiles minus 1, n - 1.
+            adc #1              ; n
+            bcs plot_bank1_offset_endloop
+            
+            tay                 ; temp (n)
             adc $74             ; Add n to o.
+            
             cmp #40
             bpl plot_bank1_offset_endloop
             sta $74
             
-            tya         ; temp (n)
+            tya                 ; temp (n)
             asl
             asl
             asl                 ; n*8
-            adc $72
+            sta $7a
+            lda #0
+            adc #0
+            sta $7b
+            clc
+            
+            lda $72
+            adc $7a
             sta $72
             lda $73
-            adc #0
+            adc $7b
             sta $73             ; x ($72,$73)
             clc
             
@@ -403,28 +398,7 @@ scroll_right:
         scroll_right_loop_next_offset:
         clc
         
-        ; ---
-        
-        lda row_table_low,x     ; Load entry a from the table.
-        
-        adc #level_data_low     ; Add a to the data start address
-                                ; to get the row start address, A.
-        sta $76
-        lda row_table_high,x
-        adc #level_data_high
-        sta $77             ; A ($76,$77)
-        clc
-        
-        lda row_indices,x   ; Load index i from the indices;
-        asl                 ; and multiply it by 2 to get i*2.
-        adc $76             ; Add i*2 to A to get the address, I, of the
-        sta $76             ; starting offset and type.
-        lda $77
-        adc #0
-        sta $77             ; I ($76,$77)
-        clc
-        
-        ; ---
+        jsr read_row_address
         
         inc row_indices,x   ; increment the index
         
@@ -444,44 +418,34 @@ plot_bank2:
     
     plot_bank2_row_loop:
     
-        ; ---
-        
-        lda row_table_low,x     ; Load entry a from the table.
-        
-        adc #level_data_low     ; Add a to the data start address
-                                ; to get the row start address, A.
-        sta $76
-        lda row_table_high,x
-        adc #level_data_high
-        sta $77             ; A ($76,$77)
         clc
-        
-        lda row_indices,x   ; Load index i from the indices;
-        asl                 ; and multiply it by 2 to get i*2.
-        adc $76             ; Add i*2 to A to get the address, I, of the
-        sta $76             ; starting offset and type.
-        lda $77
-        adc #0
-        sta $77             ; I ($76,$77)
-        clc
-        
-        ; ---
+        jsr read_row_address
         
         lda #0
         sta $71
         
         lda initial_row_offsets,x   ; Load the initial row offset, o.
+        cmp #41
+        bmi plot_bank2_row_loop_calculate_row_address
+        
+        dex
+        bpl plot_bank2_row_loop
+        clc
+        rts
+        
+        plot_bank2_row_loop_calculate_row_address:
+        
         sta $74
         asl                     ; Multiply o by 8
         asl
         asl
         bcc plot_bank2_row_loop_set_row_address
+        clc
         
         tay
         lda #1
         sta $71
         tya
-        clc
         
         plot_bank2_row_loop_set_row_address:
         
@@ -495,6 +459,15 @@ plot_bank2:
         lda $74
         cmp #0
         beq plot_bank2_row_loop_skip_leading
+        cmp #40
+        bmi plot_bank2_row_loop_plot_leading
+        
+        dex
+        bpl plot_bank2_row_loop
+        clc
+        rts
+        
+        plot_bank2_row_loop_plot_leading:
         
         lda $72                 ; move to the previous cell
         sec
@@ -531,7 +504,12 @@ plot_bank2:
         
         lda $74
         cmp #40
-        bpl plot_bank2_offset_endloop
+        bmi plot_bank2_offset_loop
+        
+        dex
+        bpl plot_bank2_row_loop
+        clc
+        rts
         
         plot_bank2_offset_loop:
         
@@ -559,6 +537,7 @@ plot_bank2:
             
             lda $74
             adc $79                 ; Add n - 1 to o.
+            clc
             
             cmp #40
             bpl plot_bank2_offset_endloop   ; break if the screen edge is reached
@@ -568,10 +547,17 @@ plot_bank2:
             asl
             asl
             asl                     ; (n - 1)*8
-            adc $72
+            sta $7a
+            lda #0
+            adc #0
+            sta $7b
+            clc
+            
+            lda $72
+            adc $7a
             sta $72
             lda $73
-            adc #0
+            adc $7b
             sta $73                 ; x ($72,$73)
             clc
             
@@ -624,4 +610,28 @@ plot_bank2:
     
     plot_bank2_row_endloop:
     clc
+    rts
+
+read_row_address:           ; X=row number
+                            ; Returns $76,$77 (row address)
+
+    lda row_table_low,x     ; Load entry a from the table.
+
+    adc #level_data_low     ; Add a to the data start address
+                            ; to get the row start address, A.
+    sta $76
+    lda row_table_high,x
+    adc #level_data_high
+    sta $77             ; A ($76,$77)
+    clc
+
+    lda row_indices,x   ; Load index i from the indices;
+    asl                 ; and multiply it by 2 to get i*2.
+    adc $76             ; Add i*2 to A to get the address, I, of the
+    sta $76             ; starting offset and type.
+    lda $77
+    adc #0
+    sta $77             ; I ($76,$77)
+    clc
+    
     rts
