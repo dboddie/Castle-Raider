@@ -35,12 +35,29 @@ main:
     
         clc
         
+        ;wait_loop1:
+        ;    ldx #157
+        ;    jsr check_key
+        ;    cpy #255
+        ;    bne wait_loop1
+        ;clc
+        ;
+        ;wait_loop2:
+        ;    ldx #157
+        ;    jsr check_key
+        ;    cpy #255
+        ;    beq wait_loop2
+        ;
+        ;after_wait:
+        ;clc
+        
         jsr plot_bank2
         lda #19
         jsr $fff4
         jsr show_bank2
         
         jsr pre_scroll_right
+        clc
         
         jsr plot_bank1
         lda #19
@@ -57,20 +74,6 @@ main:
     
     scroll_loop:
     
-        ldx #157
-        jsr check_key
-        cpy #255
-        bne after_wait
-        
-        wait_loop2:
-            ldx #157
-            jsr check_key
-            cpy #255
-            beq wait_loop2
-        
-        after_wait:
-        clc
-        
         jsr plot_bank2
         lda #19
         jsr $fff4
@@ -86,7 +89,7 @@ main:
         lda $80
         adc #1
         sta $80
-        cmp #88
+        cmp #120
         bmi scroll_loop
     
     clc
@@ -240,16 +243,13 @@ plot_bank1:
         clc
         jsr read_row_address
         
-        lda #0
-        sta $71
-        
         lda initial_row_offsets,x   ; Load the initial row offset, o.
 
         cmp #40
         bmi plot_bank1_row_loop_calculate_row_address
         
         dex
-        bpl plot_bank1_row_loop
+        bpl plot_bank1_row_loop     ; Loop again or exit.
         clc
         rts
         
@@ -259,20 +259,17 @@ plot_bank1:
         asl                     ; Multiply o by 8
         asl
         asl
-        bcc plot_bank1_row_loop_set_row_address
-        
-        tay
-        lda #1
-        sta $71
-        tya
+        sta $72
+        lda #0
+        adc #0
+        sta $73
         clc
         
-        plot_bank1_row_loop_set_row_address:
-        
+        lda $72
         adc bank1_rows_low,x    ; Add to the screen start address for the
         sta $72                 ; row, R, to get x.
-        lda bank1_rows_high,x
-        adc $71
+        lda $73
+        adc bank1_rows_high,x
         sta $73                 ; x ($72,$73)
         clc
         
@@ -300,11 +297,12 @@ plot_bank1:
             
             tay                 ; temp (n)
             adc $74             ; Add n to o.
+            clc
             
             cmp #40
-            bpl plot_bank1_offset_endloop
+            bcs plot_bank1_offset_endloop
             sta $74
-            
+
             tya                 ; temp (n)
             asl
             asl
@@ -421,9 +419,6 @@ plot_bank2:
         clc
         jsr read_row_address
         
-        lda #0
-        sta $71
-        
         lda initial_row_offsets,x   ; Load the initial row offset, o.
         cmp #41
         bmi plot_bank2_row_loop_calculate_row_address
@@ -439,20 +434,17 @@ plot_bank2:
         asl                     ; Multiply o by 8
         asl
         asl
-        bcc plot_bank2_row_loop_set_row_address
+        sta $72
+        lda #0
+        adc #0
+        sta $73
         clc
         
-        tay
-        lda #1
-        sta $71
-        tya
-        
-        plot_bank2_row_loop_set_row_address:
-        
+        lda $72
         adc bank2_rows_low,x    ; Add to the screen start address for the
         sta $72                 ; row, R, to get x.
-        lda bank2_rows_high,x
-        adc $71
+        lda $73
+        adc bank2_rows_high,x
         sta $73                 ; x ($72,$73)
         clc
         
@@ -540,7 +532,7 @@ plot_bank2:
             clc
             
             cmp #40
-            bpl plot_bank2_offset_endloop   ; break if the screen edge is reached
+            bcs plot_bank2_offset_endloop   ; break if the screen edge is reached
             sta $74                 ; Store the new offset
             
             lda $79                 ; n - 1
@@ -635,3 +627,23 @@ read_row_address:           ; X=row number
     clc
     
     rts
+
+initial_plot_bank1:
+
+    ldx #15
+    initial_plot_bank1_row_loop:
+    
+        clc
+        jsr read_row_address
+        
+        lda bank1_rows_low,x
+        sta $72
+        lda bank1_rows_high,x
+        sta $73                 ; x ($72,$73)
+        
+        lda #0
+        sta $74
+        
+        initial_plot_bank1_span_loop:
+        
+            
