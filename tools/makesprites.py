@@ -136,7 +136,7 @@ def compress(data):
     
     return "".join(output)
 
-def read_sprites(paths, merged_tiles):
+def read_tiles(paths, merged_tiles):
 
     sprites = []
     for path in paths:
@@ -172,6 +172,22 @@ def read_sprites(paths, merged_tiles):
             lines.append(line[len(line)/2:] + line[:len(line)/2])
         
         sprites.append(lines)
+    
+    data = ""
+    for lines in sprites:
+    
+        data += read_sprite(lines)
+    
+    print "%i bytes of tile data" % len(data)
+    
+    return data
+
+def read_sprites(paths):
+
+    sprites = []
+    for path in paths:
+    
+        sprites.append(read_png(path))
     
     data = ""
     for lines in sprites:

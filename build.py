@@ -118,6 +118,8 @@ def address_length_end(address, data):
 
 tiles = ["images/blank.png", "images/brick.png", "images/grass.png", "images/ground.png"]
 
+char_sprites = ["images/right1.png", "images/right2.png"]
+
 constants_oph = \
 """.alias sprite_area_low              $%02x
 .alias sprite_area_high             $%02x
@@ -160,6 +162,19 @@ if __name__ == "__main__":
     
     out_uef_file = sys.argv[1]
     
+    # Memory map
+    #
+    #  e00      code
+    # 1fc0      row indices
+    # 1fd0      initial row offsets
+    # 1fe0      row table low
+    # 1ff0      row table high
+    # 2000      level data
+    # 2800      tile sprites
+    # 2e00      character sprites
+    # 3000      bank 1
+    # 5800      bank 2
+    
     files = []
     
     levels_address = 0x1fe0
@@ -167,7 +182,7 @@ if __name__ == "__main__":
     files.append(("LEVELS", levels_address, levels_address, level_data))
     
     sprite_area_address = 0x2800
-    sprite_data = makesprites.read_sprites(tiles, merged_tiles)
+    sprite_data = makesprites.read_tiles(tiles, merged_tiles)
     files.append(("TILES", sprite_area_address, sprite_area_address, sprite_data))
     
     merged_sprites = sprite_area_address + (len(tiles) * 8)
@@ -176,6 +191,10 @@ if __name__ == "__main__":
     rotated_sprites = merged_sprites + ((len(merged_tiles) + 1) * 8)
     rotated_sprites_low = rotated_sprites & 0xff
     rotated_sprites_high = rotated_sprites >> 8
+    
+    char_area_address = 0x2E00
+    char_data = makesprites.read_sprites(char_sprites)
+    files.append(("SPRITES", char_area_address, char_area_address, char_data))
     
     code_start = 0x0e00
     
