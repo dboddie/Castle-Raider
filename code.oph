@@ -35,22 +35,6 @@ main:
     
         clc
         
-        ;wait_loop1:
-        ;    ldx #157
-        ;    jsr check_key
-        ;    cpy #255
-        ;    bne wait_loop1
-        ;clc
-        ;
-        ;wait_loop2:
-        ;    ldx #157
-        ;    jsr check_key
-        ;    cpy #255
-        ;    beq wait_loop2
-        ;
-        ;after_wait:
-        ;clc
-        
         jsr plot_bank2
         lda #19
         jsr $fff4
@@ -69,6 +53,7 @@ main:
         cmp #0
         bne pre_scroll_loop
     
+    clc
     lda #0
     sta $80
     
@@ -89,8 +74,11 @@ main:
         lda $80
         adc #1
         sta $80
-        cmp #120
-        bmi scroll_loop
+        cmp #152
+        beq scroll_loop_endloop
+        jmp scroll_loop
+    
+    scroll_loop_endloop:
     
     clc
     rts
@@ -246,7 +234,7 @@ plot_bank1:
         lda initial_row_offsets,x   ; Load the initial row offset, o.
 
         cmp #40
-        bmi plot_bank1_row_loop_calculate_row_address
+        bcc plot_bank1_row_loop_calculate_row_address
         
         dex
         bpl plot_bank1_row_loop     ; Loop again or exit.
@@ -421,7 +409,7 @@ plot_bank2:
         
         lda initial_row_offsets,x   ; Load the initial row offset, o.
         cmp #41
-        bmi plot_bank2_row_loop_calculate_row_address
+        bcc plot_bank2_row_loop_calculate_row_address
         
         dex
         bpl plot_bank2_row_loop
@@ -589,7 +577,7 @@ plot_bank2:
             
             lda $74
             cmp #40
-            bpl plot_bank2_offset_endloop   ; break if the screen edge is reached
+            bcs plot_bank2_offset_endloop   ; break if the screen edge is reached
 
             jmp plot_bank2_offset_loop
         

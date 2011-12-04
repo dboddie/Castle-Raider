@@ -136,6 +136,8 @@ constants_oph = \
 .alias levels_length_high           $%02x
 .alias levels_end_low               $%02x
 .alias levels_end_high              $%02x
+
+.alias level_extent                 %i
 """
 
 extras_oph = \
@@ -180,7 +182,7 @@ if __name__ == "__main__":
     values = address_length_end(sprite_area_address, sprite_data) + (
             merged_sprites_low, merged_sprites_high,
             rotated_sprites_low, rotated_sprites_high
-            ) + address_length_end(levels_address, level_data)
+            ) + address_length_end(levels_address, level_data) + (len(makelevels.levels[0][0]) - 41,)
     
     open("constants.oph", "w").write(constants_oph % values)
     
