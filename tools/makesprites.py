@@ -22,7 +22,7 @@ import Image
 palette = {"\x00\x00\x00": 0,
            "\xff\x00\x00": 1,
            "\x00\xff\x00": 2,
-           "\xff\xff\x00": 2,
+           "\xff\xff\x00": 3,
            "\x00\x00\xff": 1,
            "\xff\x00\xff": 2,
            "\x00\xff\xff": 2,
