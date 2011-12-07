@@ -138,8 +138,14 @@ constants_oph = \
 .alias levels_length_high           $%02x
 .alias levels_end_low               $%02x
 .alias levels_end_high              $%02x
-
 .alias level_extent                 %i
+
+.alias char_area_low                $%02x
+.alias char_area_high               $%02x
+.alias char_area_length_low         $%02x
+.alias char_area_length_high        $%02x
+.alias char_area_end_low            $%02x
+.alias char_area_end_high           $%02x
 """
 
 extras_oph = \
@@ -198,10 +204,12 @@ if __name__ == "__main__":
     
     code_start = 0x0e00
     
-    values = address_length_end(sprite_area_address, sprite_data) + (
-            merged_sprites_low, merged_sprites_high,
-            rotated_sprites_low, rotated_sprites_high
-            ) + address_length_end(levels_address, level_data) + (len(makelevels.levels[0][0]) - 41,)
+    values = address_length_end(sprite_area_address, sprite_data) + \
+        (merged_sprites_low, merged_sprites_high,
+         rotated_sprites_low, rotated_sprites_high) + \
+        address_length_end(levels_address, level_data) + \
+        (len(makelevels.levels[0][0]) - 41,) + \
+        address_length_end(char_area_address, char_data)
     
     open("constants.oph", "w").write(constants_oph % values)
     

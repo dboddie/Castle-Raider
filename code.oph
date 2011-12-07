@@ -2,6 +2,14 @@
 
 .include "constants.oph"
 
+.alias initial_row_tiles    $1fb0
+.alias row_indices          $1fc0
+.alias initial_row_offsets  $1fd0
+.alias row_table_low        $1fe0
+.alias row_table_high       $1ff0
+.alias level_data_low       $00
+.alias level_data_high      $20
+
 init:
 
     lda #22         ; MODE 5
@@ -34,8 +42,10 @@ main:
     
     jsr show_bank2          ; Hide the bank being plotted.
     jsr initial_plot_bank1
+    jsr plot_char_bank1
     jsr show_bank1          ; Show the completed bank.
     jsr initial_plot_bank2
+    jsr plot_char_bank2
     
     lda #0
     sta $80
@@ -214,14 +224,6 @@ set_palette:
     ldy #$3d
     jsr $fff1
     rts
-
-.alias initial_row_tiles    $1fb0
-.alias row_indices          $1fc0
-.alias initial_row_offsets  $1fd0
-.alias row_table_low        $1fe0
-.alias row_table_high       $1ff0
-.alias level_data_low       $00
-.alias level_data_high      $20
 
 bank1_rows_low:  .byte  $00,$40,$80,$c0,$00,$40,$80,$c0,$00,$40,$80,$c0,$00,$40,$80,$c0
 bank1_rows_high: .byte  $3a,$3b,$3c,$3d,$3f,$40,$41,$42,$44,$45,$46,$47,$49,$4a,$4b,$4c
@@ -509,15 +511,6 @@ plot_bank2:
         
         plot_bank2_row_loop_skip_leading:
         clc
-        
-        lda $74
-        cmp #40
-        bmi plot_bank2_offset_loop
-        
-        dex
-        bpl plot_bank2_row_loop
-        clc
-        rts
         
         plot_bank2_offset_loop:
         
@@ -847,3 +840,76 @@ initial_plot_bank2:
     initial_plot_bank2_row_endloop:
     clc
     rts
+
+; Sprite data stored in memory: 00 04 08 0c 10 14 18 1c 20 24 28 2c
+
+plot8x24_y0:            ; $70,$71=source address
+                        ; $72,$73=destination address
+
+    ldx #2
+
+    plot8x24_y0_loop:
+
+        ldy #15
+
+        plotloop8x24_y0_0:
+            lda ($70),y
+            eor ($72),y
+            sta ($72),y
+            dey
+            bpl plotloop8x24_y0_0
+
+        dex
+        bmi plot8x24_y0_exit
+        
+        lda $72
+        adc #$40
+        sta $72
+        lda $73
+        adc #$01
+        sta $73
+        clc
+
+        lda $70
+        adc #16
+        sta $70
+        lda $71
+        adc #0
+        sta $71
+        clc
+
+        jmp plot8x24_y0_loop
+
+    plot8x24_y0_exit:
+    clc
+    rts
+
+plot_char_bank1:
+
+    lda #char_area_low
+    sta $70
+    lda #char_area_high
+    sta $71
+    
+    ldx #6
+    lda bank1_rows_low,x
+    sta $72
+    lda bank1_rows_high,x
+    sta $73
+    
+    jmp plot8x24_y0
+    
+plot_char_bank2:
+
+    lda #char_area_low
+    sta $70
+    lda #char_area_high
+    sta $71
+    
+    ldx #6
+    lda bank2_rows_low,x
+    sta $72
+    lda bank2_rows_high,x
+    sta $73
+    
+    jmp plot8x24_y0
