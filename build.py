@@ -171,6 +171,9 @@ if __name__ == "__main__":
     # Memory map
     #
     #  e00      code
+    # 1fa0      player x
+    # 1fa1      player y
+    # 1fa2      bank number
     # 1fc0      row indices
     # 1fd0      initial row offsets
     # 1fe0      row table low

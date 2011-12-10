@@ -10,6 +10,13 @@
 .alias level_data_low       $00
 .alias level_data_high      $20
 
+.alias player_x             $1fa0
+.alias player_y             $1fa1
+.alias bank_number          $1fa2
+
+.alias scroll_offset_low    $80
+.alias scroll_offset_high   $81
+
 init:
 
     lda #22         ; MODE 5
@@ -29,6 +36,14 @@ init:
         bpl cursor_loop
     
     jsr set_core_palette
+    
+    lda #4
+    sta player_x
+    lda #0
+    sta player_y
+    
+    lda #1              ; Use 1 and 2 for banks 1 and 2.
+    sta bank_number
 
 main:
 
@@ -45,78 +60,140 @@ main:
     jsr plot_char_bank1
     jsr show_bank1          ; Show the completed bank.
     jsr initial_plot_bank2
-    jsr plot_char_bank2
     
     lda #0
-    sta $80
+    sta scroll_offset_low
     lda #0
-    sta $81
+    sta scroll_offset_high
     
-    scroll_loop:
+    main_loop:
     
-        jsr plot_bank2
-        lda #19
-        jsr $fff4
-        jsr show_bank2
+        jsr check_keys
+        jsr check_beneath
         
-        jsr scroll_right
-        
-        jsr plot_bank1
-        lda #19
-        jsr $fff4
-        jsr show_bank1
-        
-        lda $80
-        adc #1
-        sta $80
-        lda $81
-        adc #0
-        sta $81
-        clc
-        
-        lda $80
-        cmp #$58
-        bne scroll_loop
-        lda $81
-        cmp #$01
-        bne scroll_loop
+        ldx #143            ; (Escape)
+        jsr check_key
+        cpy #255
+        bne main_loop
     
-    scroll_loop_endloop:
+    main_loop_endloop:
     
     clc
     rts
 
-scroll_on:
+check_keys:
 
-    pre_scroll_loop:
+    ldx #189        ; (X)
+    jsr check_key
+    cpy #255
+    bne check_keys_not_right
+    clc
     
-        clc
-        
-        jsr plot_bank2
-        lda #19
-        jsr $fff4
-        jsr show_bank2
-        
-        jsr pre_scroll_right
-        clc
-        
-        jsr plot_bank1
-        lda #19
-        jsr $fff4
-        jsr show_bank1
-        
-        ldx #0
-        lda initial_row_offsets,x
-        cmp #0
-        bne pre_scroll_loop
+    lda scroll_offset_low
+    cmp #$58
+    bne check_keys_right
+    lda scroll_offset_high
+    cmp #$01
+    bne check_keys_right
     
     clc
+    rts
+    
+    check_keys_right:
+    jsr scroll_right_update
+    
+    check_keys_not_right:
+    clc
+    rts
+
+scroll_right_update:
+
+    lda bank_number
+    cmp #2              ; showing bank 2?
+    beq scroll_right_update_show_bank1
+    
+    jsr plot_bank2
+    lda #19
+    jsr $fff4
+    jsr show_bank2
+    
+    jsr plot_char_bank1 ; unplot the player on bank 1
+    jsr plot_char_bank2 ; plot the player on bank 2
+    
+    lda #2
+    sta bank_number
+    
+    clc
+    rts
+    
+    scroll_right_update_show_bank1:
+    clc
+    
+    jsr scroll_right
+    
+    jsr plot_bank1
+    lda #19
+    jsr $fff4
+    jsr show_bank1
+    
+    lda $80
+    adc #1
+    sta $80
+    lda $81
+    adc #0
+    sta $81
+    clc
+    
+    jsr plot_char_bank2 ; unplot the player on bank 2
+    jsr plot_char_bank1 ; plot the player on bank 1
+    
+    lda #1
+    sta bank_number
+    
     rts
 
 check_key:      ; x=key code
     lda #129    ; returns y=255 or 0
     ldy #255
     jsr $fff4
+    rts
+
+check_beneath:
+
+    lda player_x
+    sta $70
+    lda player_y
+    adc #3
+    sta $71
+    
+    jsr check_tile
+    
+    cmp #0
+    beq check_beneath_fall
+    
+    clc
+    rts
+    
+    check_beneath_fall:
+    
+    lda bank_number
+    cmp #2
+    beq check_beneath_fall_bank2
+    clc
+    
+    jsr plot_char_bank1     ; unplot
+    inc player_y
+    jsr plot_char_bank1     ; plot
+    clc
+    rts
+    
+    check_beneath_fall_bank2:
+    clc
+    
+    jsr plot_char_bank1     ; unplot
+    inc player_y
+    jsr plot_char_bank1     ; plot
+    clc
     rts
 
 clear_bank1:
@@ -238,8 +315,6 @@ init_scrolling:
         lda #0
         sta row_indices,x
         sta initial_row_tiles,x
-        ;lda #40
-        lda #0
         sta initial_row_offsets,x
         dex
         bpl init_banks_loop
@@ -884,32 +959,104 @@ plot8x24_y0:            ; $70,$71=source address
     clc
     rts
 
-plot_char_bank1:
+plot_char_bank1:            ; plots the player character on bank 1
 
     lda #char_area_low
     sta $70
     lda #char_area_high
     sta $71
     
-    ldx #6
-    lda bank1_rows_low,x
+    ldx player_y
+    lda player_x
+    asl
+    asl
+    asl
+    adc bank1_rows_low,x
     sta $72
     lda bank1_rows_high,x
+    adc #0
     sta $73
+    clc
     
     jmp plot8x24_y0
     
-plot_char_bank2:
+plot_char_bank2:            ; plots the player character on bank 2
 
     lda #char_area_low
     sta $70
     lda #char_area_high
     sta $71
     
-    ldx #6
-    lda bank2_rows_low,x
+    ldx player_y
+    lda player_x
+    asl
+    asl
+    asl
+    adc bank2_rows_low,x
     sta $72
     lda bank2_rows_high,x
+    adc #0
     sta $73
+    clc
     
     jmp plot8x24_y0
+
+check_tile:         ; $70=x position (0-39)
+                    ; $71=y position (0-15)
+
+    ldx $71
+    jsr read_row_address
+    
+    lda initial_row_offsets,x
+    cmp $70
+    bmi check_tile_spans
+    
+    clc
+    lda initial_row_tiles,x
+    rts                     ; Return the type.
+    
+    check_tile_spans:
+    clc
+    
+    sta $74                 ; Store the row offset of the next span.
+    
+    check_tile_spans_loop:
+    
+        ldy #1
+        lda ($76),y         ; Load the number of tiles minus 1, n - 1.
+        adc #1              ; n
+        adc $74             ; Add to the row offset
+        clc
+        
+        cmp $70
+        beq check_tile_spans_loop_next
+        bmi check_tile_spans_loop_next
+        
+        clc
+        ldy #0
+        lda ($76),y             ; Load the type number, t,
+        and #$0f                ; mask off the top 4 bits,
+        rts
+        
+        check_tile_spans_loop_next:
+        
+        cmp #40
+        bpl check_tile_spans_endloop
+        
+        sta $74             ; and store the result.
+        
+        lda $76             ; Increment the row address.
+        adc #2
+        sta $76
+        lda $77
+        adc #0
+        sta $77
+        clc
+        
+        jmp check_tile_spans_loop
+        
+    check_tile_spans_endloop:
+    clc
+    
+    lda #0          ; In theory, we should never reach here.
+    rts
