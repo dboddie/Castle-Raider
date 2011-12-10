@@ -118,7 +118,7 @@ def address_length_end(address, data):
 
 tiles = ["images/blank.png", "images/brick.png", "images/grass.png", "images/ground.png"]
 
-char_sprites = ["images/right1.png", "images/right2.png"]
+char_sprites = ["images/left1.png", "images/left2.png", "images/right1.png", "images/right2.png"]
 
 constants_oph = \
 """.alias sprite_area_low              $%02x
@@ -140,6 +140,7 @@ constants_oph = \
 .alias levels_end_high              $%02x
 .alias level_extent                 %i
 
+.alias char_area                    $%x
 .alias char_area_low                $%02x
 .alias char_area_high               $%02x
 .alias char_area_length_low         $%02x
@@ -171,9 +172,8 @@ if __name__ == "__main__":
     # Memory map
     #
     #  e00      code
-    # 1fa0      player x
-    # 1fa1      player y
-    # 1fa2      bank number
+    # 1fa0      player position, animation and bank number
+    # 1fb0      (free)
     # 1fc0      row indices
     # 1fd0      initial row offsets
     # 1fe0      row table low
@@ -212,6 +212,7 @@ if __name__ == "__main__":
          rotated_sprites_low, rotated_sprites_high) + \
         address_length_end(levels_address, level_data) + \
         (len(makelevels.levels[0][0]) - 41,) + \
+        (char_area_address,) + \
         address_length_end(char_area_address, char_data)
     
     open("constants.oph", "w").write(constants_oph % values)

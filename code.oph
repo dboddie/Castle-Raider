@@ -13,6 +13,7 @@
 .alias player_x             $1fa0
 .alias player_y             $1fa1
 .alias bank_number          $1fa2
+.alias player_animation     $1fa3
 
 .alias scroll_offset_low    $80
 .alias scroll_offset_high   $81
@@ -41,6 +42,8 @@ init:
     sta player_x
     lda #0
     sta player_y
+    lda #2
+    sta player_animation
     
     lda #1              ; Use 1 and 2 for banks 1 and 2.
     sta bank_number
@@ -100,8 +103,11 @@ check_keys:
     rts
     
     check_keys_right:
-    jsr scroll_right_update
     
+    jsr check_move_right
+    bcs check_keys_not_right
+    jmp scroll_right_update ; branch then exit
+
     check_keys_not_right:
     clc
     rts
@@ -118,6 +124,9 @@ scroll_right_update:
     jsr show_bank2
     
     jsr plot_char_bank1 ; unplot the player on bank 1
+    lda player_animation
+    eor #1
+    sta player_animation
     jsr plot_char_bank2 ; plot the player on bank 2
     
     lda #2
@@ -145,6 +154,9 @@ scroll_right_update:
     clc
     
     jsr plot_char_bank2 ; unplot the player on bank 2
+    lda player_animation
+    eor #1
+    sta player_animation
     jsr plot_char_bank1 ; plot the player on bank 1
     
     lda #1
@@ -190,9 +202,9 @@ check_beneath:
     check_beneath_fall_bank2:
     clc
     
-    jsr plot_char_bank1     ; unplot
+    jsr plot_char_bank2     ; unplot
     inc player_y
-    jsr plot_char_bank1     ; plot
+    jsr plot_char_bank2     ; plot
     clc
     rts
 
@@ -959,11 +971,15 @@ plot8x24_y0:            ; $70,$71=source address
     clc
     rts
 
+player_sprites_low:  .byte <char_area, <[char_area + 48], <[char_area + 96], <[char_area + 144]
+player_sprites_high: .byte >char_area, >[char_area + 48], >[char_area + 96], >[char_area + 144]
+
 plot_char_bank1:            ; plots the player character on bank 1
 
-    lda #char_area_low
+    ldx player_animation
+    lda player_sprites_low,x
     sta $70
-    lda #char_area_high
+    lda player_sprites_high,x
     sta $71
     
     ldx player_y
@@ -982,9 +998,10 @@ plot_char_bank1:            ; plots the player character on bank 1
     
 plot_char_bank2:            ; plots the player character on bank 2
 
-    lda #char_area_low
+    ldx player_animation
+    lda player_sprites_low,x
     sta $70
-    lda #char_area_high
+    lda player_sprites_high,x
     sta $71
     
     ldx player_y
@@ -1009,6 +1026,7 @@ check_tile:         ; $70=x position (0-39)
     
     lda initial_row_offsets,x
     cmp $70
+    beq check_tile_spans
     bmi check_tile_spans
     
     clc
@@ -1059,4 +1077,32 @@ check_tile:         ; $70=x position (0-39)
     clc
     
     lda #0          ; In theory, we should never reach here.
+    rts
+
+check_move_right:
+
+    lda player_x
+    adc #2
+    sta $70
+    lda player_y
+    sta $71
+    
+    lda #2
+    sta $72
+    check_move_right_loop:
+    
+        clc
+        jsr check_tile
+        cmp #0
+        beq check_move_right_next
+        sec
+        rts
+        
+        check_move_right_next:
+        
+        inc $71
+        dec $72
+        bpl check_move_right_loop
+    
+    clc
     rts
