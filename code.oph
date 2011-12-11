@@ -14,6 +14,8 @@
 .alias player_y             $1fa1
 .alias bank_number          $1fa2
 .alias player_animation     $1fa3
+.alias player_jumping       $1fa4
+.alias player_moving        $1fa5
 
 .alias scroll_offset_low    $80
 .alias scroll_offset_high   $81
@@ -44,6 +46,10 @@ init:
     sta player_y
     lda #2
     sta player_animation
+    lda #0
+    sta player_jumping
+    lda #0
+    sta player_moving
     
     lda #1              ; Use 1 and 2 for banks 1 and 2.
     sta bank_number
@@ -54,9 +60,6 @@ main:
     jsr clear_bank2
     
     jsr init_scrolling
-    
-    ;jsr show_bank1
-    ;jsr scroll_on
     
     jsr show_bank2          ; Hide the bank being plotted.
     jsr initial_plot_bank1
@@ -71,8 +74,39 @@ main:
     
     main_loop:
     
-        jsr check_keys
-        jsr check_beneath
+        lda player_jumping
+        cmp #0
+        bne main_loop_move_allowed
+        
+            jsr check_beneath
+            bcs main_loop_no_moving
+        
+        main_loop_move_allowed:
+        
+            jsr player_move
+            jmp main_loop_next
+        
+        main_loop_no_moving:
+        
+            lda #19
+            jsr $fff4
+            jsr plot_player
+        
+            inc player_y
+            jsr plot_player
+            
+            lda player_moving
+            cmp #2
+            bne main_loop_not_moving_right
+            
+            jsr player_move_right
+            
+            main_loop_not_moving_right:
+            clc
+        
+        main_loop_next:
+        
+        clc
         
         ldx #143            ; (Escape)
         jsr check_key
@@ -84,31 +118,82 @@ main:
     clc
     rts
 
-check_keys:
+player_move:
 
-    ldx #189        ; (X)
-    jsr check_key
-    cpy #255
-    bne check_keys_not_right
+    lda player_jumping
+    cmp #0
+    beq player_move_check_keys
     clc
     
-    lda scroll_offset_low
-    cmp #$58
-    bne check_keys_right
-    lda scroll_offset_high
-    cmp #$01
-    bne check_keys_right
+    lda #19
+    jsr $fff4
+    jsr plot_player                 ; unplot
+    
+    jsr player_jump
+    
+    jsr plot_player                 ; plot
+    
+    lda player_moving
+    cmp #2
+    bne player_move_not_moving_right
+    
+    jsr player_move_right
+    
+    player_move_not_moving_right:
     
     clc
     rts
     
-    check_keys_right:
+    player_move_check_keys:
     
-    jsr check_move_right
-    bcs check_keys_not_right
-    jmp scroll_right_update ; branch then exit
+    lda #0
+    sta player_moving
+    
+    ldx #189        ; (X)
+    jsr check_key
+    cpy #255
+    bne player_move_not_right
+    clc
+    
+    lda scroll_offset_low
+    cmp #$58
+    bne player_move_move_right
+    lda scroll_offset_high
+    cmp #$01
+    bne player_move_move_right
+    
+    clc
+    rts
+    
+    player_move_move_right:
+    
+    jsr player_move_right   ; allow the player to jump while moving
+    
+    lda #2                  ; 2=moving right
+    sta player_moving
 
-    check_keys_not_right:
+    player_move_not_right:
+    
+    lda player_jumping
+    cmp #0
+    bne player_move_not_jump
+    
+    ldx #182        ; (Return)
+    jsr check_key
+    cpy #255
+    bne player_move_not_jump
+    clc
+    
+    lda #19
+    jsr $fff4
+    jsr plot_player                 ; unplot
+    
+    jsr player_jump
+    
+    jsr plot_player                 ; plot
+    
+    player_move_not_jump:
+    
     clc
     rts
 
@@ -125,7 +210,6 @@ scroll_right_update:
     
     jsr plot_char_bank1 ; unplot the player on bank 1
     lda player_animation
-    eor #1
     sta player_animation
     jsr plot_char_bank2 ; plot the player on bank 2
     
@@ -172,39 +256,31 @@ check_key:      ; x=key code
 
 check_beneath:
 
-    lda player_x
-    sta $70
     lda player_y
+    cmp #13
+    bpl check_beneath_exit
+    
     adc #3
     sta $71
+    lda player_x
+    sta $70
     
     jsr check_tile
-    
     cmp #0
-    beq check_beneath_fall
+    bne check_beneath_exit
     
     clc
-    rts
+    inc $70
+    jsr check_tile
+    cmp #0
+    bne check_beneath_exit
     
     check_beneath_fall:
     
-    lda bank_number
-    cmp #2
-    beq check_beneath_fall_bank2
-    clc
-    
-    jsr plot_char_bank1     ; unplot
-    inc player_y
-    jsr plot_char_bank1     ; plot
-    clc
+    sec                     ; set the carry flag to indicate falling
     rts
     
-    check_beneath_fall_bank2:
-    clc
-    
-    jsr plot_char_bank2     ; unplot
-    inc player_y
-    jsr plot_char_bank2     ; plot
+    check_beneath_exit:
     clc
     rts
 
@@ -1018,6 +1094,20 @@ plot_char_bank2:            ; plots the player character on bank 2
     
     jmp plot8x24_y0
 
+plot_player:
+
+    lda bank_number
+    cmp #1
+    bne plot_player_plot_bank2
+    
+        clc
+        jmp plot_char_bank1
+    
+    plot_player_plot_bank2:
+    
+        clc
+        jmp plot_char_bank2
+
 check_tile:         ; $70=x position (0-39)
                     ; $71=y position (0-15)
 
@@ -1103,6 +1193,84 @@ check_move_right:
         inc $71
         dec $72
         bpl check_move_right_loop
+    
+    clc
+    rts
+
+player_move_right:
+
+    clc
+    jsr check_move_right
+    bcs player_move_right_cannot_move
+    
+    jmp scroll_right_update     ; branch then exit
+    
+    player_move_right_cannot_move:
+    clc
+    rts
+
+jump_steps: .byte 2,1,1,0
+char_plot_routines: .byte 0,0,<plot_char_bank1,>plot_char_bank1,<plot_char_bank2,>plot_char_bank2
+
+player_jump:
+
+    clc
+    
+    ldx player_jumping
+    lda jump_steps,x
+    sta $72
+    
+    lda player_y
+    sta $71
+    
+    player_jump_check_loop:
+    
+        lda $72
+        cmp #0
+        beq player_jump_check_endloop
+        
+        lda $71
+        cmp #0
+        beq player_jump_stop_jumping
+        dec $71
+        clc
+        
+        lda player_x
+        sta $70
+        jsr check_tile
+        cmp #0
+        bne player_jump_stop_jumping
+        clc
+        
+        inc $70
+        
+        jsr check_tile
+        cmp #0
+        bne player_jump_stop_jumping
+        
+        lda $71
+        sta player_y
+        
+        dec $72
+        jmp player_jump_check_loop
+    
+    player_jump_check_endloop:
+    clc
+    
+    lda player_jumping
+    adc #1
+    cmp #4
+    bpl player_jump_stop_jumping
+    
+    sta player_jumping
+    clc
+    rts
+    
+    player_jump_stop_jumping:
+    clc
+    
+    lda #0
+    sta player_jumping
     
     clc
     rts
