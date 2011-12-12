@@ -16,6 +16,7 @@
 .alias player_animation     $1fa3
 .alias player_jumping       $1fa4
 .alias player_moving        $1fa5
+.alias player_falling       $1fa6
 
 .alias scroll_offset_low    $80
 .alias scroll_offset_high   $81
@@ -42,14 +43,14 @@ init:
     
     lda #4
     sta player_x
-    lda #0
+    lda #12
     sta player_y
     lda #2
     sta player_animation
     lda #0
     sta player_jumping
-    lda #0
     sta player_moving
+    sta player_falling
     
     lda #1              ; Use 1 and 2 for banks 1 and 2.
     sta bank_number
@@ -76,33 +77,38 @@ main:
     
         lda player_jumping
         cmp #0
-        bne main_loop_move_allowed
+        bne main_loop_check_fall
         
             jsr check_beneath
-            bcs main_loop_no_moving
         
-        main_loop_move_allowed:
+        main_loop_check_fall:
         
-            jsr player_move
+        lda player_falling
+        cmp #0
+        beq main_loop_allow_movement
+        
+            lda player_moving
+            cmp #2
+            bne main_loop_not_moving_right
+            
+            jsr player_move_right
             jmp main_loop_next
-        
-        main_loop_no_moving:
-        
+            
+            main_loop_not_moving_right:
+            
             lda #19
             jsr $fff4
             jsr plot_player
         
             inc player_y
             jsr plot_player
-            
-            lda player_moving
-            cmp #2
-            bne main_loop_not_moving_right
-            
-            jsr player_move_right
-            
-            main_loop_not_moving_right:
+        
+        main_loop_allow_movement:
+        
             clc
+            
+            jsr player_move
+            jmp main_loop_next
         
         main_loop_next:
         
@@ -209,8 +215,14 @@ scroll_right_update:
     jsr show_bank2
     
     jsr plot_char_bank1 ; unplot the player on bank 1
-    lda player_animation
-    sta player_animation
+    lda player_falling
+    cmp #0
+    beq scroll_right_update_plot_bank2
+    
+    inc player_y
+    
+    scroll_right_update_plot_bank2:
+    clc
     jsr plot_char_bank2 ; plot the player on bank 2
     
     lda #2
@@ -241,6 +253,16 @@ scroll_right_update:
     lda player_animation
     eor #1
     sta player_animation
+    
+    lda player_falling
+    cmp #0
+    beq scroll_right_update_plot_bank1
+    
+    inc player_y
+    
+    scroll_right_update_plot_bank1:
+    clc
+    
     jsr plot_char_bank1 ; plot the player on bank 1
     
     lda #1
@@ -275,12 +297,26 @@ check_beneath:
     cmp #0
     bne check_beneath_exit
     
+    lda bank_number
+    cmp #2
+    bne check_beneath_fall
+    
+    clc
+    inc $70
+    jsr check_tile
+    cmp #0
+    bne check_beneath_exit
+    
     check_beneath_fall:
     
-    sec                     ; set the carry flag to indicate falling
+    lda #1
+    sta player_falling
+    clc
     rts
     
     check_beneath_exit:
+    lda #0
+    sta player_falling
     clc
     rts
 
@@ -1206,6 +1242,9 @@ player_move_right:
     jmp scroll_right_update     ; branch then exit
     
     player_move_right_cannot_move:
+    
+    lda #0                      ; stop the player's motion
+    sta player_moving
     clc
     rts
 
