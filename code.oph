@@ -89,6 +89,14 @@ main:
         beq main_loop_allow_movement
         
             lda player_moving
+            cmp #1
+            bne main_loop_not_moving_left
+            
+            jsr player_move_left
+            jmp main_loop_next
+            
+            main_loop_not_moving_left:
+            
             cmp #2
             bne main_loop_not_moving_right
             
@@ -236,37 +244,12 @@ scroll_right_update:
     cmp #2              ; showing bank 2?
     beq scroll_right_update_show_bank1
     
-    jsr plot_bank2
-    lda #19
-    jsr $fff4
-    jsr show_bank2
-    
-    jsr plot_char_bank1 ; unplot the player on bank 1
-    lda player_falling
-    cmp #0
-    beq scroll_right_update_plot_bank2
-    
-    inc player_y
-    
-    scroll_right_update_plot_bank2:
-    clc
-    jsr plot_char_bank2 ; plot the player on bank 2
-    
-    lda #2
-    sta bank_number
-    
-    clc
-    rts
+    jmp scroll_update_bank1_bank2
     
     scroll_right_update_show_bank1:
     clc
     
     jsr scroll_right
-    
-    jsr plot_bank1
-    lda #19
-    jsr $fff4
-    jsr show_bank1
     
     lda $80
     adc #1
@@ -276,26 +259,7 @@ scroll_right_update:
     sta $81
     clc
     
-    jsr plot_char_bank2 ; unplot the player on bank 2
-    lda player_animation
-    eor #1
-    sta player_animation
-    
-    lda player_falling
-    cmp #0
-    beq scroll_right_update_plot_bank1
-    
-    inc player_y
-    
-    scroll_right_update_plot_bank1:
-    clc
-    
-    jsr plot_char_bank1 ; plot the player on bank 1
-    
-    lda #1
-    sta bank_number
-    
-    rts
+    jmp scroll_update_bank2_bank1
 
 scroll_left_update:
 
@@ -303,45 +267,30 @@ scroll_left_update:
     cmp #2              ; showing bank 2?
     beq scroll_left_update_show_bank1
     
-    jsr plot_bank2
-    lda #19
-    jsr $fff4
-    jsr show_bank2
-    
-    jsr plot_char_bank1 ; unplot the player on bank 1
-    lda player_falling
-    cmp #0
-    beq scroll_left_update_plot_bank2
-    
-    inc player_y
-    
-    scroll_left_update_plot_bank2:
-    clc
-    jsr plot_char_bank2 ; plot the player on bank 2
-    
-    lda #2
-    sta bank_number
-    
-    clc
-    rts
+    jmp scroll_update_bank1_bank2
     
     scroll_left_update_show_bank1:
     clc
     
     jsr scroll_left
     
+    lda $80
+    sec
+    sbc #1
+    sta $80
+    lda $81
+    sbc #0
+    sta $81
+    clc
+    
+    ; Fall through to the next routine.
+
+scroll_update_bank2_bank1:
+
     jsr plot_bank1
     lda #19
     jsr $fff4
     jsr show_bank1
-    
-    lda $80
-    adc #1
-    sta $80
-    lda $81
-    adc #0
-    sta $81
-    clc
     
     jsr plot_char_bank2 ; unplot the player on bank 2
     lda player_animation
@@ -350,11 +299,11 @@ scroll_left_update:
     
     lda player_falling
     cmp #0
-    beq scroll_left_update_plot_bank1
+    beq scroll_update_plot_bank1
     
     inc player_y
     
-    scroll_left_update_plot_bank1:
+    scroll_update_plot_bank1:
     clc
     
     jsr plot_char_bank1 ; plot the player on bank 1
@@ -362,6 +311,31 @@ scroll_left_update:
     lda #1
     sta bank_number
     
+    clc
+    rts
+
+scroll_update_bank1_bank2:
+
+    jsr plot_bank2
+    lda #19
+    jsr $fff4
+    jsr show_bank2
+    
+    jsr plot_char_bank1 ; unplot the player on bank 1
+    lda player_falling
+    cmp #0
+    beq scroll_update_plot_bank2
+    
+    inc player_y
+    
+    scroll_update_plot_bank2:
+    clc
+    jsr plot_char_bank2 ; plot the player on bank 2
+    
+    lda #2
+    sta bank_number
+    
+    clc
     rts
 
 check_key:      ; x=key code
@@ -1343,6 +1317,7 @@ check_move_right:
     sta $70
     lda player_y
     sta $71
+    clc
     
     jmp check_move  ; branch then exit
 
