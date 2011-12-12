@@ -2,9 +2,10 @@
 
 .include "constants.oph"
 
-.alias initial_row_tiles    $1fb0
-.alias row_indices          $1fc0
-.alias initial_row_offsets  $1fd0
+.alias max_row_offsets      $1f90 ; the furthest they can be displaced to the right
+.alias initial_row_tiles    $1fb0 ; the tile occurring at the left edge of the screen
+.alias row_indices          $1fc0 ; indices into each row of the level data
+.alias initial_row_offsets  $1fd0 ; current displacements for the rows
 .alias row_table_low        $1fe0
 .alias row_table_high       $1ff0
 .alias level_data_low       $00
@@ -155,6 +156,32 @@ player_move:
     lda #0
     sta player_moving
     
+    ldx #158        ; (Z)
+    jsr check_key
+    cpy #255
+    bne player_move_not_left
+    clc
+    
+    lda scroll_offset_low
+    cmp #0
+    bne player_move_move_left
+    lda scroll_offset_high
+    cmp #0
+    bne player_move_move_left
+    
+    clc
+    rts
+    
+    player_move_move_left:
+    
+    jsr player_move_left   ; allow the player to jump while moving
+    
+    lda #1                  ; 1=moving left
+    sta player_moving
+
+    player_move_not_left:
+    clc
+    
     ldx #189        ; (X)
     jsr check_key
     cpy #255
@@ -261,6 +288,73 @@ scroll_right_update:
     inc player_y
     
     scroll_right_update_plot_bank1:
+    clc
+    
+    jsr plot_char_bank1 ; plot the player on bank 1
+    
+    lda #1
+    sta bank_number
+    
+    rts
+
+scroll_left_update:
+
+    lda bank_number
+    cmp #2              ; showing bank 2?
+    beq scroll_left_update_show_bank1
+    
+    jsr plot_bank2
+    lda #19
+    jsr $fff4
+    jsr show_bank2
+    
+    jsr plot_char_bank1 ; unplot the player on bank 1
+    lda player_falling
+    cmp #0
+    beq scroll_left_update_plot_bank2
+    
+    inc player_y
+    
+    scroll_left_update_plot_bank2:
+    clc
+    jsr plot_char_bank2 ; plot the player on bank 2
+    
+    lda #2
+    sta bank_number
+    
+    clc
+    rts
+    
+    scroll_left_update_show_bank1:
+    clc
+    
+    jsr scroll_left
+    
+    jsr plot_bank1
+    lda #19
+    jsr $fff4
+    jsr show_bank1
+    
+    lda $80
+    adc #1
+    sta $80
+    lda $81
+    adc #0
+    sta $81
+    clc
+    
+    jsr plot_char_bank2 ; unplot the player on bank 2
+    lda player_animation
+    eor #1
+    sta player_animation
+    
+    lda player_falling
+    cmp #0
+    beq scroll_left_update_plot_bank1
+    
+    inc player_y
+    
+    scroll_left_update_plot_bank1:
     clc
     
     jsr plot_char_bank1 ; plot the player on bank 1
@@ -440,6 +534,7 @@ init_scrolling:
         sta row_indices,x
         sta initial_row_tiles,x
         sta initial_row_offsets,x
+        sta max_row_offsets,x
         dex
         bpl init_banks_loop
     
@@ -570,24 +665,6 @@ plot_tile_bank:     ; $70,$71 source address
     clc
     rts
 
-pre_scroll_right:
-
-    ldx #15
-    pre_scroll_right_loop:
-    
-        lda initial_row_offsets,x
-        cmp #0
-        beq pre_scroll_right_loop_not_next_offset
-        
-        dec initial_row_offsets,x
-        
-        pre_scroll_right_loop_not_next_offset:
-        dex
-        bpl pre_scroll_right_loop
-    
-    clc
-    rts
-
 scroll_right:
 
     ldx #15
@@ -620,9 +697,63 @@ scroll_right:
         ldy #1              ; load the number of tiles left in the current span
         lda ($76),y         ; minus 1 (n - 1)
         sta initial_row_offsets,x
+        sta max_row_offsets,x
         
         dex
         bpl scroll_right_loop
+    
+    clc
+    rts
+
+scroll_left:
+
+    ldx #15
+    scroll_left_loop:
+    
+        lda initial_row_offsets,x
+        cmp max_row_offsets,x
+        beq scroll_left_loop_previous_offset
+        
+        inc initial_row_offsets,x
+        
+        dex
+        bpl scroll_left_loop
+        
+        clc
+        rts
+        
+        scroll_left_loop_previous_offset:
+        clc
+        
+        dec row_indices,x   ; decrement the index to refer to the previous span
+        
+        jsr read_row_address    ; read the row address for the previous span
+        
+        lda $76             ; refer to the span before the previous span, p'
+        sec
+        sbc #2
+        sta $76
+        lda $77
+        sbc #0
+        sta $77
+        clc
+        
+        ldy #0
+        lda ($76),y             ; load the tile type for span p'
+        and #$0f
+        sta initial_row_tiles,x ; store the tile type
+        
+        ldy #1                  ; load the number of tiles in span p'
+        lda ($76),y             ; minus 1 (n - 1)
+        sta max_row_offsets,x   ; store this value as the maximum row offset
+                                ; for the previous span
+        
+        lda #0
+        sta initial_row_offsets,x   ; set the initial row offset of the previous
+                                    ; span
+        
+        dex
+        bpl scroll_left_loop
     
     clc
     rts
@@ -1213,33 +1344,7 @@ check_move_right:
     lda player_y
     sta $71
     
-    lda #2
-    sta $72
-    
-    lda player_falling
-    cmp #0
-    beq check_move_right_loop
-    
-    inc $72         ; If the player is falling then we need to check an
-                    ; additional tile.
-    
-    check_move_right_loop:
-    
-        clc
-        jsr check_tile
-        cmp #0
-        beq check_move_right_next
-        sec
-        rts
-        
-        check_move_right_next:
-        
-        inc $71
-        dec $72
-        bpl check_move_right_loop
-    
-    clc
-    rts
+    jmp check_move  ; branch then exit
 
 player_move_right:
 
@@ -1250,6 +1355,63 @@ player_move_right:
     jmp scroll_right_update     ; branch then exit
     
     player_move_right_cannot_move:
+    
+    lda #0                      ; stop the player's motion
+    sta player_moving
+    clc
+    rts
+
+check_move_left:
+
+    lda player_x
+    sec
+    sbc #2
+    sta $70
+    lda player_y
+    sta $71
+    clc
+    
+    ; fall through into the next routine
+
+check_move:
+
+    lda #2
+    sta $72
+    
+    lda player_falling
+    cmp #0
+    beq check_move_loop
+    
+    inc $72         ; If the player is falling then we need to check an
+                    ; additional tile.
+    
+    check_move_loop:
+    
+        clc
+        jsr check_tile
+        cmp #0
+        beq check_move_next
+        sec
+        rts
+        
+        check_move_next:
+        
+        inc $71
+        dec $72
+        bpl check_move_loop
+    
+    clc
+    rts
+
+player_move_left:
+
+    clc
+    jsr check_move_left
+    bcs player_move_left_cannot_move
+    
+    jmp scroll_left_update     ; branch then exit
+    
+    player_move_left_cannot_move:
     
     lda #0                      ; stop the player's motion
     sta player_moving
