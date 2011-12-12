@@ -1215,6 +1215,14 @@ check_move_right:
     
     lda #2
     sta $72
+    
+    lda player_falling
+    cmp #0
+    beq check_move_right_loop
+    
+    inc $72         ; If the player is falling then we need to check an
+                    ; additional tile.
+    
     check_move_right_loop:
     
         clc
