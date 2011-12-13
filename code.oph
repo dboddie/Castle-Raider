@@ -170,6 +170,13 @@ player_move:
     bne player_move_not_left
     clc
     
+;    player_move_left_wait:
+;        ldx #158        ; (Z)
+;        jsr check_key
+;        cpy #255
+;        beq player_move_left_wait
+;    clc
+    
     lda scroll_offset_low
     cmp #0
     bne player_move_move_left
@@ -195,6 +202,13 @@ player_move:
     cpy #255
     bne player_move_not_right
     clc
+    
+;    player_move_right_wait:
+;        ldx #189        ; (X)
+;        jsr check_key
+;        cpy #255
+;        beq player_move_right_wait
+;    clc
     
     lda scroll_offset_low
     cmp #$58
@@ -244,7 +258,21 @@ scroll_right_update:
     cmp #2              ; showing bank 2?
     beq scroll_right_update_show_bank1
     
-    jmp scroll_update_bank1_bank2
+    jsr plot_bank2r
+    lda #19
+    jsr $fff4
+    jsr show_bank2
+    
+    jsr scroll_update_bank1_bank2
+    
+    lda player_animation
+    ora #$02
+    sta player_animation
+    
+    jsr plot_char_bank2 ; plot the player on bank 2
+    
+    clc
+    rts
     
     scroll_right_update_show_bank1:
     clc
@@ -259,7 +287,21 @@ scroll_right_update:
     sta $81
     clc
     
-    jmp scroll_update_bank2_bank1
+    jsr plot_bank1r
+    lda #19
+    jsr $fff4
+    jsr show_bank1
+    
+    jsr scroll_update_bank2_bank1
+    
+    lda player_animation
+    ora #$02
+    sta player_animation
+    
+    jsr plot_char_bank1 ; plot the player on bank 1
+    
+    clc
+    rts
 
 scroll_left_update:
 
@@ -267,7 +309,21 @@ scroll_left_update:
     cmp #2              ; showing bank 2?
     beq scroll_left_update_show_bank1
     
-    jmp scroll_update_bank1_bank2
+    jsr plot_bank2l
+    lda #19
+    jsr $fff4
+    jsr show_bank2
+    
+    jsr scroll_update_bank1_bank2
+    
+    lda player_animation
+    and #$01
+    sta player_animation
+    
+    jsr plot_char_bank2 ; plot the player on bank 2
+    
+    clc
+    rts
     
     scroll_left_update_show_bank1:
     clc
@@ -283,16 +339,26 @@ scroll_left_update:
     sta $81
     clc
     
-    ; Fall through to the next routine.
-
-scroll_update_bank2_bank1:
-
-    jsr plot_bank1
+    jsr plot_bank1l
     lda #19
     jsr $fff4
     jsr show_bank1
     
+    jsr scroll_update_bank2_bank1
+    
+    lda player_animation
+    and #$01
+    sta player_animation
+    
+    jsr plot_char_bank1 ; plot the player on bank 1
+    
+    clc
+    rts
+
+scroll_update_bank2_bank1:
+
     jsr plot_char_bank2 ; unplot the player on bank 2
+    
     lda player_animation
     eor #1
     sta player_animation
@@ -306,8 +372,6 @@ scroll_update_bank2_bank1:
     scroll_update_plot_bank1:
     clc
     
-    jsr plot_char_bank1 ; plot the player on bank 1
-    
     lda #1
     sta bank_number
     
@@ -316,12 +380,8 @@ scroll_update_bank2_bank1:
 
 scroll_update_bank1_bank2:
 
-    jsr plot_bank2
-    lda #19
-    jsr $fff4
-    jsr show_bank2
-    
     jsr plot_char_bank1 ; unplot the player on bank 1
+    
     lda player_falling
     cmp #0
     beq scroll_update_plot_bank2
@@ -330,7 +390,6 @@ scroll_update_bank1_bank2:
     
     scroll_update_plot_bank2:
     clc
-    jsr plot_char_bank2 ; plot the player on bank 2
     
     lda #2
     sta bank_number
@@ -515,11 +574,11 @@ init_scrolling:
     clc
     rts
 
-plot_bank1:
+plot_bank1r:
 
     ldx #15          ; row number
     
-    plot_bank1_row_loop:
+    plot_bank1r_row_loop:
     
         clc
         jsr read_row_address
@@ -527,14 +586,14 @@ plot_bank1:
         lda initial_row_offsets,x   ; Load the initial row offset, o.
 
         cmp #40
-        bcc plot_bank1_row_loop_calculate_row_address
+        bcc plot_bank1r_row_loop_calculate_row_address
         
         dex
-        bpl plot_bank1_row_loop     ; Loop again or exit.
+        bpl plot_bank1r_row_loop     ; Loop again or exit.
         clc
         rts
         
-        plot_bank1_row_loop_calculate_row_address:
+        plot_bank1r_row_loop_calculate_row_address:
         
         sta $74
         asl                     ; Multiply o by 8
@@ -554,7 +613,7 @@ plot_bank1:
         sta $73                 ; x ($72,$73)
         clc
         
-        plot_bank1_offset_loop:
+        plot_bank1r_offset_loop:
         
             ldy #0
             lda ($76),y             ; Load the type number, t,
@@ -574,14 +633,14 @@ plot_bank1:
             ldy #1
             lda ($76),y         ; Load the number of tiles minus 1, n - 1.
             adc #1              ; n
-            bcs plot_bank1_offset_endloop
+            bcs plot_bank1r_offset_endloop
             
             tay                 ; temp (n)
             adc $74             ; Add n to o.
             clc
             
             cmp #40
-            bcs plot_bank1_offset_endloop
+            bcs plot_bank1r_offset_endloop
             sta $74
 
             tya                 ; temp (n)
@@ -605,23 +664,148 @@ plot_bank1:
             lda $76             ; Add 2 to I.
             adc #2
             sta $76
-            bcc plot_bank1_offset_loop
+            bcc plot_bank1r_offset_loop
             
             lda $77
             adc #0
             sta $77
             clc
             
-            jmp plot_bank1_offset_loop
+            jmp plot_bank1r_offset_loop
         
-        plot_bank1_offset_endloop:
+        plot_bank1r_offset_endloop:
         clc
         
         dex
-        bmi plot_bank1_row_endloop
-        jmp plot_bank1_row_loop
+        bmi plot_bank1r_row_endloop
+        jmp plot_bank1r_row_loop
     
-    plot_bank1_row_endloop:
+    plot_bank1r_row_endloop:
+    clc
+    rts
+
+plot_bank1l:
+
+    ldx #15          ; row number
+    
+    plot_bank1l_row_loop:
+    
+        clc
+        jsr read_row_address
+        
+        lda initial_row_offsets,x   ; Load the initial row offset, o.
+        sec
+        sbc #1
+        clc
+
+        cmp #40
+        bcc plot_bank1l_row_loop_calculate_row_address
+        
+        dex
+        bpl plot_bank1l_row_loop     ; Loop again or exit.
+        clc
+        rts
+        
+        plot_bank1l_row_loop_calculate_row_address:
+        
+        sta $74
+        asl                     ; Multiply o by 8
+        asl
+        asl
+        sta $72
+        lda #0
+        adc #0
+        sta $73
+        clc
+        
+        lda $72
+        adc bank1_rows_low,x    ; Add to the screen start address for the
+        sta $72                 ; row, R, to get x.
+        lda $73
+        adc bank1_rows_high,x
+        sta $73                 ; x ($72,$73)
+        clc
+        
+        lda initial_row_tiles,x     ; Load the initial tile type.
+        
+        asl                     ; multiply by 8 to get t1.
+        asl
+        asl
+        adc #sprite_area_low    ; add to S to get S1.
+        sta $70
+        lda #sprite_area_high
+        adc #0
+        sta $71                 ; S1 ($70,$71)
+        clc
+        
+        plot_bank1l_offset_loop:
+        
+            jsr plot_tile_bank
+            
+            ldy #1
+            lda ($76),y         ; Load the number of tiles minus 1, n - 1.
+            adc #1              ; n
+            bcs plot_bank1l_offset_endloop
+            
+            tay                 ; temp (n)
+            adc $74             ; Add n to o.
+            clc
+            
+            cmp #40
+            bcs plot_bank1l_offset_endloop
+            sta $74
+
+            tya                 ; temp (n)
+            asl
+            asl
+            asl                 ; n*8
+            sta $7a
+            lda #0
+            adc #0
+            sta $7b
+            clc
+            
+            lda $72
+            adc $7a
+            sta $72
+            lda $73
+            adc $7b
+            sta $73             ; x ($72,$73)
+            clc
+            
+            ldy #0
+            lda ($76),y             ; Load the type number, t,
+            and #$0f                ; mask off the top 4 bits,
+            asl                     ; multiply by 8 to get t1.
+            asl
+            asl
+            adc #sprite_area_low    ; add to S to get S1.
+            sta $70
+            lda #sprite_area_high
+            adc #0
+            sta $71                 ; S1 ($70,$71)
+            clc
+            
+            lda $76             ; Add 2 to I.
+            adc #2
+            sta $76
+            bcc plot_bank1l_offset_loop
+            
+            lda $77
+            adc #0
+            sta $77
+            clc
+            
+            jmp plot_bank1l_offset_loop
+        
+        plot_bank1l_offset_endloop:
+        clc
+        
+        dex
+        bmi plot_bank1l_row_endloop
+        jmp plot_bank1l_row_loop
+    
+    plot_bank1l_row_endloop:
     clc
     rts
 
@@ -732,25 +916,25 @@ scroll_left:
     clc
     rts
 
-plot_bank2:
+plot_bank2r:
 
     ldx #15          ; row number
     
-    plot_bank2_row_loop:
+    plot_bank2r_row_loop:
     
         clc
         jsr read_row_address
         
         lda initial_row_offsets,x   ; Load the initial row offset, o.
         cmp #41
-        bcc plot_bank2_row_loop_calculate_row_address
+        bcc plot_bank2r_row_loop_calculate_row_address
         
         dex
-        bpl plot_bank2_row_loop
+        bpl plot_bank2r_row_loop
         clc
         rts
         
-        plot_bank2_row_loop_calculate_row_address:
+        plot_bank2r_row_loop_calculate_row_address:
         
         sta $74
         asl                     ; Multiply o by 8
@@ -772,16 +956,16 @@ plot_bank2:
         
         lda $74
         cmp #0
-        beq plot_bank2_row_loop_skip_leading
+        beq plot_bank2r_row_loop_skip_leading
         cmp #40
-        bmi plot_bank2_row_loop_plot_leading
+        bmi plot_bank2r_row_loop_plot_leading
         
         dex
-        bpl plot_bank2_row_loop
+        bpl plot_bank2r_row_loop
         clc
         rts
         
-        plot_bank2_row_loop_plot_leading:
+        plot_bank2r_row_loop_plot_leading:
         
         lda $72                 ; move to the previous cell
         sec
@@ -813,16 +997,16 @@ plot_bank2:
         sta $73
         clc
         
-        plot_bank2_row_loop_skip_leading:
+        plot_bank2r_row_loop_skip_leading:
         clc
         
-        plot_bank2_offset_loop:
+        plot_bank2r_offset_loop:
         
             ldy #1
             lda ($76),y                 ; Load the number of tiles minus 1, n - 1.
             sta $79                     ; temp (n - 1)
             cmp #0                      ; If there is only one tile in the
-            beq plot_bank2_offset_next  ; span, move to the next span,
+            beq plot_bank2r_offset_next  ; span, move to the next span,
                                         ; otherwise plot a continuation tile.
             
             ldy #0
@@ -845,7 +1029,7 @@ plot_bank2:
             clc
             
             cmp #40
-            bcs plot_bank2_offset_endloop   ; break if the screen edge is reached
+            bcs plot_bank2r_offset_endloop   ; break if the screen edge is reached
             sta $74                 ; Store the new offset
             
             lda $79                 ; n - 1
@@ -866,7 +1050,7 @@ plot_bank2:
             sta $73                 ; x ($72,$73)
             clc
             
-            plot_bank2_offset_next:
+            plot_bank2r_offset_next:
             clc
             
             lda $76                 ; Add 2 to I.
@@ -902,18 +1086,184 @@ plot_bank2:
             
             lda $74
             cmp #40
-            bcs plot_bank2_offset_endloop   ; break if the screen edge is reached
+            bcs plot_bank2r_offset_endloop   ; break if the screen edge is reached
 
-            jmp plot_bank2_offset_loop
+            jmp plot_bank2r_offset_loop
         
-        plot_bank2_offset_endloop:
+        plot_bank2r_offset_endloop:
         clc
         
         dex
-        bmi plot_bank2_row_endloop
-        jmp plot_bank2_row_loop
+        bmi plot_bank2r_row_endloop
+        jmp plot_bank2r_row_loop
     
-    plot_bank2_row_endloop:
+    plot_bank2r_row_endloop:
+    clc
+    rts
+
+plot_bank2l:
+
+    ldx #15          ; row number
+    
+    plot_bank2l_row_loop:
+    
+        clc
+        jsr read_row_address
+        
+        lda initial_row_offsets,x   ; Load the initial row offset, o.
+        cmp #42
+        bcc plot_bank2l_row_loop_calculate_row_address
+        
+        dex
+        bpl plot_bank2l_row_loop
+        clc
+        rts
+        
+        plot_bank2l_row_loop_calculate_row_address:
+        
+        sec                     ; Each full tile starts two cells before the
+        sbc #2                  ; tiles that arrive from the right.
+        sta $74
+        clc
+        
+        asl                     ; Multiply o by 8
+        asl
+        asl
+        sta $72
+        lda #0
+        adc #0
+        sta $73
+        clc
+        
+        lda $72
+        adc bank2_rows_low,x    ; Add to the screen start address for the
+        sta $72                 ; row, R, to get x.
+        lda $73
+        adc bank2_rows_high,x
+        sta $73                 ; x ($72,$73)
+        clc
+        
+        lda $74
+        cmp #0
+        bcc plot_bank2l_skip_leading_tile
+        
+        clc
+        
+        lda initial_row_tiles,x     ; Load the initial tile type.
+        
+        asl                     ; multiply by 8 to get t1.
+        asl
+        asl
+        adc #rotated_sprites_low    ; add to S to get S1.
+        sta $70
+        lda #rotated_sprites_high
+        adc #0
+        sta $71                 ; S1 ($70,$71)
+        clc
+        
+        jsr plot_tile_bank
+        
+        plot_bank2l_skip_leading_tile:
+        clc
+        
+        plot_bank2l_offset_loop:
+        
+            inc $74
+            
+            lda $74
+            cmp #40
+            bcs plot_bank2l_offset_endloop   ; break if the screen edge is reached
+            
+            lda $72                 ; move to the next cell
+            adc #8
+            sta $72
+            lda $73
+            adc #0
+            sta $73
+            clc
+            
+            lda $76                 ; Add 2 to I.
+            adc #2
+            sta $76
+            lda $77
+            adc #0
+            sta $77
+            clc
+            
+            ldy #0
+            lda ($76),y                 ; Load the type number, t,
+            and #$f0                    ; mask off the bottom 4 bits,
+            lsr                         ; divide by 2 to get t2.
+            adc #merged_sprites_low     ; add to S to get S2.
+            sta $70
+            lda #merged_sprites_high
+            adc #0
+            sta $71                     ; S2 ($70,$71)
+            clc
+            
+            jsr plot_tile_bank
+            
+            ldy #1
+            lda ($76),y                 ; Load the number of tiles minus 1, n - 1.
+            sta $79                     ; temp (n - 1)
+            cmp #0                      ; If there is only one tile in the
+            beq plot_bank2l_offset_next  ; span, move to the next span,
+                                        ; otherwise plot a continuation tile.
+            
+            lda $74
+            adc $79                 ; Add n - 1 to o.
+            clc
+            
+            cmp #40
+            bcs plot_bank2l_offset_endloop   ; break if the screen edge is reached
+            sta $74                 ; Store the new offset
+            
+            lda $79                 ; n - 1
+            asl
+            asl
+            asl                     ; (n - 1)*8
+            sta $7a
+            lda #0
+            adc #0
+            sta $7b
+            clc
+            
+            lda $72
+            adc $7a
+            sta $72
+            lda $73
+            adc $7b
+            sta $73                 ; x ($72,$73)
+            clc
+            
+            ldy #0
+            lda ($76),y                 ; Load the type number, t,
+            and #$0f                    ; mask off the top 4 bits,
+            asl                         ; multiply by 8 to get t1.
+            asl
+            asl
+            adc #rotated_sprites_low    ; add to SR to get S3.
+            sta $70
+            lda #rotated_sprites_high
+            adc #0
+            sta $71                     ; S3 ($70,$71)
+            clc
+            
+            jsr plot_tile_bank
+            
+            plot_bank2l_offset_next:
+            clc
+            
+            jmp plot_bank2l_offset_loop
+        
+        plot_bank2l_offset_endloop:
+        clc
+        
+        dex
+        bmi plot_bank2l_row_endloop
+        jmp plot_bank2l_row_loop
+    
+    plot_bank2l_row_endloop:
     clc
     rts
 
