@@ -139,6 +139,8 @@ constants_oph = \
 .alias levels_end_low               $%02x
 .alias levels_end_high              $%02x
 .alias level_extent                 %i
+.alias level_extent_low             $%02x
+.alias level_extent_high            $%02x
 
 .alias char_area                    $%x
 .alias char_area_low                $%02x
@@ -190,6 +192,8 @@ if __name__ == "__main__":
     level_data, merged_tiles = makelevels.create_levels()
     files.append(("LEVELS", levels_address, levels_address, level_data))
     
+    level_extent = len(makelevels.levels[0][0]) - 41
+    
     sprite_area_address = 0x2800
     sprite_data = makesprites.read_tiles(tiles, merged_tiles)
     files.append(("TILES", sprite_area_address, sprite_area_address, sprite_data))
@@ -211,7 +215,7 @@ if __name__ == "__main__":
         (merged_sprites_low, merged_sprites_high,
          rotated_sprites_low, rotated_sprites_high) + \
         address_length_end(levels_address, level_data) + \
-        (len(makelevels.levels[0][0]) - 41,) + \
+        (level_extent, level_extent & 0xff, level_extent >> 8) + \
         (char_area_address,) + \
         address_length_end(char_area_address, char_data)
     

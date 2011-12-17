@@ -214,3 +214,11 @@ To scroll right, for each row:
     Otherwise, load the number of tiles (minus 1) in the span for the current
     span and store that as the new initial row offset.
     Add 1 to the index for the row.
+
+
+Scrolling left:
+
+  <~>       offset >= 2 (leading span, merged tile then first span)
+  ~>        offset = 1 (no leading span, just the merged tile)
+  >         offset = 0 (no leading span)
+
