@@ -116,7 +116,9 @@ def address_length_end(address, data):
     return address_low, address_high, length_low, length_high, end_low, end_high
 
 
-tiles = ["images/blank.png", "images/brick.png", "images/grass.png", "images/ground.png"]
+tiles = ["images/blank.png", "images/brick.png", "images/grass.png",
+         "images/ground.png", "images/floor.png", "images/door.png",
+         "images/key.png"]
 
 char_sprites = ["images/left1.png", "images/left2.png", "images/right1.png", "images/right2.png"]
 
@@ -192,7 +194,7 @@ if __name__ == "__main__":
     level_data, merged_tiles = makelevels.create_levels()
     files.append(("LEVELS", levels_address, levels_address, level_data))
     
-    level_extent = len(makelevels.levels[0][0]) - 41
+    level_extent = len(makelevels.levels[0][0]) - 40
     
     sprite_area_address = 0x2800
     sprite_data = makesprites.read_tiles(tiles, merged_tiles)
