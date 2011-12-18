@@ -137,7 +137,7 @@ player_move:
 
     lda player_jumping
     cmp #0
-    beq player_move_check_keys
+    beq player_move_check_fall
     clc
     
     lda #19
@@ -165,6 +165,15 @@ player_move:
     clc
     rts
     
+    player_move_check_fall:
+    
+    lda player_falling
+    cmp #0
+    beq player_move_check_keys
+    
+    clc
+    rts
+    
     player_move_check_keys:
     
     lda #0
@@ -174,13 +183,6 @@ player_move:
     jsr check_key
     cpy #255
     bne player_move_not_left
-    clc
-    
-    player_move_left_wait:
-        ldx #158        ; (Z)
-        jsr check_key
-        cpy #255
-        beq player_move_left_wait
     clc
     
     jsr player_move_left   ; allow the player to jump while moving
@@ -195,13 +197,6 @@ player_move:
     jsr check_key
     cpy #255
     bne player_move_not_right
-    clc
-    
-    player_move_right_wait:
-        ldx #189        ; (X)
-        jsr check_key
-        cpy #255
-        beq player_move_right_wait
     clc
     
     jsr player_move_right   ; allow the player to jump while moving
@@ -432,9 +427,9 @@ check_beneath:
     cmp #0
     bne check_beneath_exit
     
-    lda bank_number
-    cmp #2
-    bne check_beneath_fall
+    lda bank_number         ; When half way across a cell, check another cell
+    cmp #2                  ; beneath the player since they could be standing
+    bne check_beneath_fall  ; on one or more of three tiles.
     
     clc
     inc $70
@@ -450,6 +445,7 @@ check_beneath:
     rts
     
     check_beneath_exit:
+    
     lda #0
     sta player_falling
     clc
@@ -1661,6 +1657,16 @@ check_tile:         ; $70=x position (0-39)
 
 check_move_right:
 
+    lda bank_number
+    cmp #2
+    bne check_move_right_continue
+    
+    clc             ; If bank 2 is showing, we can move right without checking.
+    rts
+    
+    check_move_right_continue:
+    clc
+    
     lda player_x
     adc #2
     sta $70
@@ -1687,13 +1693,23 @@ player_move_right:
 
 check_move_left:
 
+    lda bank_number
+    cmp #2
+    bne check_move_left_continue
+    
+    clc             ; If bank 2 is showing, we can move left without checking.
+    rts
+    
+    check_move_left_continue:
+    clc
+    
     lda player_x
     sec
     sbc #1
     sta $70
+    clc
     lda player_y
     sta $71
-    clc
     
     ; fall through into the next routine
 
