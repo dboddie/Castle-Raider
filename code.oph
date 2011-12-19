@@ -1603,7 +1603,7 @@ check_tile:         ; $70=x position (0-39)
     lda initial_row_offsets,x
     cmp $70
     beq check_tile_spans
-    bmi check_tile_spans
+    bcc check_tile_spans
     
     clc
     lda initial_row_tiles,x
@@ -1625,7 +1625,7 @@ check_tile:         ; $70=x position (0-39)
         
         cmp $70
         beq check_tile_spans_loop_next
-        bmi check_tile_spans_loop_next
+        bcc check_tile_spans_loop_next
         
         check_tile_spans_loop_found:
         
