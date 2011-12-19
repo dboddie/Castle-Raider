@@ -606,7 +606,7 @@ plot_bank1r:
         
             ldy #0
             lda ($76),y             ; Load the type number, t,
-            and #$0f                ; mask off the top 4 bits,
+            and #$07                ; mask off the top 5 bits,
             asl                     ; multiply by 8 to get t1.
             asl
             asl
@@ -783,7 +783,7 @@ plot_bank1l:
             
             ldy #0
             lda ($76),y             ; Load the type number, t,
-            and #$0f                ; mask off the top 4 bits,
+            and #$07                ; mask off the top 5 bits,
             asl                     ; multiply by 8 to get t1.
             asl
             asl
@@ -857,7 +857,7 @@ scroll_right:
         
         ldy #0
         lda ($76),y             ; load the tile type for the current span
-        and #$0f
+        and #$07
         sta initial_row_tiles,x ; store the tile type
         
         ldy #1              ; load the number of tiles left in the current span
@@ -906,7 +906,7 @@ scroll_left:
         
         ldy #0
         lda ($76),y             ; load the tile type for span p'
-        and #$0f
+        and #$07
         sta initial_row_tiles,x ; store the tile type
         
         ldy #1                  ; load the number of tiles in span p'
@@ -971,7 +971,7 @@ plot_bank2r:
         
         ldy #0
         lda ($76),y                 ; Load the type number, t,
-        and #$f0                    ; mask off the bottom 4 bits,
+        and #$f8                    ; mask off the bottom 3 bits,
         jsr read_merged_sprite_address
         
         jsr plot_tile_bank
@@ -1002,7 +1002,7 @@ plot_bank2r:
             
             ldy #0
             lda ($76),y                 ; Load the type number, t,
-            and #$0f                    ; mask off the top 4 bits,
+            and #$07                    ; mask off the top 5 bits,
             jsr read_rotated_sprite_address
             
             jsr plot_tile_bank
@@ -1046,7 +1046,7 @@ plot_bank2r:
             
             ldy #0
             lda ($76),y                 ; Load the type number, t,
-            and #$f0                    ; mask off the bottom 4 bits,
+            and #$f8                    ; mask off the bottom 3 bits,
             jsr read_merged_sprite_address
             
             jsr plot_tile_bank
@@ -1188,7 +1188,7 @@ plot_bank2l:
         
             ldy #0
             lda ($76),y                 ; Load the type number, t,
-            and #$f0                    ; mask off the bottom 4 bits,
+            and #$f8                    ; mask off the bottom 3 bits,
             jsr read_merged_sprite_address
             
             jsr plot_tile_bank
@@ -1234,7 +1234,7 @@ plot_bank2l:
             
             ldy #0
             lda ($76),y                 ; Load the type number, t,
-            and #$0f                    ; mask off the top 4 bits,
+            and #$07                    ; mask off the top 3 bits,
             jsr read_rotated_sprite_address
             
             jsr plot_tile_bank
@@ -1320,7 +1320,7 @@ initial_plot_bank1:
         
             ldy #0
             lda ($76),y             ; Load the type number, t,
-            and #$0f                ; mask off the top 4 bits,
+            and #$07                ; mask off the top 5 bits,
             asl                     ; multiply by 8 to get t1.
             asl
             asl
@@ -1411,7 +1411,7 @@ initial_plot_bank2:
             
             ldy #0
             lda ($76),y                 ; Load the type number, t,
-            and #$f0                    ; mask off the bottom 4 bits,
+            and #$f8                    ; mask off the bottom 3 bits,
             jsr read_merged_sprite_address
             
             jsr plot_tile_bank
@@ -1430,7 +1430,7 @@ initial_plot_bank2:
             
             ldy #0
             lda ($76),y                 ; Load the type number, t,
-            and #$0f                    ; mask off the top 4 bits,
+            and #$07                    ; mask off the top 5 bits,
             jsr read_rotated_sprite_address
             
             ldy #1
@@ -1619,17 +1619,20 @@ check_tile:         ; $70=x position (0-39)
         ldy #1
         lda ($76),y         ; Load the number of tiles minus 1, n - 1.
         adc #1              ; n
+        bcs check_tile_spans_loop_found
         adc $74             ; Add to the row offset
-        clc
+        bcs check_tile_spans_loop_found
         
         cmp $70
         beq check_tile_spans_loop_next
         bmi check_tile_spans_loop_next
         
+        check_tile_spans_loop_found:
+        
         clc
         ldy #0
         lda ($76),y             ; Load the type number, t,
-        and #$0f                ; mask off the top 4 bits,
+        and #$07                ; mask off the top 5 bits,
         rts
         
         check_tile_spans_loop_next:
@@ -1765,7 +1768,7 @@ player_jump:
 
     clc
     
-    ldx player_jumping
+    ldx player_jumping      ; Load the number of rows to move.
     lda jump_steps,x
     sta $72
     
@@ -1774,12 +1777,12 @@ player_jump:
     
     player_jump_check_loop:
     
-        lda $72
+        lda $72         ; If there are no more rows to move then stop jumping.
         cmp #0
         beq player_jump_check_endloop
         
-        lda $71
-        cmp #0
+        lda $71                         ; If the character reaches the top of
+        cmp #0                          ; the screen then stop jumping.
         beq player_jump_stop_jumping
         dec $71
         clc
@@ -1796,12 +1799,26 @@ player_jump:
         jsr check_tile
         cmp #0
         bne player_jump_stop_jumping
+        clc
         
-        lda $71
-        sta player_y
+        lda bank_number         ; When half way across a cell, check another cell
+        cmp #2                  ; above the player since they could be under one
+        bne player_jump_move_up ; or more of three tiles.
+        clc
         
-        dec $72
-        jmp player_jump_check_loop
+            inc $70
+            
+            jsr check_tile
+            cmp #0
+            bne player_jump_stop_jumping
+        
+        player_jump_move_up:
+        
+            lda $71
+            sta player_y
+        
+            dec $72
+            jmp player_jump_check_loop
     
     player_jump_check_endloop:
     clc
@@ -1886,7 +1903,6 @@ read_rotated_sprite_address:    ; A=tile number
 read_merged_sprite_address:     ; A=tile number in high 4 bits
                                 ; sets $70,$71=sprite address
 
-    lsr                         ; divide by 2 to get t2.
     adc #merged_sprites_low     ; add to S to get S2.
     sta $70
     lda #merged_sprites_high

@@ -78,7 +78,7 @@ def create_level_data(level):
         data.append(line_data)
     
     merged_tiles_number = len(merged_tiles)
-    if merged_tiles_number > 16:
+    if merged_tiles_number > 32:
         raise LevelError, "Too many merged tiles: %i found." % merged_tiles_number
     
     print merged_tiles_number, "merged tiles"
@@ -111,7 +111,7 @@ def create_levels():
                 except ValueError:
                     merged_index = 0
                 
-                tile = ((merged_index & 0x0f) << 4) | (current & 0x0f)
+                tile = ((merged_index & 0x1f) << 3) | (current & 0x07)
                 row_data += chr(tile) + chr(number - 1)
             
             if len(row_data) >= 512:
