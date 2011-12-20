@@ -1,0 +1,4 @@
+To Do
+
+Ensure that the player simply falls when colliding with scenery when both
+moving horizontally and falling.
