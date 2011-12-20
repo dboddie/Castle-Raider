@@ -1,0 +1,74 @@
+; Copyright (C) 2011 David Boddie <david@boddie.org.uk>
+;
+; This program is free software: you can redistribute it and/or modify
+; it under the terms of the GNU General Public License as published by
+; the Free Software Foundation, either version 3 of the License, or
+; (at your option) any later version.
+;
+; This program is distributed in the hope that it will be useful,
+; but WITHOUT ANY WARRANTY; without even the implied warranty of
+; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+; GNU General Public License for more details.
+;
+; You should have received a copy of the GNU General Public License
+; along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+.org $1900
+
+.include "constants.oph"
+
+main:
+
+    lda #255
+    ldx #<tiles_block
+    ldy #>tiles_block
+    jsr $ffdd
+
+    lda #255
+    ldx #<sprites_block
+    ldy #>sprites_block
+    jsr $ffdd
+
+    lda #255
+    ldx #<levels_block
+    ldy #>levels_block
+    jsr $ffdd
+
+    lda #255
+    ldx #<code_block
+    ldy #>code_block
+    jsr $ffdd
+
+    jmp code_start_address
+
+tiles_block: .byte <tiles_file_name, >tiles_file_name
+             .byte sprite_area_low, sprite_area_high, 0, 0
+             .byte sprite_area_low, sprite_area_high, 0, 0
+             .byte sprite_area_length_low, sprite_area_length_high, 0, 0
+             .byte sprite_area_end_low, sprite_area_end_high, 0, 0
+
+tiles_file_name: .byte "TILES", 13
+
+sprites_block: .byte <sprites_file_name, >sprites_file_name
+             .byte char_area_low, char_area_high, 0, 0
+             .byte char_area_low, char_area_high, 0, 0
+             .byte char_area_length_low, char_area_length_high, 0, 0
+             .byte char_area_end_low, char_area_end_high, 0, 0
+
+sprites_file_name: .byte "SPRITES", 13
+
+levels_block: .byte <levels_file_name, >levels_file_name
+             .byte levels_address_low, levels_address_high, 0, 0
+             .byte levels_address_low, levels_address_high, 0, 0
+             .byte levels_length_low, levels_length_high, 0, 0
+             .byte levels_end_low, levels_end_high, 0, 0
+
+levels_file_name: .byte "LEVELS", 13
+
+code_block: .byte <code_file_name, >code_file_name
+             .byte code_start_low, code_start_high, 0, 0
+             .byte code_start_low, code_start_high, 0, 0
+             .byte code_length_low, code_length_high, 0, 0
+             .byte code_end_low, code_end_high, 0, 0
+
+code_file_name: .byte "CODE", 13
