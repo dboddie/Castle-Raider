@@ -136,27 +136,23 @@ def compress(data):
     
     return "".join(output)
 
-def read_tiles(paths, merged_tiles):
+def read_tiles(paths):
 
     sprites = []
     for path in paths:
     
         sprites.append(read_png(path))
     
-    # Add a blank tile at the start of the merged tiles.
-    sprites.append([[0]*4]*8)
+    # Add left edge sprites for bank 2.
+    for i in range(len(paths)):
     
-    for left, right in merged_tiles:
-    
-        left_sprite = sprites[left]
-        right_sprite = sprites[right]
+        sprite = sprites[i]
         
         lines = []
-        for i in range(len(left_sprite)):
+        for i in range(len(sprite)):
         
-            left_line = left_sprite[i]
-            right_line = right_sprite[i]
-            lines.append(left_line[len(left_line)/2:] + right_line[:len(right_line)/2])
+            right_line = sprite[i]
+            lines.append([0] * (len(right_line)/2) + right_line[:len(right_line)/2])
         
         sprites.append(lines)
     
@@ -170,6 +166,19 @@ def read_tiles(paths, merged_tiles):
         
             line = sprite[j]
             lines.append(line[len(line)/2:] + line[:len(line)/2])
+        
+        sprites.append(lines)
+    
+    # Add right edge sprites for bank 2.
+    for i in range(len(paths)):
+    
+        sprite = sprites[i]
+        
+        lines = []
+        for i in range(len(sprite)):
+        
+            left_line = sprite[i]
+            lines.append(left_line[len(left_line)/2:] + [0] * (len(left_line)/2))
         
         sprites.append(lines)
     

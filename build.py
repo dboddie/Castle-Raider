@@ -118,7 +118,9 @@ def address_length_end(address, data):
 
 tiles = ["images/blank.png", "images/brick.png", "images/grass.png",
          "images/ground.png", "images/floor.png", "images/door.png",
-         "images/key.png"]
+         "images/window-topleft.png", "images/window-topright.png",
+         "images/brick-left.png", "images/brick-right.png",
+         "images/rope.png"]
 
 char_sprites = ["images/left1.png", "images/left2.png", "images/right1.png", "images/right2.png"]
 
@@ -129,10 +131,12 @@ constants_oph = \
 .alias sprite_area_length_high      $%02x
 .alias sprite_area_end_low          $%02x
 .alias sprite_area_end_high         $%02x
-.alias merged_sprites_low           $%02x
-.alias merged_sprites_high          $%02x
+.alias left_sprites_low             $%02x
+.alias left_sprites_high            $%02x
 .alias rotated_sprites_low          $%02x
 .alias rotated_sprites_high         $%02x
+.alias right_sprites_low            $%02x
+.alias right_sprites_high           $%02x
 
 .alias levels_address_low           $%02x
 .alias levels_address_high          $%02x
@@ -191,21 +195,24 @@ if __name__ == "__main__":
     files = []
     
     levels_address = 0x1fe0
-    level_data, merged_tiles = makelevels.create_levels()
+    level_data = makelevels.create_levels()
     files.append(("LEVELS", levels_address, levels_address, level_data))
     
     level_extent = len(makelevels.levels[0][0]) - 40
     
     sprite_area_address = 0x2800
-    sprite_data = makesprites.read_tiles(tiles, merged_tiles)
+    sprite_data = makesprites.read_tiles(tiles)
     files.append(("TILES", sprite_area_address, sprite_area_address, sprite_data))
     
-    merged_sprites = sprite_area_address + (len(tiles) * 8)
-    merged_sprites_low = merged_sprites & 0xff
-    merged_sprites_high = merged_sprites >> 8
-    rotated_sprites = merged_sprites + ((len(merged_tiles) + 1) * 8)
+    left_sprites = sprite_area_address + (len(tiles) * 8)
+    left_sprites_low = left_sprites & 0xff
+    left_sprites_high = left_sprites >> 8
+    rotated_sprites = left_sprites + (len(tiles) * 8)
     rotated_sprites_low = rotated_sprites & 0xff
     rotated_sprites_high = rotated_sprites >> 8
+    right_sprites = rotated_sprites + (len(tiles) * 8)
+    right_sprites_low = right_sprites & 0xff
+    right_sprites_high = right_sprites >> 8
     
     char_area_address = 0x2E00
     char_data = makesprites.read_sprites(char_sprites)
@@ -214,8 +221,9 @@ if __name__ == "__main__":
     code_start = 0x0e00
     
     values = address_length_end(sprite_area_address, sprite_data) + \
-        (merged_sprites_low, merged_sprites_high,
-         rotated_sprites_low, rotated_sprites_high) + \
+        (left_sprites_low, left_sprites_high,
+         rotated_sprites_low, rotated_sprites_high,
+         right_sprites_low, right_sprites_high) + \
         address_length_end(levels_address, level_data) + \
         (level_extent, level_extent & 0xff, level_extent >> 8) + \
         (char_area_address,) + \

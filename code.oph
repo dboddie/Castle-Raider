@@ -204,6 +204,8 @@ player_move:
     
     lda #1                  ; 1=moving left
     sta player_moving
+    
+    jmp player_move_check_jump
 
     player_move_not_left:
     clc
@@ -218,8 +220,12 @@ player_move:
     
     lda #2                  ; 2=moving right
     sta player_moving
+    
+    ; jmp player_move_check_jump (fall through)
 
     player_move_not_right:
+    
+    player_move_check_jump:
     
     lda player_jumping
     cmp #0
@@ -621,7 +627,6 @@ plot_bank1r:
         
             ldy #0
             lda ($76),y             ; Load the type number, t,
-            and #$07                ; mask off the top 5 bits,
             asl                     ; multiply by 8 to get t1.
             asl
             asl
@@ -798,7 +803,6 @@ plot_bank1l:
             
             ldy #0
             lda ($76),y             ; Load the type number, t,
-            and #$07                ; mask off the top 5 bits,
             asl                     ; multiply by 8 to get t1.
             asl
             asl
@@ -846,6 +850,22 @@ plot_tile_bank:     ; $70,$71 source address
     clc
     rts
 
+plot_merged_tile_bank:  ; $70,$71 source address 1
+                        ; $72,$73 screen address
+                        ; $80,$81 source address 2
+
+    ldy #7
+    plot_merged_tile_bank_loop:
+    
+        lda ($70),y
+        ora ($80),y
+        sta ($72),y
+        dey
+        bpl plot_merged_tile_bank_loop
+    
+    clc
+    rts
+
 scroll_right:
 
     ldx #15
@@ -872,7 +892,6 @@ scroll_right:
         
         ldy #0
         lda ($76),y             ; load the tile type for the current span
-        and #$07
         sta initial_row_tiles,x ; store the tile type
         
         ldy #1              ; load the number of tiles left in the current span
@@ -921,7 +940,6 @@ scroll_left:
         
         ldy #0
         lda ($76),y             ; load the tile type for span p'
-        and #$07
         sta initial_row_tiles,x ; store the tile type
         
         ldy #1                  ; load the number of tiles in span p'
@@ -952,26 +970,29 @@ plot_bank2r:
         cmp #41
         bcc plot_bank2r_row_loop_calculate_row_address
         
-        dex
-        bpl plot_bank2r_row_loop
-        clc
-        rts
+            dex
+            bpl plot_bank2r_row_loop
+            clc
+            rts
         
         plot_bank2r_row_loop_calculate_row_address:
         
         sta $74
         jsr read_screen_address_bank2
         
+        lda initial_row_tiles,x         ; Load the initial tile type.
+        sta $78
+        
         lda $74
         cmp #0
         beq plot_bank2r_row_loop_skip_leading
         cmp #41
-        bmi plot_bank2r_row_loop_plot_leading
+        bcc plot_bank2r_row_loop_plot_leading
         
-        dex
-        bpl plot_bank2r_row_loop
-        clc
-        rts
+            dex
+            bpl plot_bank2r_row_loop
+            clc
+            rts
         
         plot_bank2r_row_loop_plot_leading:
         
@@ -984,16 +1005,23 @@ plot_bank2r:
         sta $73
         clc
         
-        ldy #0
-        lda ($76),y                 ; Load the type number, t,
-        and #$f8                    ; mask off the bottom 3 bits,
-        jsr read_merged_sprite_address
+        lda $78                         ; Read the current type and the
+        jsr read_right_sprite_address   ; corresponding right edge sprite.
         
-        jsr plot_tile_bank
+        ldy #0
+        lda ($76),y                     ; Load the type number, t,
+        sta $78                         ; Record the new current type.
+        jsr read_left_sprite_address
+        
+        jsr plot_merged_tile_bank
         
         lda $74
         cmp #40
-        bcs plot_bank2r_offset_endloop   ; break if the screen edge is reached
+        bcc plot_bank2r_row_on_screen
+        
+        jmp plot_bank2r_offset_endloop   ; break if the screen edge is reached
+        
+        plot_bank2r_row_on_screen:
         
         lda $72                 ; move to the next cell
         adc #8
@@ -1008,6 +1036,10 @@ plot_bank2r:
         
         plot_bank2r_offset_loop:
         
+            ldy #0
+            lda ($76),y                 ; Load the type number, t,
+            sta $78
+            
             ldy #1
             lda ($76),y                 ; Load the number of tiles minus 1, n - 1.
             sta $79                     ; temp (n - 1)
@@ -1015,9 +1047,7 @@ plot_bank2r:
             beq plot_bank2r_offset_next  ; span, move to the next span,
                                         ; otherwise plot a continuation tile.
             
-            ldy #0
-            lda ($76),y                 ; Load the type number, t,
-            and #$07                    ; mask off the top 5 bits,
+            lda $78
             jsr read_rotated_sprite_address
             
             jsr plot_tile_bank
@@ -1059,12 +1089,15 @@ plot_bank2r:
             sta $77
             clc
             
-            ldy #0
-            lda ($76),y                 ; Load the type number, t,
-            and #$f8                    ; mask off the bottom 3 bits,
-            jsr read_merged_sprite_address
+            lda $78                         ; Read the current type and the
+            jsr read_right_sprite_address   ; corresponding right edge sprite.
             
-            jsr plot_tile_bank
+            ldy #0
+            lda ($76),y                     ; Load the type number, t,
+            sta $78                         ; Record the new current type.
+            jsr read_left_sprite_address
+            
+            jsr plot_merged_tile_bank
             
             lda $72                 ; move to the next cell
             adc #8
@@ -1114,6 +1147,10 @@ plot_bank2l:
         plot_bank2l_row_loop_calculate_row_address:
         sta $74
         
+        lda initial_row_tiles,x         ; Load the initial tile type.
+        sta $78
+        
+        lda $74
         cmp #2                              ; Both the trailing tile and the
         bcc plot_bank2l_skip_leading_tile   ; merged tile can be plotted.
         
@@ -1128,7 +1165,7 @@ plot_bank2l:
             sta $73
             clc
             
-            lda initial_row_tiles,x         ; Load the initial tile type.
+            lda $78
             jsr read_rotated_sprite_address ; $70,$71
             jsr plot_tile_bank
             
@@ -1201,18 +1238,29 @@ plot_bank2l:
         
         plot_bank2l_offset_loop:
         
-            ldy #0
-            lda ($76),y                 ; Load the type number, t,
-            and #$f8                    ; mask off the bottom 3 bits,
-            jsr read_merged_sprite_address
+            lda $78                         ; Read the current type and the
+            jsr read_right_sprite_address   ; corresponding right edge sprite.
             
-            jsr plot_tile_bank
+            ldy #0
+            lda ($76),y                     ; Load the type number, t,
+            sta $78                         ; Record the new current type.
+            jsr read_left_sprite_address
+            
+            jsr plot_merged_tile_bank
             
             lda $74
             cmp #41
             bcs plot_bank2l_offset_endloop   ; break if the screen edge is reached
             
+            jmp plot_bank2l_offset_loop_span_continue
+            
             plot_bank2l_offset_loop_span:
+            
+                ldy #0          ; Keep the previous type updated (only need to
+                lda ($76),y     ; do this if the merged tile was not plotted).
+                sta $78         ; Record the new current type.
+            
+            plot_bank2l_offset_loop_span_continue:
             
             ldy #1
             lda ($76),y                 ; Load the number of tiles minus 1, n - 1.
@@ -1249,7 +1297,7 @@ plot_bank2l:
             
             ldy #0
             lda ($76),y                 ; Load the type number, t,
-            and #$07                    ; mask off the top 3 bits,
+            sta $78
             jsr read_rotated_sprite_address
             
             jsr plot_tile_bank
@@ -1335,7 +1383,6 @@ initial_plot_bank1:
         
             ldy #0
             lda ($76),y             ; Load the type number, t,
-            and #$07                ; mask off the top 5 bits,
             asl                     ; multiply by 8 to get t1.
             asl
             asl
@@ -1418,18 +1465,24 @@ initial_plot_bank2:
         lda #0
         sta $74
         
+        lda initial_row_tiles,x         ; Load the initial tile type.
+        sta $79
+        
         initial_plot_bank2_span_loop:
         
             lda $74
             cmp #0
             beq initial_plot_bank2_span_loop_skip_merged
             
-            ldy #0
-            lda ($76),y                 ; Load the type number, t,
-            and #$f8                    ; mask off the bottom 3 bits,
-            jsr read_merged_sprite_address
+            lda $79                         ; Read the current type and the
+            jsr read_right_sprite_address   ; corresponding right edge sprite.
             
-            jsr plot_tile_bank
+            ldy #0
+            lda ($76),y                     ; Load the type number, t,
+            sta $79                         ; Record the new current type.
+            jsr read_left_sprite_address
+            
+            jsr plot_merged_tile_bank
             
             lda $72
             adc #8
@@ -1445,7 +1498,7 @@ initial_plot_bank2:
             
             ldy #0
             lda ($76),y                 ; Load the type number, t,
-            and #$07                    ; mask off the top 5 bits,
+            sta $79                         ; Record the new current type.
             jsr read_rotated_sprite_address
             
             ldy #1
@@ -1647,7 +1700,6 @@ check_tile:         ; $70=x position (0-39)
         clc
         ldy #0
         lda ($76),y             ; Load the type number, t,
-        and #$07                ; mask off the top 5 bits,
         rts
         
         check_tile_spans_loop_next:
@@ -1900,6 +1952,21 @@ read_screen_address_bank2:  ; X=row, A=column offset
     
     rts
 
+read_left_sprite_address:     ; A=tile number in high 4 bits
+                                ; sets $70,$71=sprite address
+
+    asl                         ; multiply by 8
+    asl
+    asl
+    adc #left_sprites_low       ; add to S to get S2.
+    sta $70
+    lda #left_sprites_high
+    adc #0
+    sta $71                     ; S2 ($70,$71)
+    clc
+    
+    rts
+
 read_rotated_sprite_address:    ; A=tile number
                                 ; sets $70,$71=sprite address
 
@@ -1915,14 +1982,17 @@ read_rotated_sprite_address:    ; A=tile number
     
     rts
 
-read_merged_sprite_address:     ; A=tile number in high 4 bits
-                                ; sets $70,$71=sprite address
+read_right_sprite_address:      ; A=tile number in high 4 bits
+                                ; sets $80,$81=sprite address
 
-    adc #merged_sprites_low     ; add to S to get S2.
-    sta $70
-    lda #merged_sprites_high
+    asl                         ; multiply by 8
+    asl
+    asl
+    adc #right_sprites_low      ; add to S to get S2.
+    sta $80
+    lda #right_sprites_high
     adc #0
-    sta $71                     ; S2 ($70,$71)
+    sta $81                     ; S2 ($80,$81)
     clc
     
     rts
