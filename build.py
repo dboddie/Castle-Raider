@@ -117,7 +117,9 @@ def address_length_end(address, data):
 
 
 tiles = ["images/blank.png", "images/brick.png", "images/grass.png",
-         "images/ground.png", "images/floor.png", "images/door.png",
+         "images/grass2.png",
+         "images/ground.png", "images/ground2.png", "images/floor.png",
+         "images/door.png",
          "images/window-topleft.png", "images/window-topright.png",
          "images/brick-left.png", "images/brick-right.png",
          "images/rope.png"]
@@ -195,7 +197,7 @@ if __name__ == "__main__":
     files = []
     
     levels_address = 0x1fe0
-    level_data = makelevels.create_levels()
+    level_data = makelevels.create_levels(tiles)
     files.append(("LEVELS", levels_address, levels_address, level_data))
     
     level_extent = len(makelevels.levels[0][0]) - 40
