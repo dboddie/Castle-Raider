@@ -17,7 +17,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-import os, struct, sys
+import os, stat, struct, sys
 import UEFfile
 
 from tools import makelevels, makesprites
@@ -122,7 +122,7 @@ tiles = ["images/blank.png", "images/brick.png", "images/grass.png",
          "images/door.png",
          "images/window-topleft.png", "images/window-topright.png",
          "images/brick-left.png", "images/brick-right.png",
-         "images/rope.png"]
+         "images/rope.png", "images/flag.png"]
 
 char_sprites = ["images/left1.png", "images/left2.png", "images/right1.png", "images/right2.png"]
 
@@ -246,6 +246,10 @@ if __name__ == "__main__":
     system("ophis loader.oph LOADER")
     loader_code = open("LOADER").read()
     files.insert(0, ("LOADER", loader_start, loader_start, loader_code))
+    
+    code_size = os.stat("CODE")[stat.ST_SIZE]
+    print "%i bytes (%04x) of code" % (code_size, code_size)
+    print "Code runs from %04x to %04x" % (code_start, code_start + code_size)
     
     u = UEFfile.UEFfile(creator = 'build.py '+version)
     u.minor = 6

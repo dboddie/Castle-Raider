@@ -187,7 +187,7 @@ def read_tiles(paths):
     
         data += read_sprite(lines)
     
-    print "%i bytes of tile data" % len(data)
+    print "%i bytes (%04x) of tile data" % (len(data), len(data))
     
     return data
 
@@ -203,7 +203,7 @@ def read_sprites(paths):
     
         data += read_sprite(lines)
     
-    print "%i bytes of sprite data" % len(data)
+    print "%i bytes (%04x) of sprite data" % (len(data), len(data))
     
     return data
 
