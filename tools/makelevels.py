@@ -21,6 +21,13 @@ class LevelError(Exception):
 
     pass
 
+class Action:
+
+    trigger = ""
+    span = ""
+    trigger_position = 0
+    span_positions = {}
+
 levels = [
     [r"#################...................................................................................................................@@..?..?..@@............................................@@..@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@...............................................................................################............@@@@################............@@@@",
      r"##################..................................................................................................................@@@@@@@@@@@@....................................@@..@@@@@@@@@@@@@@@@@............@@@@@..............................................................................................################............@@@@################............@@@@",
@@ -67,11 +74,11 @@ def create_level_data(level, tile_paths):
     
     data = []
     actions = {}
+    l = 0
     
     for line in level:
     
         line_data = []
-        previous = 0
         current = None
         offset = 0
         i = 0
@@ -85,24 +92,33 @@ def create_level_data(level, tile_paths):
             
                 # Check for a predefined trigger or span.
                 if triggers.has_key(ch):
-                    c = tiles[triggers[ch]]
-                    d = actions.setdefault(ch, {})
-                    d["trigger"] = len(line_data)
+                    c = ch
+                    a = actions.setdefault(ch, Action())
+                    a.trigger = ch
+                    a.trigger_position = len(line_data)
                 elif spans.has_key(ch):
-                    c = tiles[spans[ch][0]]
-                    d = actions.setdefault(ch.lower(), {})
-                    d.setdefault("spans", []).append(len(line_data))
+                    c = ch
+                    a = actions.setdefault(ch.lower(), Action())
+                    a.span = ch
+                    if not a.span_positions.has_key(l):
+                        a.span_positions[l] = len(line_data)
                 else:
                     raise
             
             if c != current:
             
+                if isinstance(current, str):
+                
+                    a = actions[current.lower()]
+                    if current.islower():
+                        current = tiles[triggers[a.trigger]]
+                    else:
+                        current = tiles[spans[a.span][0]]
+                
                 if current is not None:
                 
-                    # Append the previous type and number of tiles to the data.
-                    line_data.append(((previous, current), i - offset))
-                    
-                    previous = current
+                    # Append the type and number of tiles to the data.
+                    line_data.append((current, i - offset))
                 
                 current = c
                 offset = i
@@ -110,11 +126,12 @@ def create_level_data(level, tile_paths):
             i += 1
         
         if i > offset:
-            line_data.append(((previous, current), i - offset))
+            line_data.append((current, i - offset))
         
         data.append(line_data)
+        l += 1
     
-    return data
+    return data, actions
 
 def create_levels(tile_paths):
 
@@ -123,7 +140,8 @@ def create_levels(tile_paths):
     l = 0
     for level in levels:
     
-        level_data = create_level_data(level, tile_paths)
+        level_data, level_actions = create_level_data(level, tile_paths)
+        print level_actions
         row_offsets = []
         
         r = 0
@@ -132,7 +150,7 @@ def create_levels(tile_paths):
             row_offsets.append(len(data))
             row_data = ""
             
-            for (previous, current), number in row:
+            for current, number in row:
             
                 if number > 256:
                     raise LevelError, "Level %i: Row %i has a span longer than 256 tiles.\n" % (l, r)

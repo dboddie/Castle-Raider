@@ -189,7 +189,7 @@ if __name__ == "__main__":
     # 1fe0      row table low
     # 1ff0      row table high
     # 2000      level data
-    # 2800      tile sprites
+    # 2a00      tile sprites
     # 2e00      character sprites
     # 3000      bank 1
     # 5800      bank 2
@@ -202,7 +202,7 @@ if __name__ == "__main__":
     
     level_extent = len(makelevels.levels[0][0]) - 40
     
-    sprite_area_address = 0x2800
+    sprite_area_address = 0x2a00
     sprite_data = makesprites.read_tiles(tiles)
     files.append(("TILES", sprite_area_address, sprite_area_address, sprite_data))
     
@@ -249,7 +249,10 @@ if __name__ == "__main__":
     
     code_size = os.stat("CODE")[stat.ST_SIZE]
     print "%i bytes (%04x) of code" % (code_size, code_size)
-    print "Code runs from %04x to %04x" % (code_start, code_start + code_size)
+    
+    print "CODE runs from %04x to %04x" % (code_start, code_start + code_size)
+    print "TILES runs from %04x to %04x" % (sprite_area_address, sprite_area_address + len(sprite_data))
+    print "SPRITES runs from %04x to %04x" % (char_area_address, char_area_address + len(char_data))
     
     u = UEFfile.UEFfile(creator = 'build.py '+version)
     u.minor = 6
