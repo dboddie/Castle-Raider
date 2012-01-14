@@ -116,13 +116,24 @@ def address_length_end(address, data):
     return address_low, address_high, length_low, length_high, end_low, end_high
 
 
-tiles = ["images/blank.png", "images/brick.png", "images/grass.png",
-         "images/grass2.png",
-         "images/ground.png", "images/ground2.png", "images/floor.png",
-         "images/door.png",
+tiles = ["images/blank.png", "images/brick.png",
+         "images/grass.png", "images/grass2.png",
+         "images/ground.png", "images/ground2.png",
+         "images/floor.png", "images/door.png",
          "images/window-topleft.png", "images/window-topright.png",
          "images/brick-left.png", "images/brick-right.png",
-         "images/rope.png", "images/flag.png"]
+         "images/rope.png", "images/flag.png",
+         "images/rope.png", "images/flag.png",
+         # Trigger tiles
+         "images/brick-trigger0.png", "images/flag.png",
+         "images/rope.png", "images/flag.png",
+         "images/rope.png", "images/flag.png",
+         "images/rope.png", "images/flag.png",
+         "images/rope.png", "images/flag.png",
+         "images/rope.png", "images/flag.png",
+         "images/rope.png", "images/flag.png",
+         "images/brick-trigger0.png", "images/brick-trigger0.png",
+         ]
 
 char_sprites = ["images/left1.png", "images/left2.png", "images/right1.png", "images/right2.png"]
 
@@ -149,6 +160,10 @@ constants_oph = \
 .alias level_extent                 %i
 .alias level_extent_low             $%02x
 .alias level_extent_high            $%02x
+
+.alias actions_address              $%x
+.alias actions_address_low          $%02x
+.alias actions_address_high         $%02x
 
 .alias char_area                    $%x
 .alias char_area_low                $%02x
@@ -197,10 +212,15 @@ if __name__ == "__main__":
     files = []
     
     levels_address = 0x1fe0
-    level_data = makelevels.create_levels(tiles)
-    files.append(("LEVELS", levels_address, levels_address, level_data))
+    level_data, actions_data = makelevels.create_levels(tiles, levels_address)
+    files.append(("LEVELS", levels_address, levels_address, level_data + actions_data))
     
     level_extent = len(makelevels.levels[0][0]) - 40
+    
+    actions_start = levels_address + len(level_data)
+    actions_finish = actions_start + len(actions_data)
+    actions_low = actions_start & 0xff
+    actions_high = actions_start >> 8
     
     sprite_area_address = 0x2a00
     sprite_data = makesprites.read_tiles(tiles)
@@ -227,8 +247,9 @@ if __name__ == "__main__":
          rotated_sprites_low, rotated_sprites_high,
          right_sprites_low, right_sprites_high) + \
         address_length_end(levels_address, level_data) + \
-        (level_extent, level_extent & 0xff, level_extent >> 8) + \
-        (char_area_address,) + \
+        (level_extent, level_extent & 0xff, level_extent >> 8,
+         actions_start, actions_low, actions_high,
+         char_area_address,) + \
         address_length_end(char_area_address, char_data)
     
     open("constants.oph", "w").write(constants_oph % values)
@@ -250,9 +271,29 @@ if __name__ == "__main__":
     code_size = os.stat("CODE")[stat.ST_SIZE]
     print "%i bytes (%04x) of code" % (code_size, code_size)
     
-    print "CODE runs from %04x to %04x" % (code_start, code_start + code_size)
-    print "TILES runs from %04x to %04x" % (sprite_area_address, sprite_area_address + len(sprite_data))
-    print "SPRITES runs from %04x to %04x" % (char_area_address, char_area_address + len(char_data))
+    code_finish = code_start + code_size
+    print "CODE    runs from %04x to %04x" % (code_start, code_finish)
+    if code_finish > 0x1fa0:
+        sys.stderr.write("CODE overruns following data.\n")
+        sys.exit(1)
+    
+    levels_finish = levels_address + len(level_data) + len(actions_data)
+    print "LEVELS  runs from %04x to %04x" % (levels_address, levels_finish)
+    if levels_finish > sprite_area_address:
+        sys.stderr.write("LEVELS overruns following data.\n")
+        sys.exit(1)
+    
+    sprite_area_finish = sprite_area_address + len(sprite_data)
+    print "TILES   runs from %04x to %04x" % (sprite_area_address, sprite_area_finish)
+    if sprite_area_finish > char_area_address:
+        sys.stderr.write("TILES overruns following data.\n")
+        sys.exit(1)
+    
+    char_area_finish = char_area_address + len(char_data)
+    print "SPRITES runs from %04x to %04x" % (char_area_address, char_area_finish)
+    if char_area_finish > 0x3000:
+        sys.stderr.write("SPRITES overruns following data.\n")
+        sys.exit(1)
     
     u = UEFfile.UEFfile(creator = 'build.py '+version)
     u.minor = 6

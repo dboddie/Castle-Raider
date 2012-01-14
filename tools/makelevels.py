@@ -23,13 +23,16 @@ class LevelError(Exception):
 
 class Action:
 
-    trigger = ""
-    span = ""
-    trigger_position = 0
-    span_positions = {}
+    def __init__(self):
+        self.spans = set()
+        self.initial = 0
+        self.final = 0
+    
+    def __repr__(self):
+        return "<Action [%x,%x] %i spans>" % (self.initial, self.final, len(self.spans))
 
 levels = [
-    [r"#################...................................................................................................................@@..?..?..@@............................................@@..@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@...............................................................................################............@@@@################............@@@@",
+    [r"#################...................................................................................................................@@..?..?..@@....................................@@..@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@...............................................................................################............@@@@################............@@@@",
      r"##################..................................................................................................................@@@@@@@@@@@@....................................@@..@@@@@@@@@@@@@@@@@............@@@@@..............................................................................................################............@@@@################............@@@@",
      r"############%#####...........................................................@@..@@.................................................@@@@@@@@@@@@....................................@@@@@@@@@@@@@@@@@@@@...............|................................................................................................################............@@@@################............@@@@",
      r"###.##############...........................................................@@@@@@.................................................@@@@]..[@@@@....................................@@@@@@@@@@@@@@@@@@@@...............|................................................................................................################............@@@@################............@@@@",
@@ -40,11 +43,11 @@ levels = [
      r"###################...................................................................................................................................................................................................@@@................@@@.................................................@@.........................################............@@@@################............@@@@",
      r"###################.........................................................................................................................................................................................................................@@@............................................@@...........................################............@@@@################............@@@@",
      r"########.##########................................................................................................................@@@@@@@@@@@a]AAAAAAAAAAAAAAAA[@@@@@@@@+.....................................................................@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@.@@.............................################............@@@@################............@@@@",
-     r"#######.###########.............................................................................................................@@@@@@@@@@@@@@@@................@@@@@@@@@@++............................................................................@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@................................################............@@@@################............@@@@",
+     r"#######.###########...............BBB...........................................................................................@@@@@@@@@@@@@@@@................@@@@@@@@@@++............................................................................@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@................................################............@@@@################............@@@@",
      r"###################........................................................++@@@@@@++.......................................@@@@@@@@@@@@@/\@@@@@................@@@@/\@@@@##++..........................................................................@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@................................################............@@@@################............@@@@",
      r"###################...................................................+++++##@@@@@@##+++................................@@@@@@@@@@@@@@@@]..[@@@@................@@@]..[@@@####+++~+++++++++++++++++~++~+++++++++++++++@@@...............................@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@++++++++++++++++++++++++++++++++################............@@@@################............@@@@",
      r"###########%#######.........................................+++~++++++##################+++++++~++++++++++++++++++++~+++@@@@@@@@@@@@@@@@]..[@@@@................@@@]..[@@@############################################@@@...+++....+++..................@@@@@@@@@@@@@@@@@@@..@@@@@@@@@@@################################################............@@@@################............@@@@",
-     r"###################+++++~++++++++++++~+++++++++~++++++++++++############################################################@@@@@@@@@@@@@@@@@@@@@@@@................@@@@@@@@@@############################################@@@...###....###....@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@################################################............@@@@################............@@@@"]
+     r"###################+++++~++++++++++++~++b++++++~++++++++++++############################################################@@@@@@@@@@@@@@@@@@@@@@@@................@@@@@@@@@@############################################@@@...###....###....@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@################################################............@@@@################............@@@@"]
     ]
 
 tile_ref = {".": "images/blank.png",
@@ -60,20 +63,23 @@ tile_ref = {".": "images/blank.png",
             "[": "images/brick-left.png",
             "]": "images/brick-right.png",
             "{": "images/rope.png",
-            "?": "images/flag.png"}
+            "?": "images/flag.png",
+            "^": "images/brick-trigger0.png"}
 
-triggers = {"a": "@"}
-spans = {"A": (".", "@")}
+# The triggers dictionary maps each symbol used in the level map to a tuple
+# containing the corresponding tile and action group.
+triggers = {"a": ("^", 0),
+            "b": ("^", 1)}
 
-def create_level_data(level, tile_paths):
+# The spans dictionary maps each symbols used in the level map to a pair of tiles used for
+# the initial and final states of that action.
+spans = {"A": (".", "-"),
+         "B": (".", "@")}
 
-    tiles = {}
-    for key, value in tile_ref.items():
-    
-        tiles[key] = tile_paths.index(value)
-    
+def create_level_data(level, tiles):
+
+    actions_dict = {}
     data = []
-    actions = {}
     l = 0
     
     for line in level:
@@ -92,16 +98,18 @@ def create_level_data(level, tile_paths):
             
                 # Check for a predefined trigger or span.
                 if triggers.has_key(ch):
-                    c = ch
-                    a = actions.setdefault(ch, Action())
-                    a.trigger = ch
-                    a.trigger_position = len(line_data)
+                
+                    # Use the tile mapped to by the trigger dictionary, setting
+                    # one or more of the top 4 bits to indicate that the span
+                    # contains a trigger.
+                    tile, group = triggers[ch]
+                    c = tiles[tile] | ((group + 1) << 4)
+                
                 elif spans.has_key(ch):
+                
+                    # Use the first tile in the action.
                     c = ch
-                    a = actions.setdefault(ch.lower(), Action())
-                    a.span = ch
-                    if not a.span_positions.has_key(l):
-                        a.span_positions[l] = len(line_data)
+                
                 else:
                     raise
             
@@ -109,16 +117,21 @@ def create_level_data(level, tile_paths):
             
                 if isinstance(current, str):
                 
-                    a = actions[current.lower()]
-                    if current.islower():
-                        current = tiles[triggers[a.trigger]]
-                    else:
-                        current = tiles[spans[a.span][0]]
+                    tile, group = triggers[current.lower()]
+                    number = (tiles[tile] | ((group + 1) << 4)) - 16
+                    
+                    action = actions_dict.setdefault(number, Action())
+                    action.initial = tiles[spans[current][0]]
+                    action.final = tiles[spans[current][1]]
+                    action.spans.add((l, len(line_data)))
+                    
+                    current = action.initial
                 
                 if current is not None:
                 
-                    # Append the type and number of tiles to the data.
-                    line_data.append((current, i - offset))
+                    # Store the length of the tile span, reduced by one to
+                    # increase the range of tiles that can be described.
+                    line_data.append((current, i - offset - 1))
                 
                 current = c
                 offset = i
@@ -131,17 +144,21 @@ def create_level_data(level, tile_paths):
         data.append(line_data)
         l += 1
     
-    return data, actions
+    return data, actions_dict
 
-def create_levels(tile_paths):
+def create_levels(tile_paths, levels_address):
 
+    tiles = {}
+    for key, value in tile_ref.items():
+    
+        tiles[key] = tile_paths.index(value)
+    
     data = ""
     
     l = 0
     for level in levels:
     
-        level_data, level_actions = create_level_data(level, tile_paths)
-        print level_actions
+        level_data, actions_dict = create_level_data(level, tiles)
         row_offsets = []
         
         r = 0
@@ -150,13 +167,12 @@ def create_levels(tile_paths):
             row_offsets.append(len(data))
             row_data = ""
             
-            for current, number in row:
+            for tile, number in row:
             
                 if number > 256:
                     raise LevelError, "Level %i: Row %i has a span longer than 256 tiles.\n" % (l, r)
                 
-                tile = (current & 0xff)
-                row_data += chr(tile) + chr(number - 1)
+                row_data += chr(tile) + chr(number)
             
             if len(row_data) >= 512:
                 raise LevelError, "Level %i: Row %i too long or too detailed.\n" % (l, r)
@@ -175,4 +191,55 @@ def create_levels(tile_paths):
     # Append the data to the table of row offsets.
     data = table + data
     
-    return data
+    # Actions are stored as a table of addresses followed by the actions
+    # themselves. Even though
+    
+    actions_list = actions_dict.items()
+    actions_list.sort()
+    actions = max(actions_dict.keys()) + 1
+    
+    actions_table = ""
+    actions_data = ""
+    actions_table_length = actions * 2
+    actions_start_address = levels_address + len(data) + actions_table_length
+    
+    number = 0
+    while number < actions:
+    
+        try:
+            action = actions_dict[number]
+        except KeyError:
+            actions_table += chr(0) + chr(0)
+            number += 1
+            continue
+        
+        # Store the spans described in the action in the following format:
+        # <original tile type>, <replacement tile type>,
+        # <number of spans, n>,
+        # <address 0>, ... <address n - 1>
+        
+        original_tile_type = action.initial
+        replacement_tile_type = action.final
+        number_of_spans = len(action.spans)
+        
+        addresses = []
+        
+        for span in action.spans:
+        
+            line, offset = span
+            address = levels_address + (len(row_offsets)*2) + row_offsets[line] + offset*2
+            addresses += chr(address & 0xff) + chr(address >> 8)
+        
+        action_address = actions_start_address + len(actions_data)
+        actions_table += chr(action_address & 0xff) + chr(action_address >> 8)
+        
+        actions_data += chr(original_tile_type) + chr(replacement_tile_type) + \
+                        chr(number_of_spans) + "".join(addresses)
+        
+        number += 1
+    
+    actions_data = actions_table + actions_data
+    
+    print "%i bytes (%04x) of actions data" % (len(actions_data), len(actions_data))
+    
+    return data, actions_data
