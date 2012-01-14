@@ -1425,14 +1425,9 @@ read_row_address:           ; X=row number
                             ; Returns $76,$77 (row address)
 
     lda row_table_low,x     ; Load entry a from the table.
-
-    adc #level_data_low     ; Add a to the data start address
-                            ; to get the row start address, A.
     sta $76
     lda row_table_high,x
-    adc #level_data_high
-    sta $77             ; A ($76,$77)
-    clc
+    sta $77
 
     lda row_indices,x   ; Load index i from the indices;
     asl                 ; and multiply it by 2 to get i*2.
@@ -1440,7 +1435,7 @@ read_row_address:           ; X=row number
     sta $76             ; starting offset and type.
     lda $77
     adc #0
-    sta $77             ; I ($76,$77)
+    sta $77
     clc
     
     rts

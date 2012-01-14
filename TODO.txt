@@ -1,10 +1,9 @@
 To Do
 
-Replace the level row offsets with level row addresses since we can calculate
-them in advance.
 Ensure that the player simply falls when colliding with scenery when both
 moving horizontally and falling.
 Add half vertical tile movement (4 pixels) for the player and update jumping
 and falling motion to use it.
 Add support for scenery/span modification, using reversible actions that can be
 triggered at certain points on the level.
+Add support for plotting the view onto the level from any point in the level.

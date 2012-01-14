@@ -179,12 +179,12 @@ def create_levels(tile_paths, levels_address):
     for level in levels:
     
         level_data, actions_dict = create_level_data(level, tiles)
-        row_offsets = []
+        row_addresses = []
         
         r = 0
         for row in level_data:
         
-            row_offsets.append(len(data))
+            row_addresses.append(levels_address + (16 * 2) + len(data))
             row_data = ""
             
             for tile, number in row:
@@ -205,8 +205,8 @@ def create_levels(tile_paths, levels_address):
     print "%i bytes (%04x) of level data" % (len(data), len(data))
     
     # Create a table of row offsets.
-    table = "".join(map(lambda x: chr(x & 0xff), row_offsets)) + \
-            "".join(map(lambda x: chr(x >> 8), row_offsets))
+    table = "".join(map(lambda x: chr(x & 0xff), row_addresses)) + \
+            "".join(map(lambda x: chr(x >> 8), row_addresses))
     
     # Append the data to the table of row offsets.
     data = table + data
@@ -247,7 +247,7 @@ def create_levels(tile_paths, levels_address):
         for span in action.spans:
         
             line, offset = span
-            address = levels_address + (len(row_offsets)*2) + row_offsets[line] + offset*2
+            address = row_addresses[line] + offset*2
             addresses += chr(address & 0xff) + chr(address >> 8)
         
         action_address = actions_start_address + len(actions_data)
