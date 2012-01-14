@@ -503,10 +503,13 @@ invoke_action:                      ; A=trigger tile number
 
     ; Determine which action should be invoked.
     
-    sec                     ; Subtract 16 from the tile number to obtain the
-    sbc #$10                ; action number (tiles 16 to 31 are dedicated
-    clc                     ; trigger tiles) then shift left by one to obtain
-    asl                     ; an offset into the action address table.
+    tay                     ; The tile number has the format, aaaxtttt, where
+    and #$e0                ; the bottom 5 bits are the tile sprite and the
+    sta $84                 ; top three bits are the action group. We need to
+    tya                     ; process this value to get aaatttt0, which is the
+    and #$0f                ; action number multiplied by two.
+    asl                     ; This provides an offset into the action address
+    ora $84                 ; table.
     
     tax
     lda actions_address,x   ; Read the low byte of the action address from the
