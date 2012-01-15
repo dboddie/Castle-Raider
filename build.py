@@ -126,7 +126,7 @@ tiles = ["images/blank.png", "images/brick.png",
          "images/rope.png", "images/flag.png",
          # Trigger tiles
          "images/brick-trigger0.png", "images/brick-trigger1.png",
-         "images/ground-trigger2.png", "images/flag.png",
+         "images/ground-trigger2.png", "images/grass-trigger3.png",
          "images/rope.png", "images/flag.png",
          "images/rope.png", "images/flag.png",
          "images/rope.png", "images/flag.png",

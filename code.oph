@@ -59,7 +59,7 @@ init:
     
     lda #19
     sta player_x
-    lda #12
+    lda #20
     sta player_y
     lda #2
     sta player_animation
@@ -450,7 +450,7 @@ check_key:      ; x=key code
 check_beneath:
 
     lda player_y
-    cmp #13
+    cmp #21
     bpl check_beneath_exit
     
     adc #3
@@ -674,10 +674,14 @@ set_palette:
     jsr $fff1
     rts
 
+bank1_char_rows_low:  .byte $00,$40,$80,$c0,$00,$40,$80,$c0
 bank1_rows_low:  .byte  $00,$40,$80,$c0,$00,$40,$80,$c0,$00,$40,$80,$c0,$00,$40,$80,$c0
-bank1_rows_high: .byte  $3a,$3b,$3c,$3d,$3f,$40,$41,$42,$44,$45,$46,$47,$49,$4a,$4b,$4c
+bank1_char_rows_high: .byte $35,$36,$37,$38,$3a,$3b,$3c,$3d
+bank1_rows_high: .byte  $3f,$40,$41,$42,$44,$45,$46,$47,$49,$4a,$4b,$4c,$4e,$4f,$50,$51
+bank2_char_rows_low:  .byte $00,$40,$80,$c0,$00,$40,$80,$c0
 bank2_rows_low:  .byte  $00,$40,$80,$c0,$00,$40,$80,$c0,$00,$40,$80,$c0,$00,$40,$80,$c0
-bank2_rows_high: .byte  $62,$63,$64,$65,$67,$68,$69,$6a,$6c,$6d,$6e,$6f,$71,$72,$73,$74
+bank2_char_rows_high: .byte $5d,$5e,$5f,$60,$62,$63,$64,$65
+bank2_rows_high: .byte  $67,$68,$69,$6a,$6c,$6d,$6e,$6f,$71,$72,$73,$74,$76,$77,$78,$79
 
 init_scrolling:
 
@@ -1727,9 +1731,9 @@ plot_char_bank1:            ; plots the player character on bank 1
     asl
     asl
     asl
-    adc bank1_rows_low,x
+    adc bank1_char_rows_low,x
     sta $72
-    lda bank1_rows_high,x
+    lda bank1_char_rows_high,x
     adc #0
     sta $73
     clc
@@ -1749,9 +1753,9 @@ plot_char_bank2:            ; plots the player character on bank 2
     asl
     asl
     asl
-    adc bank2_rows_low,x
+    adc bank2_char_rows_low,x
     sta $72
-    lda bank2_rows_high,x
+    lda bank2_char_rows_high,x
     adc #0
     sta $73
     clc
@@ -1773,9 +1777,21 @@ plot_player:
         jmp plot_char_bank2
 
 check_tile:         ; $70=x position (0-39)
-                    ; $71=y position (0-15)
+                    ; $71=y position (0-23) (measured from the top of the
+                    ;           playing area, not the top row of the scenery)
 
-    ldx $71
+    lda $71         ; For y positions less than 8 do not check the
+    cmp #8          ; corresponding row.
+    bcs check_tile_row
+    
+    lda #0
+    rts
+    
+    check_tile_row:
+    sbc #8
+    clc
+    
+    tax
     jsr read_row_address
     
     lda initial_row_offsets,x

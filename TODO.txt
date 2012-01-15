@@ -1,11 +1,11 @@
 To Do
 
+Ensure that all tiles beneath the character are checked for triggers.
 Add support for plotting the view onto the level from any point in the level.
 Ensure that the player simply falls when colliding with scenery when both
 moving horizontally and falling.
 Add half vertical tile movement (4 pixels) for the player's character and
 update jumping and falling motion to use it.
-Expand the number of rows in the playing area so that the player's character
-can roam along the top of the level if necessary. Perhaps add 4-8 more rows
-without scenery.
 Add support for non-scenery objects in the plotting routines.
+Allow the player's character to fall off the bottom of the level and add
+support for restoring the player's position when this happens.
