@@ -1468,6 +1468,10 @@ initial_plot_bank1:
         
         jsr initial_plot_bank1_tile_loop
         
+        lda $74
+        cmp #40
+        bcs initial_plot_bank1_span_endloop
+        
         initial_plot_bank1_span_loop:
         
             ldy #0
@@ -1552,9 +1556,22 @@ initial_plot_bank2:
         lda #0
         sta $74
         
+        lda initial_row_offsets,x
+        cmp #0
+        beq initial_plot_bank2_span_loop
+        sta $78
+        dec $78
+        
         lda initial_row_tiles,x         ; Load the initial tile type,
         and #$1f                        ; mask off the top 3 bits.
         sta $79
+        jsr read_rotated_sprite_address
+        
+        jsr initial_plot_bank2_tile_loop
+        
+        lda $74
+        cmp #40
+        bcs initial_plot_bank2_span_endloop
         
         initial_plot_bank2_span_loop:
         
@@ -1595,32 +1612,7 @@ initial_plot_bank2:
             lda ($76),y         ; Load the number of tiles minus 1, n - 1.
             sta $78
             
-            initial_plot_bank2_tile_loop:
-            
-                lda $74
-                cmp #40
-                beq initial_plot_bank2_span_endloop
-                lda $78
-                cmp #0
-                beq initial_plot_bank2_tile_endloop
-                
-                jsr plot_tile_bank
-                
-                lda $72
-                adc #8
-                sta $72
-                lda $73
-                adc #0
-                sta $73
-                clc
-                
-                inc $74         ; one tile filled on the screen
-                dec $78         ; one tile less to plot
-                
-                jmp initial_plot_bank2_tile_loop
-            
-            initial_plot_bank2_tile_endloop:
-            clc
+            jsr initial_plot_bank2_tile_loop
             
             lda $74
             cmp #40
@@ -1645,6 +1637,34 @@ initial_plot_bank2:
         jmp initial_plot_bank2_row_loop
     
     initial_plot_bank2_row_endloop:
+    clc
+    rts
+
+initial_plot_bank2_tile_loop:
+
+    lda $74
+    cmp #40
+    beq initial_plot_bank2_span_endloop
+    lda $78
+    cmp #0
+    beq initial_plot_bank2_tile_endloop
+    
+    jsr plot_tile_bank
+    
+    lda $72
+    adc #8
+    sta $72
+    lda $73
+    adc #0
+    sta $73
+    clc
+    
+    inc $74         ; one tile filled on the screen
+    dec $78         ; one tile less to plot
+    
+    jmp initial_plot_bank2_tile_loop
+
+    initial_plot_bank2_tile_endloop:
     clc
     rts
 
