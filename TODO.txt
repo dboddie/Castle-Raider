@@ -1,9 +1,11 @@
 To Do
 
+Add support for plotting the view onto the level from any point in the level.
 Ensure that the player simply falls when colliding with scenery when both
 moving horizontally and falling.
-Add half vertical tile movement (4 pixels) for the player and update jumping
-and falling motion to use it.
-Add support for scenery/span modification, using reversible actions that can be
-triggered at certain points on the level.
-Add support for plotting the view onto the level from any point in the level.
+Add half vertical tile movement (4 pixels) for the player's character and
+update jumping and falling motion to use it.
+Expand the number of rows in the playing area so that the player's character
+can roam along the top of the level if necessary. Perhaps add 4-8 more rows
+without scenery.
+Add support for non-scenery objects in the plotting routines.
