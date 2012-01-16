@@ -561,11 +561,21 @@ invoke_action:                      ; A=trigger tile number
     
     clc
     
-    ;jsr initial_plot_bank1
-    ;jsr plot_char_bank1
-    ;jsr initial_plot_bank2
+    jsr initial_plot_bank1
+    jsr initial_plot_bank2
+    
+    lda bank_number
+    cmp #1
+    bne invoke_action_bank2
     
     clc
+    jsr plot_char_bank1
+    rts
+    
+    invoke_action_bank2:
+    clc
+    jsr plot_char_bank2
+    
     rts
 
 clear_bank1:
