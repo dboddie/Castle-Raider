@@ -136,15 +136,12 @@ def compress(data):
     
     return "".join(output)
 
-def read_tiles(paths):
+def read_tile_data(sprites):
 
-    sprites = []
-    for path in paths:
-    
-        sprites.append(read_png(path))
+    number = len(sprites)
     
     # Add left edge sprites for bank 2.
-    for i in range(len(paths)):
+    for i in range(number):
     
         sprite = sprites[i]
         
@@ -157,7 +154,7 @@ def read_tiles(paths):
         sprites.append(lines)
     
     # Add rotated sprites for bank 2.
-    for i in range(len(paths)):
+    for i in range(number):
     
         sprite = sprites[i]
         
@@ -170,7 +167,7 @@ def read_tiles(paths):
         sprites.append(lines)
     
     # Add right edge sprites for bank 2.
-    for i in range(len(paths)):
+    for i in range(number):
     
         sprite = sprites[i]
         
@@ -191,6 +188,34 @@ def read_tiles(paths):
     
     return data
 
+def read_tiles(paths):
+
+    sprites = []
+    for path in paths:
+    
+        sprites.append(read_png(path))
+    
+    return sprites
+
+def read_object_tiles(paths):
+
+    sprites = []
+    for path in paths:
+    
+        sprite = read_png(path)
+        left = []
+        right = []
+        
+        for line in sprite:
+        
+            left.append(line[:len(line)/2])
+            right.append(line[len(line)/2:])
+        
+        sprites.append(left)
+        sprites.append(right)
+    
+    return sprites
+    
 def read_sprites(paths):
 
     sprites = []

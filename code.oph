@@ -490,6 +490,7 @@ check_beneath:
     cmp #$10                        ; Tiles >= 16 are trigger tiles.
     bcc check_beneath_no_trigger
     
+    clc
     jsr invoke_action
     
     check_beneath_no_trigger:

@@ -124,16 +124,15 @@ tiles = ["images/blank.png", "images/brick.png",
          "images/brick-left.png", "images/brick-right.png",
          "images/rope.png", "images/flag.png",
          "images/rope.png", "images/flag.png",
+         "images/rope.png", "images/flag.png",
          # Trigger tiles
          "images/brick-trigger0.png", "images/brick-trigger1.png",
          "images/ground-trigger2.png", "images/grass-trigger3.png",
          "images/rope.png", "images/flag.png",
          "images/rope.png", "images/flag.png",
-         "images/rope.png", "images/flag.png",
-         "images/rope.png", "images/flag.png",
-         "images/rope.png", "images/flag.png",
-         "images/brick-trigger0.png", "images/brick-trigger0.png",
-         ]
+         "images/rope.png", "images/flag.png"]
+
+object_tiles = ["images/gem.png", "images/crown.png"]
 
 char_sprites = ["images/left1.png", "images/left2.png", "images/right1.png", "images/right2.png"]
 
@@ -212,7 +211,7 @@ if __name__ == "__main__":
     files = []
     
     levels_address = 0x1fe0
-    level_data, actions_data = makelevels.create_levels(tiles, levels_address)
+    level_data, actions_data = makelevels.create_levels(tiles, object_tiles, levels_address)
     files.append(("LEVELS", levels_address, levels_address, level_data + actions_data))
     
     level_extent = len(makelevels.levels[0][0]) - 40
@@ -223,16 +222,20 @@ if __name__ == "__main__":
     actions_high = actions_start >> 8
     
     sprite_area_address = 0x2a00
-    sprite_data = makesprites.read_tiles(tiles)
+    tile_sprites = makesprites.read_tiles(tiles)
+    tile_sprites += makesprites.read_object_tiles(object_tiles)
+    sprite_data = makesprites.read_tile_data(tile_sprites)
+    all_tiles = len(tiles) + len(object_tiles) * 2
+    
     files.append(("TILES", sprite_area_address, sprite_area_address, sprite_data))
     
-    left_sprites = sprite_area_address + (len(tiles) * 8)
+    left_sprites = sprite_area_address + (all_tiles * 8)
     left_sprites_low = left_sprites & 0xff
     left_sprites_high = left_sprites >> 8
-    rotated_sprites = left_sprites + (len(tiles) * 8)
+    rotated_sprites = left_sprites + (all_tiles * 8)
     rotated_sprites_low = rotated_sprites & 0xff
     rotated_sprites_high = rotated_sprites >> 8
-    right_sprites = rotated_sprites + (len(tiles) * 8)
+    right_sprites = rotated_sprites + (all_tiles * 8)
     right_sprites_low = right_sprites & 0xff
     right_sprites_high = right_sprites >> 8
     

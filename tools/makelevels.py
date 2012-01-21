@@ -46,7 +46,7 @@ levels = [
      r"#######%###########.................................@@@.....................@@@@@@@@.............................................++#@@@@@@@@@@@@....................@@@@@@@@@@@@#+............................@@....@@...................B@@................................................................................................@",
      r"###################.........................................................@@@@@@@@#.........................................+++###@@@@@/\@@@@@....................@@@@@/\@@@@@##++........................@@@@....@@@@....................................................................................................................@",
      r"###################...........................@@@@..........................@@@@@@@@#+++...................................+++######@@@@]..[@@@@....................@@@@]..[@@@@####+++~++++++++++++++++++++@@@@....@@@@++~++++++...........................................................................................................@",
-     r"###################...........................####..........................@@@@@@@@####+++++++~++++++++++++++++++++~++++++#########@@@@]..[@@@@....................@@@@]..[@@@@##################################b##############++++++.....................................................................................................@",
+     r"###################...................00..11..####..........................@@@@@@@@####+++++++~++++++++++++++++++++~++++++#########@@@@]..[@@@@....................@@@@]..[@@@@##################################b##############++++++.....................................................................................................@",
      r"###################+++++~++++++++++++~++++++++####+++++++++++++++++++++++ee+########################################################@@@@@@@@@@@@....................@@@@@@@@@@@@#######################################################+++@d@@@@@@@@@@c@@@@@@@++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++@"]
     ]
 
@@ -69,6 +69,9 @@ tile_ref = {".": "images/blank.png",
             "*": "images/ground-trigger2.png",
             "'": "images/grass-trigger3.png"}
 
+object_ref = {"0": "images/gem.png",
+              "1": "images/crown.png"}
+
 # The triggers dictionary maps each symbol used in the level map to a tuple
 # containing the corresponding tile and action group.
 triggers = {"a": "^",
@@ -85,7 +88,7 @@ spans = {"A": ("-", "."),
          "D": ("-", "."),
          "E": ("|", ".")}
 
-def create_level_data(level, tiles):
+def create_level_data(level, tiles, objects):
 
     triggers_dict = {}
     used_triggers = {}
@@ -127,6 +130,11 @@ def create_level_data(level, tiles):
                     tile, group = triggers_dict[ch]
                     c = tiles[tile] | (group << 5)
                 
+                elif objects.has_key(ch):
+                
+                    # Use the character to define a span and process it later.
+                    c = ch
+                
                 elif spans.has_key(ch):
                 
                     # Use the first tile in the action.
@@ -139,16 +147,45 @@ def create_level_data(level, tiles):
             
                 if isinstance(current, str):
                 
-                    tile, group = triggers_dict[current.lower()]
-                    number = (tiles[tile] | (group << 5))
-                    number = (number & 0x0f) | ((number & 0xe0) >> 1)
+                    if current.isalpha():
                     
-                    action = actions_dict.setdefault(number, Action())
-                    action.initial = tiles[spans[current][0]]
-                    action.final = tiles[spans[current][1]]
-                    action.spans.add((l, len(line_data)))
+                        # A span related to a trigger and an action.
+                        
+                        tile, group = triggers_dict[current.lower()]
+                        number = (tiles[tile] | (group << 5))
+                        number = (number & 0x0f) | ((number & 0xe0) >> 1)
+                        
+                        action = actions_dict.setdefault(number, Action())
+                        action.initial = tiles[spans[current][0]]
+                        action.final = tiles[spans[current][1]]
+                        action.spans.add((l, len(line_data)))
+                        
+                        current = action.initial
                     
-                    current = action.initial
+                    elif current.isdigit():
+                    
+                        # A span related to an object. This should only be
+                        # two tiles in length and be split into two separate
+                        # spans corresponding to the two tiles that make up
+                        # the object. Also create two actions that blank out
+                        # both spans.
+                        
+                        for j in 0, 1:
+                        
+                            # These objects should be unique, so 
+                            number = objects[current][j]
+                            action_number = (number & 0x0f) | ((number & 0xe0) >> 1)
+                            
+                            action = actions_dict.setdefault(action_number, Action())
+                            action.initial = number
+                            action.final = tiles["."]
+                            action.spans.add((l, len(line_data)))
+                            
+                            # Each side of the object is only one tile.
+                            line_data.append((number, 0))
+                        
+                        # Prevent normal handling of the tile span.
+                        current = None
                 
                 if current is not None:
                 
@@ -169,19 +206,23 @@ def create_level_data(level, tiles):
     
     return data, actions_dict
 
-def create_levels(tile_paths, levels_address):
+def create_levels(tile_paths, object_tile_paths, levels_address):
 
     tiles = {}
     for key, value in tile_ref.items():
-    
         tiles[key] = tile_paths.index(value)
+    
+    objects = {}
+    for key, value in object_ref.items():
+        tile_index = len(tile_paths) + (object_tile_paths.index(value) * 2)
+        objects[key] = (tile_index, tile_index + 1)
     
     data = ""
     
     l = 0
     for level in levels:
     
-        level_data, actions_dict = create_level_data(level, tiles)
+        level_data, actions_dict = create_level_data(level, tiles, objects)
         row_addresses = []
         
         r = 0
@@ -264,5 +305,8 @@ def create_levels(tile_paths, levels_address):
     actions_data = actions_table + actions_data
     
     print "%i bytes (%04x) of actions data" % (len(actions_data), len(actions_data))
+    #print map(lambda x: hex(ord(x)), actions_data[:len(actions_table)])
+    #print hex(actions_start_address)
+    #print map(lambda x: hex(ord(x)), actions_data[len(actions_table):])
     
     return data, actions_data
