@@ -124,15 +124,7 @@ tiles = ["images/blank.png", "images/brick.png",
          "images/brick-left.png", "images/brick-right.png",
          "images/rope.png", "images/flag.png",
          "images/rope.png", "images/flag.png",
-         "images/rope.png", "images/flag.png",
-         # Trigger tiles
-         "images/brick-trigger0.png", "images/brick-trigger1.png",
-         "images/ground-trigger2.png", "images/grass-trigger3.png",
-         "images/rope.png", "images/flag.png",
-         "images/rope.png", "images/flag.png",
          "images/rope.png", "images/flag.png"]
-
-object_tiles = ["images/gem.png", "images/crown.png"]
 
 char_sprites = ["images/left1.png", "images/left2.png", "images/right1.png", "images/right2.png"]
 
@@ -193,7 +185,7 @@ if __name__ == "__main__":
     #
     #  e00      code
     # 1fa0      player position, animation and bank number
-    # 1fb0      (free)
+    # 1fb0      tile visibility flags
     # 1fc0      row indices
     # 1fd0      initial row offsets
     # 1fe0      row table low
@@ -207,16 +199,15 @@ if __name__ == "__main__":
     files = []
     
     levels_address = 0x1fe0
-    level_data = makelevels.create_levels(tiles, object_tiles, levels_address)
+    level_data = makelevels.create_levels(tiles, levels_address)
     files.append(("LEVELS", levels_address, levels_address, level_data))
     
     level_extent = len(makelevels.levels[0][0]) - 40
     
     sprite_area_address = 0x2a00
     tile_sprites = makesprites.read_tiles(tiles)
-    tile_sprites += makesprites.read_object_tiles(object_tiles)
     sprite_data = makesprites.read_tile_data(tile_sprites)
-    all_tiles = len(tiles) + len(object_tiles) * 2
+    all_tiles = len(tiles)
     
     files.append(("TILES", sprite_area_address, sprite_area_address, sprite_data))
     

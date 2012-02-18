@@ -746,6 +746,7 @@ plot_bank1l:
             clc
 
             lda initial_row_tiles,x     ; Load the initial tile type,
+            and #$f8                    ; mask off the bottom 3 bits.
             jsr read_sprite_address
 
             jmp plot_bank1l_offset_loop
@@ -938,7 +939,6 @@ scroll_left:
         
         ldy #0
         lda ($76),y             ; load the tile type for span p'
-        and #$1f                ; mask off the top 3 bits,
         sta initial_row_tiles,x ; store the tile type
         
         ldy #1                  ; load the number of tiles in span p'
@@ -980,7 +980,7 @@ plot_bank2r:
         jsr read_screen_address_bank2
         
         lda initial_row_tiles,x         ; Load the initial tile type,
-        and #$1f                        ; mask off the top 3 bits.
+        and #$f8                        ; mask off the bottom 3 bits.
         sta $78
         
         lda $74
@@ -1148,7 +1148,7 @@ plot_bank2l:
         sta $74
         
         lda initial_row_tiles,x         ; Load the initial tile type,
-        and #$1f                        ; mask off the top 3 bits.
+        and #$f8                        ; mask off the bottom 3 bits.
         sta $78
         
         lda $74
@@ -1259,7 +1259,7 @@ plot_bank2l:
             
                 ldy #0          ; Keep the previous type updated (only need to
                 lda ($76),y     ; do this if the merged tile was not plotted).
-                and #$1f        ; Mask off the top 3 bits,
+                and #$f8        ; Mask off the bottom 3 bits,
                 sta $78         ; Record the new current type.
             
             plot_bank2l_offset_loop_span_continue:
@@ -1383,7 +1383,6 @@ initial_plot_bank1:
         dec $78
         
         lda initial_row_tiles,x
-        and #$1f                    ; Mask off the top 3 bits.
         jsr read_sprite_address
         
         jsr initial_plot_bank1_tile_loop
@@ -1396,7 +1395,6 @@ initial_plot_bank1:
         
             ldy #0
             lda ($76),y             ; Load the type number, t,
-            and #$1f                ; mask off the top 3 bits,
             jsr read_sprite_address
             
             ldy #1
@@ -1995,10 +1993,8 @@ read_screen_address_bank2:  ; X=row, A=column offset
 read_sprite_address:        ; $76,$77=span address
                             ; sets $70,$71=sprite address
 
-    and #$1f                ; mask off the top 3 bits,
-    asl                     ; multiply by 8 to get t1.
-    asl
-    asl
+    and #$f8                ; mask off the bottom 3 bits,
+    clc
     adc #sprite_area_low    ; add to S to get S1.
     sta $70
     lda #sprite_area_high
@@ -2010,10 +2006,8 @@ read_sprite_address:        ; $76,$77=span address
 read_left_sprite_address:       ; A=tile number in high 4 bits
                                 ; sets $70,$71=sprite address
 
-    and #$1f                ; mask off the top 3 bits,
-    asl                         ; multiply by 8
-    asl
-    asl
+    and #$f8                    ; mask off the bottom 3 bits,
+    clc
     adc #left_sprites_low       ; add to S to get S2.
     sta $70
     lda #left_sprites_high
@@ -2026,10 +2020,8 @@ read_left_sprite_address:       ; A=tile number in high 4 bits
 read_rotated_sprite_address:    ; A=tile number
                                 ; sets $70,$71=sprite address
 
-    and #$1f                ; mask off the top 3 bits,
-    asl                     ; multiply by 8 to get t1.
-    asl
-    asl
+    and #$f8                    ; mask off the bottom 3 bits,
+    clc
     adc #rotated_sprites_low    ; add to S to get S1.
     sta $70
     lda #rotated_sprites_high
@@ -2042,9 +2034,6 @@ read_rotated_sprite_address:    ; A=tile number
 read_right_sprite_address:      ; A=tile number in high 4 bits
                                 ; sets $80,$81=sprite address
 
-    asl                         ; multiply by 8
-    asl
-    asl
     adc #right_sprites_low      ; add to S to get S2.
     sta $80
     lda #right_sprites_high

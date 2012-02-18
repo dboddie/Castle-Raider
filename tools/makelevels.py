@@ -100,40 +100,16 @@ def create_level_data(level, tiles):
         while i < len(line):
         
             ch = line[i]
-            try:
-                c = tiles[ch]
-            
-            except KeyError:
-            
-                # Check for a predefined trigger or span.
-                if triggers_dict.has_key(ch):
-                
-                    # Use the tile mapped to by the trigger dictionary, setting
-                    # one or more of the top 4 bits to indicate that the span
-                    # contains a trigger.
-                    tile, group = triggers_dict[ch]
-                    c = tiles[tile] | (group << 5)
-                
-                elif objects.has_key(ch):
-                
-                    # Use the character to define a span and process it later.
-                    c = ch
-                
-                elif spans.has_key(ch):
-                
-                    # Use the first tile in the action.
-                    c = ch
-                
-                else:
-                    raise
+            c = tiles[ch]
             
             if c != current:
             
                 if current is not None:
                 
-                    # Store the length of the tile span, reduced by one to
-                    # increase the range of tiles that can be described.
-                    line_data.append((current, i - offset - 1))
+                    # Store the tile offset and length of the tile span,
+                    # reduced by one to increase the range of tiles that can be
+                    # described.
+                    line_data.append((current << 3, i - offset - 1))
                 
                 current = c
                 offset = i
@@ -148,7 +124,7 @@ def create_level_data(level, tiles):
     
     return data
 
-def create_levels(tile_paths, object_tile_paths, levels_address):
+def create_levels(tile_paths, levels_address):
 
     tiles = {}
     for key, value in tile_ref.items():
