@@ -980,7 +980,6 @@ plot_bank2r:
         jsr read_screen_address_bank2
         
         lda initial_row_tiles,x         ; Load the initial tile type,
-        and #$f8                        ; mask off the bottom 3 bits.
         sta $78
         
         lda $74
@@ -1148,7 +1147,6 @@ plot_bank2l:
         sta $74
         
         lda initial_row_tiles,x         ; Load the initial tile type,
-        and #$f8                        ; mask off the bottom 3 bits.
         sta $78
         
         lda $74
@@ -2034,6 +2032,8 @@ read_rotated_sprite_address:    ; A=tile number
 read_right_sprite_address:      ; A=tile number in high 4 bits
                                 ; sets $80,$81=sprite address
 
+    and #$f8                    ; mask off the bottom 3 bits,
+    clc
     adc #right_sprites_low      ; add to S to get S2.
     sta $80
     lda #right_sprites_high
