@@ -59,7 +59,7 @@ init:
     
     lda #19
     sta player_x
-    lda #20
+    lda #19
     sta player_y
     lda #2
     sta player_animation
@@ -487,96 +487,9 @@ check_beneath:
     
     check_beneath_exit:
     
-    cmp #$10                        ; Tiles >= 16 are trigger tiles.
-    bcc check_beneath_no_trigger
-    
-    clc
-    jsr invoke_action
-    
-    check_beneath_no_trigger:
-    
     lda #0
     sta player_falling
     clc
-    rts
-
-invoke_action:                      ; A=trigger tile number
-
-    ; Determine which action should be invoked.
-    
-    tay                     ; The tile number has the format, aaaxtttt, where
-    and #$e0                ; the bottom 5 bits are the tile sprite and the
-    sta $84                 ; top three bits are the action group. We need to
-    tya                     ; process this value to get aaatttt0, which is the
-    and #$0f                ; action number multiplied by two.
-    asl                     ; This provides an offset into the action address
-    ora $84                 ; table.
-    
-    tax
-    lda actions_address,x   ; Read the low byte of the action address from the
-                            ; action address table.
-    sta $70
-    sta $84
-    inx
-    lda actions_address,x   ; Read the high byte of the action address from the
-                            ; action address table.
-    sta $71
-    sta $85
-    
-                            ; Offset 0 is the initial tile type.
-    ldy #1
-    lda ($70),y             ; Offset 1 is the final tile type.
-    sta $74
-    sta $86
-    iny
-    lda ($70),y             ; Read the number of spans to change.
-    sta $87
-    tax
-    
-    invoke_action_loop:
-    
-        iny
-        lda ($70),y         ; low byte of span address
-        sta $72
-        iny
-        lda ($70),y         ; high byte of span address
-        sta $73
-        
-        sty $80
-        
-        lda $74
-        ldy #0
-        cmp ($72),y
-        bne invoke_action_loop_apply
-        
-        clc ; If the span has already been applied then exit because the other
-        rts ; spans will also have been applied.
-        
-        invoke_action_loop_apply:
-        sta ($72),y
-        
-        ldy $80
-        
-        dex
-        bpl invoke_action_loop
-    
-    clc
-    
-    jsr initial_plot_bank1
-    jsr initial_plot_bank2
-    
-    lda bank_number
-    cmp #1
-    bne invoke_action_bank2
-    
-    clc
-    jsr plot_char_bank1
-    rts
-    
-    invoke_action_bank2:
-    clc
-    jsr plot_char_bank2
-    
     rts
 
 clear_bank1:
@@ -738,7 +651,6 @@ plot_bank1r:
         
             ldy #0
             lda ($76),y             ; Load the type number, t,
-            and #$1f                ; mask off the top 3 bits,
             jsr read_sprite_address
             jsr plot_tile_bank
             
@@ -834,7 +746,6 @@ plot_bank1l:
             clc
 
             lda initial_row_tiles,x     ; Load the initial tile type,
-            and #$1f                    ; mask off the top 3 bits.
             jsr read_sprite_address
 
             jmp plot_bank1l_offset_loop
@@ -898,7 +809,6 @@ plot_bank1l:
             
             ldy #0
             lda ($76),y             ; Load the type number, t,
-            and #$1f                ; mask off the top 3 bits,
             jsr read_sprite_address
             
             lda $76             ; Add 2 to I.
@@ -1100,7 +1010,6 @@ plot_bank2r:
         
         ldy #0
         lda ($76),y                     ; Load the type number, t,
-        and #$1f                        ; mask off the top 3 bits,
         sta $78                         ; record the new current type.
         jsr read_left_sprite_address
         
@@ -1129,7 +1038,6 @@ plot_bank2r:
         
             ldy #0
             lda ($76),y                 ; Load the type number, t,
-            and #$1f                    ; mask off the top 3 bits,
             sta $78                     ; store the current type.
             
             ldy #1
@@ -1186,7 +1094,6 @@ plot_bank2r:
             
             ldy #0
             lda ($76),y                     ; Load the type number, t,
-            and #$1f                        ; mask off the top 3 bits,
             sta $78                         ; record the new current type.
             jsr read_left_sprite_address
             
@@ -1337,7 +1244,6 @@ plot_bank2l:
             
             ldy #0
             lda ($76),y                     ; Load the type number, t,
-            and #$1f                        ; mask off the top 3 bits,
             sta $78                         ; record the new current type.
             jsr read_left_sprite_address
             
@@ -1393,7 +1299,6 @@ plot_bank2l:
             
             ldy #0
             lda ($76),y                 ; Load the type number, t,
-            and #$1f                    ; mask off the top 3 bits,
             sta $78                     ; store the current type.
             jsr read_rotated_sprite_address
             
@@ -1578,7 +1483,6 @@ initial_plot_bank2:
         dec $78
         
         lda initial_row_tiles,x         ; Load the initial tile type,
-        and #$1f                        ; mask off the top 3 bits.
         sta $79
         jsr read_rotated_sprite_address
         
@@ -1599,7 +1503,6 @@ initial_plot_bank2:
             
             ldy #0
             lda ($76),y                     ; Load the type number, t,
-            and #$1f                        ; mask off the top 3 bits,
             sta $79                         ; record the new current type.
             jsr read_left_sprite_address
             
@@ -1619,7 +1522,6 @@ initial_plot_bank2:
             
             ldy #0
             lda ($76),y                     ; Load the type number, t,
-            and #$1f                        ; mask off the top 3 bits,
             sta $79                         ; record the new current type.
             jsr read_rotated_sprite_address
             
@@ -2093,6 +1995,7 @@ read_screen_address_bank2:  ; X=row, A=column offset
 read_sprite_address:        ; $76,$77=span address
                             ; sets $70,$71=sprite address
 
+    and #$1f                ; mask off the top 3 bits,
     asl                     ; multiply by 8 to get t1.
     asl
     asl
@@ -2107,6 +2010,7 @@ read_sprite_address:        ; $76,$77=span address
 read_left_sprite_address:       ; A=tile number in high 4 bits
                                 ; sets $70,$71=sprite address
 
+    and #$1f                ; mask off the top 3 bits,
     asl                         ; multiply by 8
     asl
     asl
@@ -2122,6 +2026,7 @@ read_left_sprite_address:       ; A=tile number in high 4 bits
 read_rotated_sprite_address:    ; A=tile number
                                 ; sets $70,$71=sprite address
 
+    and #$1f                ; mask off the top 3 bits,
     asl                     ; multiply by 8 to get t1.
     asl
     asl

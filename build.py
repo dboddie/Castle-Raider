@@ -160,10 +160,6 @@ constants_oph = \
 .alias level_extent_low             $%02x
 .alias level_extent_high            $%02x
 
-.alias actions_address              $%x
-.alias actions_address_low          $%02x
-.alias actions_address_high         $%02x
-
 .alias char_area                    $%x
 .alias char_area_low                $%02x
 .alias char_area_high               $%02x
@@ -211,15 +207,10 @@ if __name__ == "__main__":
     files = []
     
     levels_address = 0x1fe0
-    level_data, actions_data = makelevels.create_levels(tiles, object_tiles, levels_address)
-    files.append(("LEVELS", levels_address, levels_address, level_data + actions_data))
+    level_data = makelevels.create_levels(tiles, object_tiles, levels_address)
+    files.append(("LEVELS", levels_address, levels_address, level_data))
     
     level_extent = len(makelevels.levels[0][0]) - 40
-    
-    actions_start = levels_address + len(level_data)
-    actions_finish = actions_start + len(actions_data)
-    actions_low = actions_start & 0xff
-    actions_high = actions_start >> 8
     
     sprite_area_address = 0x2a00
     tile_sprites = makesprites.read_tiles(tiles)
@@ -251,7 +242,6 @@ if __name__ == "__main__":
          right_sprites_low, right_sprites_high) + \
         address_length_end(levels_address, level_data) + \
         (level_extent, level_extent & 0xff, level_extent >> 8,
-         actions_start, actions_low, actions_high,
          char_area_address,) + \
         address_length_end(char_area_address, char_data)
     
@@ -280,7 +270,7 @@ if __name__ == "__main__":
         sys.stderr.write("CODE overruns following data.\n")
         sys.exit(1)
     
-    levels_finish = levels_address + len(level_data) + len(actions_data)
+    levels_finish = levels_address + len(level_data)
     print "LEVELS  runs from %04x to %04x" % (levels_address, levels_finish)
     if levels_finish > sprite_area_address:
         sys.stderr.write("LEVELS overruns following data.\n")
