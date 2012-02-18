@@ -232,6 +232,5 @@ Level Format
 
     (type,number), ...
 
-Each type is a tile number (0-127) where numbers >= 16 are triggers. Each tile
-type takes the form,aaaxtttt, where the bottom 5 bits are the tile sprite and
-the top three bits are the action group.
+Each type is a tile number (0-127) where the top 4 bits are used to indicate
+whether the tile is visible or not.
