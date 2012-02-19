@@ -151,6 +151,10 @@ constants_oph = \
 .alias level_extent_low             $%02x
 .alias level_extent_high            $%02x
 
+.alias tile_visibility_address      $%x
+.alias tile_visibility_low          $%02x
+.alias tile_visibility_high         $%02x
+
 .alias char_area                    $%x
 .alias char_area_low                $%02x
 .alias char_area_high               $%02x
@@ -183,8 +187,10 @@ if __name__ == "__main__":
     # Memory map
     #
     #  e00      code
+    # 1f80      tile visibility flags
+    # 1f90      max row offsets
     # 1fa0      player position, animation and bank number
-    # 1fb0      tile visibility flags
+    # 1fb0      initial row tiles
     # 1fc0      row indices
     # 1fd0      initial row offsets
     # 1fe0      row table low
@@ -202,6 +208,11 @@ if __name__ == "__main__":
     files.append(("LEVELS", levels_address, levels_address, level_data))
     
     level_extent = len(makelevels.levels[0][0]) - 40
+    
+    # Visibility flags for special scenery.
+    tile_visibility_address = 0x1f80
+    tile_visibility_low = tile_visibility_address & 0xff
+    tile_visibility_high = tile_visibility_address >> 8
     
     sprite_area_address = 0x2a00
     tile_sprites = makesprites.read_tiles(tiles)
@@ -232,6 +243,7 @@ if __name__ == "__main__":
          right_sprites_low, right_sprites_high) + \
         address_length_end(levels_address, level_data) + \
         (level_extent, level_extent & 0xff, level_extent >> 8,
+         tile_visibility_address, tile_visibility_low, tile_visibility_high,
          char_area_address,) + \
         address_length_end(char_area_address, char_data)
     
@@ -256,7 +268,7 @@ if __name__ == "__main__":
     
     code_finish = code_start + code_size
     print "CODE    runs from %04x to %04x" % (code_start, code_finish)
-    if code_finish > 0x1fa0:
+    if code_finish > 0x1f80:
         sys.stderr.write("CODE overruns following data.\n")
         sys.exit(1)
     

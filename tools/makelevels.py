@@ -88,9 +88,9 @@ def create_level_data(level, tiles):
             
             if ch in special:
                 n, flags = special[ch]
-                c = (tiles[n] << 3) | flags
+                c = tiles[n] | (flags << 4)
             else:
-                c = tiles[ch] << 3
+                c = tiles[ch]
             
             if c != current:
             
