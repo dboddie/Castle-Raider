@@ -33,6 +33,7 @@
 .alias player_jumping       $1fa4
 .alias player_moving        $1fa5
 .alias player_falling       $1fa6
+.alias player_dy            $1fa7
 
 .alias scroll_offset_low    $8e
 .alias scroll_offset_high   $8f
@@ -63,6 +64,8 @@ init:
     sta player_x
     lda #19
     sta player_y
+    lda #0
+    sta player_dy
     lda #2
     sta player_animation
     lda #0
@@ -1645,8 +1648,79 @@ plot8x24_y0:            ; $70,$71=source address
     clc
     rts
 
+plot8x24_y1:            ; $70,$71=source address
+                        ; $72,$73=destination address
+
+    ldx #2
+
+    plot8x24_y1_loop:
+
+        ldy #11
+
+        plotloop8x24_y1_0:
+            lda ($70),y
+            eor ($72),y
+            sta ($72),y
+            dey
+            bmi plotloop8x24_y1_0_endloop
+            cpy #7
+            bne plotloop8x24_y1_0
+            ldy #3
+            jmp plotloop8x24_y1_0
+
+        plotloop8x24_y1_0_endloop:
+        
+        lda $72
+        adc #$3c
+        sta $72
+        lda $73
+        adc #$01
+        sta $73
+        clc
+
+        ldy #15
+
+        plotloop8x24_y1_1:
+            lda ($70),y
+            eor ($72),y
+            sta ($72),y
+            dey
+            bmi plotloop8x24_y1_1_endloop
+            cpy #11
+            bne plotloop8x24_y1_1
+            ldy #7
+            jmp plotloop8x24_y1_1
+
+        plotloop8x24_y1_1_endloop:
+        
+        dex
+        bmi plot8x24_y1_exit
+        
+        lda $72
+        adc #$08
+        sta $72
+        lda $73
+        adc #$00
+        sta $73
+        clc
+
+        lda $70
+        adc #16
+        sta $70
+        lda $71
+        adc #0
+        sta $71
+        clc
+
+        jmp plot8x24_y1_loop
+
+    plot8x24_y1_exit:
+    clc
+    rts
+
 player_sprites_low:  .byte <char_area, <[char_area + 48], <[char_area + 96], <[char_area + 144]
 player_sprites_high: .byte >char_area, >[char_area + 48], >[char_area + 96], >[char_area + 144]
+player_y_offset:     .byte 0, 4
 
 plot_char_bank1:            ; plots the player character on bank 1
 
@@ -1668,6 +1742,16 @@ plot_char_bank1:            ; plots the player character on bank 1
     sta $73
     clc
     
+    lda player_dy
+    cmp #1
+    bne plot_char_bank1_y0
+    clc
+    lda $72
+    adc #4
+    sta $72
+    jmp plot8x24_y1
+
+    plot_char_bank1_y0:
     jmp plot8x24_y0
     
 plot_char_bank2:            ; plots the player character on bank 2
@@ -1690,6 +1774,16 @@ plot_char_bank2:            ; plots the player character on bank 2
     sta $73
     clc
     
+    lda player_dy
+    cmp #1
+    bne plot_char_bank2_y0
+    clc
+    lda $72
+    adc #4
+    sta $72
+    jmp plot8x24_y1
+
+    plot_char_bank2_y0:
     jmp plot8x24_y0
 
 plot_player:

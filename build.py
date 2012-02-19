@@ -118,7 +118,7 @@ def address_length_end(address, data):
 
 tiles = ["images/blank.png", "images/brick.png",
          "images/grass.png", "images/grass2.png",
-         "images/ground.png", "images/ground2.png",
+         "images/ground.png", "images/rock.png",
          "images/floor.png", "images/door.png",
          "images/window-topleft.png", "images/window-topright.png",
          "images/brick-left.png", "images/brick-right.png",
@@ -187,6 +187,7 @@ if __name__ == "__main__":
     # Memory map
     #
     #  e00      code
+    # 1f70      initial tile visibility flags
     # 1f80      tile visibility flags
     # 1f90      max row offsets
     # 1fa0      player position, animation and bank number
@@ -253,7 +254,7 @@ if __name__ == "__main__":
     code = open("CODE").read()
     files.append(("CODE", code_start, code_start, code))
     
-    loader_start = 0x1900
+    loader_start = 0x3000
     
     values = values + (code_start,) + address_length_end(code_start, code)
     
