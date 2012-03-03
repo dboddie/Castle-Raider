@@ -123,7 +123,7 @@ tiles = ["images/blank.png", "images/brick.png",
          "images/window-topleft.png", "images/window-topright.png",
          "images/brick-left.png", "images/brick-right.png",
          "images/rope.png", "images/flag.png",
-         "images/trunk.png", "images/foliage.png"]
+         "images/gate.png", "images/foliage.png"]
 
 char_sprites = ["images/left1.png", "images/left2.png", "images/right1.png", "images/right2.png"]
 
