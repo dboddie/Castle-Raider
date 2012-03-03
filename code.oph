@@ -33,7 +33,7 @@
 .alias player_jumping       $1fa4
 .alias player_moving        $1fa5
 .alias player_falling       $1fa6
-.alias player_dy            $1fa7
+.alias player_ys            $1fa7
 
 .alias scroll_offset_low    $8e
 .alias scroll_offset_high   $8f
@@ -65,7 +65,7 @@ init:
     lda #19
     sta player_y
     lda #0
-    sta player_dy
+    sta player_ys
     lda #2
     sta player_animation
     lda #0
@@ -1648,68 +1648,88 @@ plot8x24_y0:            ; $70,$71=source address
     clc
     rts
 
+plot8x24_y1_data:   .byte 4, 12
+plot_upper_offsets: .byte 0, 8, 16, 24
+plot_lower_offsets: .byte 7, 15, 23, 31
+
 plot8x24_y1:            ; $70,$71=source address
                         ; $72,$73=destination address
-
-    ldx #2
+    
+    lda #2
+    sta $8a
 
     plot8x24_y1_loop:
 
-        ldy #11
+        ldx #0
+        plot8x24_y1_upper_loop_outer:
 
-        plotloop8x24_y1_0:
-            lda ($70),y
-            eor ($72),y
-            sta ($72),y
-            dey
-            bmi plotloop8x24_y1_0_endloop
-            cpy #7
-            bne plotloop8x24_y1_0
-            ldy #3
-            jmp plotloop8x24_y1_0
+            ldy plot8x24_y1_data,x
+            lda plot_upper_offsets,x
+            sta $89
 
-        plotloop8x24_y1_0_endloop:
-        
-        lda $72
-        adc #$3c
+            plot8x24_y1_upper_loop_inner:       ; plot the first column until
+                dey                             ; we reach the start
+                cpy $89
+                bmi plot8x24_y1_upper_loop_inner_endloop
+                lda ($70),y
+                eor ($72),y
+                sta ($72),y
+                jmp plot8x24_y1_upper_loop_inner
+
+            plot8x24_y1_upper_loop_inner_endloop:
+            clc
+
+            inx
+            cpx #2
+            bne plot8x24_y1_upper_loop_outer
+
+        clc
+        lda $72       ; move the destination pointer to refer to the next line
+        adc #$38
         sta $72
         lda $73
         adc #$01
         sta $73
         clc
 
-        ldy #15
-
-        plotloop8x24_y1_1:
-            lda ($70),y
-            eor ($72),y
-            sta ($72),y
-            dey
-            bmi plotloop8x24_y1_1_endloop
-            cpy #11
-            bne plotloop8x24_y1_1
-            ldy #7
-            jmp plotloop8x24_y1_1
-
-        plotloop8x24_y1_1_endloop:
+        ldx #0
+        plot8x24_y1_lower_loop_outer:
         
-        dex
+            lda plot_lower_offsets,x
+            tay
+            lda plot8x24_y1_data,x
+            sta $89
+
+            plot8x24_y1_lower_loop_inner:   ; plot until we reach the initial
+                lda ($70),y                 ; offset for the column
+                eor ($72),y
+                sta ($72),y
+                dey
+                cpy $89
+                bpl plot8x24_y1_lower_loop_inner
+
+            inx
+            cpx #2
+            bne plot8x24_y1_lower_loop_outer
+        
+        dec $8a
         bmi plot8x24_y1_exit
-        
-        lda $72
-        adc #$08
-        sta $72
-        lda $73
-        adc #$00
-        sta $73
-        clc
 
-        lda $70
-        adc #16
+        clc
+        lda $70         ; update the source pointer to refer to the next piece
+        adc #16         ; of sprite data
         sta $70
         lda $71
         adc #0
         sta $71
+        clc
+
+        lda $72         ; update the destination pointer to point to the next
+        adc #8          ; space
+        sta $72
+        lda $73
+        adc #0
+        sta $73
         clc
 
         jmp plot8x24_y1_loop
@@ -1742,7 +1762,7 @@ plot_char_bank1:            ; plots the player character on bank 1
     sta $73
     clc
     
-    lda player_dy
+    lda player_ys
     cmp #1
     bne plot_char_bank1_y0
     clc
@@ -1774,7 +1794,7 @@ plot_char_bank2:            ; plots the player character on bank 2
     sta $73
     clc
     
-    lda player_dy
+    lda player_ys
     cmp #1
     bne plot_char_bank2_y0
     clc
@@ -2002,7 +2022,8 @@ player_move_left:
     clc
     rts
 
-jump_steps: .byte 2,1,1,0
+jump_steps_y:    .byte 2,2,1,1,0
+jump_offsets_ys: .byte 0,1,0,1,0
 char_plot_routines: .byte 0,0,<plot_char_bank1,>plot_char_bank1,<plot_char_bank2,>plot_char_bank2
 
 player_jump:
@@ -2010,7 +2031,7 @@ player_jump:
     clc
     
     ldx player_jumping      ; Load the number of rows to move.
-    lda jump_steps,x
+    lda jump_steps_y,x
     sta $72
     
     lda player_y
@@ -2020,11 +2041,12 @@ player_jump:
     
         lda $72         ; If there are no more rows to move then stop jumping.
         cmp #0
-        beq player_jump_check_endloop
-        
+            beq player_jump_check_endloop
+
         lda $71                         ; If the character reaches the top of
         cmp #0                          ; the screen then stop jumping.
-        beq player_jump_stop_jumping
+            beq player_jump_check_endloop
+        
         dec $71
         clc
         
@@ -2032,19 +2054,19 @@ player_jump:
         sta $70
         jsr check_tile
         cmp #0
-        bne player_jump_stop_jumping
+            bne player_jump_stop_jumping
         clc
         
         inc $70
         
         jsr check_tile
         cmp #0
-        bne player_jump_stop_jumping
+            bne player_jump_stop_jumping
         clc
         
-        lda bank_number         ; When half way across a cell, check another cell
-        cmp #2                  ; above the player since they could be under one
-        bne player_jump_move_up ; or more of three tiles.
+        lda bank_number     ; When half way across a cell, check another cell
+        cmp #2                      ; above the player since they could be
+            bne player_jump_move_up ; under one or more of three tiles.
         clc
         
             inc $70
@@ -2054,7 +2076,7 @@ player_jump:
             bne player_jump_stop_jumping
         
         player_jump_move_up:
-        
+
             lda $71
             sta player_y
         
@@ -2063,8 +2085,12 @@ player_jump:
     
     player_jump_check_endloop:
     clc
-    
-    lda player_jumping
+
+    ldx player_jumping      ; Load the number of rows to move.
+    lda jump_offsets_ys,x
+    sta player_ys
+
+    txa
     adc #1
     cmp #4
     bpl player_jump_stop_jumping
@@ -2078,6 +2104,8 @@ player_jump:
     
     lda #0
     sta player_jumping
+    lda #0
+    sta player_ys
     
     clc
     rts
