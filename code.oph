@@ -126,31 +126,10 @@ main:
         lda player_falling
         cmp #0
         beq main_loop_allow_movement
-        
-            lda player_moving
-            cmp #1
-            bne main_loop_not_moving_left
-            
-            jsr player_move_left
-            jmp main_loop_next
-            
-            main_loop_not_moving_left:
-            
-            cmp #2
-            bne main_loop_not_moving_right
-            
-            jsr player_move_right
-            jmp main_loop_next
-            
-            main_loop_not_moving_right:
-            
-            lda #19
-            jsr $fff4
-            jsr plot_player
-        
-            inc player_y
-            jsr plot_player
-        
+
+            jsr player_fall
+            bcs main_loop_next
+
         main_loop_allow_movement:
         
             clc
@@ -437,7 +416,7 @@ scroll_update_bank2_bank1:
     cmp #0
     beq scroll_update_plot_bank1
     
-    inc player_y
+    jsr player_drop
     
     scroll_update_plot_bank1:
     clc
@@ -456,7 +435,7 @@ scroll_update_bank1_bank2:
     cmp #0
     beq scroll_update_plot_bank2
     
-    inc player_y
+    jsr player_drop
     
     scroll_update_plot_bank2:
     clc
@@ -506,8 +485,14 @@ check_beneath:
     
     check_beneath_fall:
     
+    lda player_falling
+    cmp #0
+        bne check_beneath_fall_exit
+
     lda #1
     sta player_falling
+
+    check_beneath_fall_exit:
     clc
     rts
     
@@ -2022,9 +2007,8 @@ player_move_left:
     clc
     rts
 
-jump_steps_y:    .byte 2,2,1,1,0
-jump_offsets_ys: .byte 0,1,0,1,0
-char_plot_routines: .byte 0,0,<plot_char_bank1,>plot_char_bank1,<plot_char_bank2,>plot_char_bank2
+jump_steps_y:    .byte 0,2,2,1,0
+jump_offsets_ys: .byte 0,0,1,1,0
 
 player_jump:
 
@@ -2090,12 +2074,11 @@ player_jump:
     lda jump_offsets_ys,x
     sta player_ys
 
-    txa
-    adc #1
-    cmp #4
+    inx
+    cpx #4
     bpl player_jump_stop_jumping
     
-    sta player_jumping
+    stx player_jumping
     clc
     rts
     
@@ -2107,6 +2090,64 @@ player_jump:
     lda #0
     sta player_ys
     
+    clc
+    rts
+
+fall_steps_y:    .byte 0,0,1
+fall_offsets_ys: .byte 0,1,0
+
+player_fall:        ; sets C if the player is moving horizontally
+
+    lda player_moving
+    cmp #1
+    bne player_fall_not_moving_left
+
+    jsr player_move_left
+    sec
+    rts
+
+    player_fall_not_moving_left:
+
+    cmp #2
+    bne player_fall_not_moving_right
+
+    jsr player_move_right
+    sec
+    rts
+
+    player_fall_not_moving_right:
+
+    ; When not moving horizontally, the player character must be unplotted and
+    ; replotted because redrawing due to scrolling does not occur.
+
+    lda #19
+    jsr $fff4
+    jsr plot_player
+
+    jsr player_drop
+
+    jsr plot_player
+
+    rts
+
+player_drop:
+
+    clc
+    ldx player_falling
+    lda fall_steps_y,x
+    adc player_y
+    sta player_y
+
+    lda fall_offsets_ys,x
+    sta player_ys
+    
+    cpx #2
+    beq player_drop_exit
+
+    inx
+    stx player_falling
+
+    player_drop_exit:
     clc
     rts
 
