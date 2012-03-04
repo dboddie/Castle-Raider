@@ -408,17 +408,24 @@ scroll_update_bank2_bank1:
 
     jsr plot_char_bank2 ; unplot the player on bank 2
 
-    lda player_animation
-    eor #1
-    sta player_animation
-
     lda player_falling
     cmp #0
     beq scroll_update_plot_bank1
 
     jsr player_drop
+    jmp scroll_update_animation_next
 
     scroll_update_plot_bank1:
+
+    lda player_jumping
+    cmp #0
+    bne scroll_update_animation_next
+
+    lda player_animation
+    eor #1
+    sta player_animation
+
+    scroll_update_animation_next:
     clc
 
     lda #1
