@@ -162,6 +162,13 @@ constants_oph = \
 .alias char_area_length_high        $%02x
 .alias char_area_end_low            $%02x
 .alias char_area_end_high           $%02x
+
+.alias panel_address_low           $%02x
+.alias panel_address_high          $%02x
+.alias panel_length_low            $%02x
+.alias panel_length_high           $%02x
+.alias panel_end_low               $%02x
+.alias panel_end_high              $%02x
 """
 
 extras_oph = \
@@ -186,7 +193,7 @@ if __name__ == "__main__":
     
     # Memory map
     #
-    #  e00      code
+    # 0e00      code
     # 1f70      initial tile visibility flags
     # 1f80      tile visibility flags
     # 1f90      max row offsets
@@ -199,28 +206,15 @@ if __name__ == "__main__":
     # 2000      level data
     # 2a00      tile sprites
     # 2e00      character sprites
-    # 3000      bank 1
+    # 3000      bank 1 (also loader code)
     # 5800      bank 2
     
     files = []
-    
-    levels_address = 0x1fe0
-    level_data = makelevels.create_levels(tiles, levels_address)
-    files.append(("LEVELS", levels_address, levels_address, level_data))
-    
-    level_extent = len(makelevels.levels[0][0]) - 40
-    
-    # Visibility flags for special scenery.
-    tile_visibility_address = 0x1f80
-    tile_visibility_low = tile_visibility_address & 0xff
-    tile_visibility_high = tile_visibility_address >> 8
     
     sprite_area_address = 0x2a00
     tile_sprites = makesprites.read_tiles(tiles)
     sprite_data = makesprites.read_tile_data(tile_sprites)
     all_tiles = len(tiles)
-    
-    files.append(("TILES", sprite_area_address, sprite_area_address, sprite_data))
     
     left_sprites = sprite_area_address + (all_tiles * 8)
     left_sprites_low = left_sprites & 0xff
@@ -234,9 +228,24 @@ if __name__ == "__main__":
     
     char_area_address = 0x2E00
     char_data = makesprites.read_sprites(char_sprites)
-    files.append(("SPRITES", char_area_address, char_area_address, char_data))
+    
+    levels_address = 0x1fe0
+    level_data = makelevels.create_levels(tiles, levels_address)
+    
+    level_extent = len(makelevels.levels[0][0]) - 40
+    
+    # Visibility flags for special scenery.
+    tile_visibility_address = 0x1f80
+    tile_visibility_low = tile_visibility_address & 0xff
+    tile_visibility_high = tile_visibility_address >> 8
     
     code_start = 0x0e00
+    data_start = 0x1f70
+    
+    panel_address = 0x3000
+    panel = makesprites.read_sprites(["images/panel.png"])
+    
+    # Create a tuple of template values.
     
     values = address_length_end(sprite_area_address, sprite_data) + \
         (left_sprites_low, left_sprites_high,
@@ -246,15 +255,17 @@ if __name__ == "__main__":
         (level_extent, level_extent & 0xff, level_extent >> 8,
          tile_visibility_address, tile_visibility_low, tile_visibility_high,
          char_area_address,) + \
-        address_length_end(char_area_address, char_data)
+        address_length_end(char_area_address, char_data) + \
+        address_length_end(panel_address, panel)
+    
+    # Assemble the main game code and loader code.
     
     open("constants.oph", "w").write(constants_oph % values)
     
     system("ophis code.oph CODE")
     code = open("CODE").read()
-    files.append(("CODE", code_start, code_start, code))
     
-    loader_start = 0x3000
+    loader_start = 0x3500
     
     values = values + (code_start,) + address_length_end(code_start, code)
     
@@ -262,14 +273,20 @@ if __name__ == "__main__":
     
     system("ophis loader.oph LOADER")
     loader_code = open("LOADER").read()
-    files.insert(0, ("LOADER", loader_start, loader_start, loader_code))
+    
+    files = [("LOADER", loader_start, loader_start, loader_code),
+             ("TILES", sprite_area_address, sprite_area_address, sprite_data),
+             ("SPRITES", char_area_address, char_area_address, char_data),
+             ("LEVELS", levels_address, levels_address, level_data),
+             ("PANEL", panel_address, panel_address, panel),
+             ("CODE", code_start, code_start, code)]
     
     code_size = os.stat("CODE")[stat.ST_SIZE]
     print "%i bytes (%04x) of code" % (code_size, code_size)
     
     code_finish = code_start + code_size
     print "CODE    runs from %04x to %04x" % (code_start, code_finish)
-    if code_finish > 0x1f80:
+    if code_finish > data_start:
         sys.stderr.write("CODE overruns following data.\n")
         sys.exit(1)
     

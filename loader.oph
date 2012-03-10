@@ -13,11 +13,37 @@
 ; You should have received a copy of the GNU General Public License
 ; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-.org $3000
+.org $3500
 
 .include "constants.oph"
 
 main:
+    lda #22         ; MODE 5
+    jsr $ffee
+    lda #5
+    jsr $ffee
+
+    lda #23         ; disable flashing cursor
+    jsr $ffee
+    lda #1
+    jsr $ffee
+    ldx #7
+    cursor_loop:
+        lda #0
+        jsr $ffee
+        dex
+        bpl cursor_loop
+
+    jsr set_core_palette
+
+    ldx #0
+    init_load_window_loop:
+
+        lda init_load_window_vdu_bytes,x
+        jsr $ffee
+        inx
+        cpx #5
+        bne init_load_window_loop
 
     lda #255
     ldx #<tiles_block
@@ -35,11 +61,95 @@ main:
     jsr $ffdd
 
     lda #255
+    ldx #<panel_block
+    ldy #>panel_block
+    jsr $ffdd
+
+    lda #255
     ldx #<code_block
     ldy #>code_block
     jsr $ffdd
 
+    lda #140
+    jsr $fff4   ; *TAPE (reclaim any workspace used on high PAGE systems)
+
+    ; Copy the panel onto bank1.
+    jsr copy_panel
+
     jmp code_start_address
+
+set_core_palette:
+
+    lda #2
+    sta $70
+    lda #2
+    sta $71
+    jsr set_palette
+
+    lda #3
+    sta $70
+    lda #3
+    sta $71
+    jsr set_palette
+
+    rts
+
+set_palette:
+                    ; $70=logical colour
+                    ; $71=physical colour
+    lda $70
+    sta $3dfb
+    lda $71
+    sta $3dfc
+    lda #0
+    sta $3dfd
+    sta $3dfe
+    sta $3dff
+
+    lda #$c         
+    ldx #$fb
+    ldy #$3d
+    jsr $fff1
+    rts
+
+copy_panel:
+
+    lda #$00
+    sta $70
+    lda #$30
+    sta $71
+    lda #$00
+    sta $72
+    lda #$58
+    sta $73
+    ldy #0
+
+    copy_panel_loop:
+
+        lda ($70),y
+        sta ($72),y
+
+        lda $70
+        adc #1
+        sta $70
+        lda $71
+        adc #0
+        sta $71
+        clc
+
+        lda $72
+        adc #1
+        sta $72
+        lda $73
+        adc #0
+        sta $73
+        clc
+
+        cmp #$5d
+        bne copy_panel_loop
+
+    clc
+    rts
 
 tiles_block: .byte <tiles_file_name, >tiles_file_name
              .byte sprite_area_low, sprite_area_high, 0, 0
@@ -65,6 +175,14 @@ levels_block: .byte <levels_file_name, >levels_file_name
 
 levels_file_name: .byte "LEVELS", 13
 
+panel_block: .byte <panel_file_name, >panel_file_name
+             .byte panel_address_low, panel_address_high, 0, 0
+             .byte panel_address_low, panel_address_high, 0, 0
+             .byte panel_length_low, panel_length_high, 0, 0
+             .byte panel_end_low, panel_end_high, 0, 0
+
+panel_file_name: .byte "PANEL", 13
+
 code_block: .byte <code_file_name, >code_file_name
              .byte code_start_low, code_start_high, 0, 0
              .byte code_start_low, code_start_high, 0, 0
@@ -72,3 +190,5 @@ code_block: .byte <code_file_name, >code_file_name
              .byte code_end_low, code_end_high, 0, 0
 
 code_file_name: .byte "CODE", 13
+
+init_load_window_vdu_bytes: .byte 28,0,30,19,27
