@@ -61,8 +61,8 @@ main:
     jsr $ffdd
 
     lda #255
-    ldx #<panel_block
-    ldy #>panel_block
+    ldx #<top_panel_block
+    ldy #>top_panel_block
     jsr $ffdd
 
     lda #255
@@ -122,9 +122,10 @@ copy_panel:
     sta $72
     lda #$58
     sta $73
+
     ldy #0
 
-    copy_panel_loop:
+    copy_top_panel_loop:
 
         lda ($70),y
         sta ($72),y
@@ -146,7 +147,7 @@ copy_panel:
         clc
 
         cmp #$5d
-        bne copy_panel_loop
+        bne copy_top_panel_loop
 
     clc
     rts
@@ -175,13 +176,13 @@ levels_block: .byte <levels_file_name, >levels_file_name
 
 levels_file_name: .byte "LEVELS", 13
 
-panel_block: .byte <panel_file_name, >panel_file_name
-             .byte panel_address_low, panel_address_high, 0, 0
-             .byte panel_address_low, panel_address_high, 0, 0
-             .byte panel_length_low, panel_length_high, 0, 0
-             .byte panel_end_low, panel_end_high, 0, 0
+top_panel_block: .byte <top_panel_file_name, >top_panel_file_name
+             .byte top_panel_address_low, top_panel_address_high, 0, 0
+             .byte top_panel_address_low, top_panel_address_high, 0, 0
+             .byte top_panel_length_low, top_panel_length_high, 0, 0
+             .byte top_panel_end_low, top_panel_end_high, 0, 0
 
-panel_file_name: .byte "PANEL", 13
+top_panel_file_name: .byte "PANEL", 13
 
 code_block: .byte <code_file_name, >code_file_name
              .byte code_start_low, code_start_high, 0, 0
@@ -191,4 +192,4 @@ code_block: .byte <code_file_name, >code_file_name
 
 code_file_name: .byte "CODE", 13
 
-init_load_window_vdu_bytes: .byte 28,0,30,19,27
+init_load_window_vdu_bytes: .byte 28,0,28,19,27

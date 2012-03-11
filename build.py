@@ -163,12 +163,12 @@ constants_oph = \
 .alias char_area_end_low            $%02x
 .alias char_area_end_high           $%02x
 
-.alias panel_address_low           $%02x
-.alias panel_address_high          $%02x
-.alias panel_length_low            $%02x
-.alias panel_length_high           $%02x
-.alias panel_end_low               $%02x
-.alias panel_end_high              $%02x
+.alias top_panel_address_low       $%02x
+.alias top_panel_address_high      $%02x
+.alias top_panel_length_low        $%02x
+.alias top_panel_length_high       $%02x
+.alias top_panel_end_low           $%02x
+.alias top_panel_end_high          $%02x
 """
 
 extras_oph = \
@@ -206,7 +206,8 @@ if __name__ == "__main__":
     # 2000      level data
     # 2a00      tile sprites
     # 2e00      character sprites
-    # 3000      bank 1 (also loader code)
+    # 3000      bank 1 (panel)
+    # 3500             (loader code)
     # 5800      bank 2
     
     files = []
@@ -304,7 +305,7 @@ if __name__ == "__main__":
     
     char_area_finish = char_area_address + len(char_data)
     print "SPRITES runs from %04x to %04x" % (char_area_address, char_area_finish)
-    if char_area_finish > 0x3000:
+    if char_area_finish > panel_address:
         sys.stderr.write("SPRITES overruns following data.\n")
         sys.exit(1)
     

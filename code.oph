@@ -21,8 +21,8 @@
 .alias initial_row_tiles    $1fb0 ; the tile occurring at the left edge of the screen
 .alias row_indices          $1fc0 ; indices into each row of the level data
 .alias initial_row_offsets  $1fd0 ; current displacements for the rows
-.alias row_table_low        $1fe0
-.alias row_table_high       $1ff0
+.alias row_table_low        $1fe0 ; low bytes for the addresses of the rows
+.alias row_table_high       $1ff0 ; high bytes for the addresses of the rows
 .alias level_data_low       $00
 .alias level_data_high      $20
 
@@ -563,14 +563,14 @@ show_bank2:
     clc
     rts
 
-bank1_char_rows_low:  .byte $00,$40,$80,$c0,$00,$40,$80,$c0
-bank1_rows_low:  .byte  $00,$40,$80,$c0,$00,$40,$80,$c0,$00,$40,$80,$c0,$00,$40,$80,$c0
-bank1_char_rows_high: .byte $35,$36,$37,$38,$3a,$3b,$3c,$3d
-bank1_rows_high: .byte  $3f,$40,$41,$42,$44,$45,$46,$47,$49,$4a,$4b,$4c,$4e,$4f,$50,$51
-bank2_char_rows_low:  .byte $00,$40,$80,$c0,$00,$40,$80,$c0
-bank2_rows_low:  .byte  $00,$40,$80,$c0,$00,$40,$80,$c0,$00,$40,$80,$c0,$00,$40,$80,$c0
-bank2_char_rows_high: .byte $5d,$5e,$5f,$60,$62,$63,$64,$65
-bank2_rows_high: .byte  $67,$68,$69,$6a,$6c,$6d,$6e,$6f,$71,$72,$73,$74,$76,$77,$78,$79
+bank1_char_rows_low:  .byte $40,$80,$c0,$00,$40,$80,$c0,$00
+bank1_rows_low:  .byte  $40,$80,$c0,$00,$40,$80,$c0,$00,$40,$80,$c0,$00,$40,$80,$c0,$00
+bank1_char_rows_high: .byte $36,$37,$38,$3a,$3b,$3c,$3d,$3f
+bank1_rows_high: .byte  $40,$41,$42,$44,$45,$46,$47,$49,$4a,$4b,$4c,$4e,$4f,$50,$51,$53
+bank2_char_rows_low:  .byte $40,$80,$c0,$00,$40,$80,$c0,$00
+bank2_rows_low:  .byte  $40,$80,$c0,$00,$40,$80,$c0,$00,$40,$80,$c0,$00,$40,$80,$c0,$00
+bank2_char_rows_high: .byte $5e,$5f,$60,$62,$63,$64,$65,$67
+bank2_rows_high: .byte  $68,$69,$6a,$6c,$6d,$6e,$6f,$71,$72,$73,$74,$76,$77,$78,$79,$7b
 
 init_scrolling:
 
