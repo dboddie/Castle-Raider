@@ -194,13 +194,13 @@ if __name__ == "__main__":
     # Memory map
     #
     # 0e00      code
-    # 1f70      initial tile visibility flags
-    # 1f80      tile visibility flags
-    # 1f90      max row offsets
-    # 1fa0      player position, animation and bank number
-    # 1fb0      initial row tiles
-    # 1fc0      row indices
-    # 1fd0      initial row offsets
+    # 1f70      tile visibility flags
+    # 1f80      max row offsets
+    # 1f90      player position, animation and bank number
+    # 1fa0      initial row tiles
+    # 1fb0      row indices
+    # 1fc0      initial row offsets
+    # 1fd0      initial tile visibility flags
     # 1fe0      row table low
     # 1ff0      row table high
     # 2000      level data
@@ -227,16 +227,20 @@ if __name__ == "__main__":
     right_sprites_low = right_sprites & 0xff
     right_sprites_high = right_sprites >> 8
     
-    char_area_address = 0x2E00
+    char_area_address = 0x2e00
     char_data = makesprites.read_sprites(char_sprites)
     
-    levels_address = 0x1fe0
+    levels_address = 0x1fd0
     level_data = makelevels.create_levels(tiles, levels_address)
     
     level_extent = len(makelevels.levels[0][0]) - 40
     
     # Visibility flags for special scenery.
-    tile_visibility_address = 0x1f80
+    tile_initial_visibility_address = 0x1fd0
+    tile_initial_visibility_low = tile_initial_visibility_address & 0xff
+    tile_initial_visibility_high = tile_initial_visibility_address >> 8
+    
+    tile_visibility_address = 0x1f70
     tile_visibility_low = tile_visibility_address & 0xff
     tile_visibility_high = tile_visibility_address >> 8
     
