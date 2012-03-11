@@ -161,6 +161,10 @@ player_move:
     beq player_move_check_fall
     clc
 
+    ; Whether moving or not, the player needs to be replotted before any
+    ; scrolling occurs because the scrolling routine will replot the player.
+    ; This needs to be optimised.
+
     lda #19
     jsr $fff4
     jsr plot_player                 ; unplot
@@ -1918,15 +1922,18 @@ check_move_left:
 
 check_move:
 
-    lda #2
+    lda #2          ; Start with an offset of 2 from the player's row number.
     sta $72
 
+    lda #0          ; Use a byte to record occupied tiles. Since we start at
+    sta $73         ; the player's top row, the order of bits is 0000tmb[f] for
+                    ; top, middle, bottom and an optional falling bit.
     lda player_falling
     cmp #0
     beq check_move_loop
 
     inc $72         ; If the player is falling then we need to check an
-                    ; additional tile.
+                    ; additional tile, below and to the left/right.
 
     check_move_loop:
 
@@ -1934,8 +1941,11 @@ check_move:
         jsr check_tile
         cmp #0
         beq check_move_next
-        sec
-        rts
+
+        lda $73     ; Set a bit to indicate that this tile is occupied.
+        asl
+        ora #1
+        sta $73
 
         check_move_next:
 
@@ -1943,6 +1953,30 @@ check_move:
         dec $72
         bpl check_move_loop
 
+    lda $73                 ; If all tiles are empty then allow the move.
+    cmp #0
+    beq check_move_exit_ok
+
+    lda player_falling      ; If some tiles are not empty while falling then
+    cmp #0                  ; stop moving.
+    bne check_move_exit_not_ok
+
+    lda $73                 ; If more than the lowest tile is blocked then
+    cmp #$01                ; stop moving.
+    bne check_move_exit_not_ok
+
+    jsr plot_player         ; Move the player up by one tile.
+    dec player_y            ; We should really check to make sure that there
+    jsr plot_player         ; is space above the player to do this.
+
+    clc
+    rts
+
+    check_move_exit_not_ok:
+    sec
+    rts
+
+    check_move_exit_ok:
     clc
     rts
 
