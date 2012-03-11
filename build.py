@@ -125,7 +125,10 @@ tiles = ["images/blank.png", "images/brick.png",
          "images/rope.png", "images/flag.png",
          "images/gate.png", "images/foliage.png"]
 
-char_sprites = ["images/left1.png", "images/left2.png", "images/right1.png", "images/right2.png"]
+char_sprites = ["images/left1.png", "images/left2.png",
+                "images/right1.png", "images/right2.png",
+                "images/birdl1.png","images/birdl2.png",
+                "images/birdr1.png","images/birdr2.png"]
 
 constants_oph = \
 """.alias sprite_area_low              $%02x
@@ -205,7 +208,7 @@ if __name__ == "__main__":
     # 1ff0      row table high
     # 2000      level data
     # 2a00      tile sprites
-    # 2e00      character sprites
+    # 2d00      character sprites
     # 3000      bank 1 (panel)
     # 3500             (loader code)
     # 5800      bank 2
@@ -227,7 +230,7 @@ if __name__ == "__main__":
     right_sprites_low = right_sprites & 0xff
     right_sprites_high = right_sprites >> 8
     
-    char_area_address = 0x2e00
+    char_area_address = 0x2d00
     char_data = makesprites.read_sprites(char_sprites)
     
     levels_address = 0x1fd0
