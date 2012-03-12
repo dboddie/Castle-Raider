@@ -199,7 +199,7 @@ if __name__ == "__main__":
     # 0e00      code
     # 1f70      tile visibility flags
     # 1f80      max row offsets
-    # 1f90      player position, animation and bank number
+    # 1f90      player information
     # 1fa0      initial row tiles
     # 1fb0      row indices
     # 1fc0      initial row offsets

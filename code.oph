@@ -26,6 +26,12 @@
 .alias player_moving        $1f95
 .alias player_falling       $1f96
 .alias player_ys            $1f97
+.alias player_lives         $1f98
+.alias player_lost          $1f99
+.alias tracking_low         $1f9a
+.alias tracking_high        $1f9b
+.alias tracking_y           $1f9c
+
 .alias initial_row_tiles    $1fa0 ; the tile occurring at the left edge of the screen
 .alias row_indices          $1fb0 ; indices into each row of the level data
 .alias initial_row_offsets  $1fc0 ; current displacements for the rows
@@ -45,6 +51,7 @@ init:
     sta player_x
     lda #19
     sta player_y
+    sta tracking_y      ; Set the vertical tracking position of the character.
     lda #0
     sta player_ys
     lda #2
@@ -53,6 +60,10 @@ init:
     sta player_jumping
     sta player_moving
     sta player_falling
+    lda #9
+    sta player_lives
+    lda #0
+    sta player_lost
 
     ; Initialise the tile visibility values.
 
@@ -89,12 +100,37 @@ main:
     jsr show_bank1          ; Show the completed bank.
     jsr initial_plot_bank2
 
-    lda #0
+    lda #0                  ; Set the initial scroll offset and tracking offset.
     sta scroll_offset_low
+    sta tracking_low
     lda #0
     sta scroll_offset_high
+    sta tracking_high
 
     main_loop:
+
+        main_loop_check_lost:
+
+        lda player_lost
+        cmp #0
+        beq main_loop_check_jump
+
+            lda player_lives
+            cmp #0
+            beq main_loop_endloop
+
+            jsr track_position      ; Move the player back to the tracking position.
+            bcs main_loop_next
+
+            lda #0
+            sta player_lost
+
+            lda tracking_y
+            sta player_y
+
+            jsr plot_char           ; Plot the character again.
+
+        main_loop_check_jump:
 
         lda player_jumping
         cmp #0
@@ -131,15 +167,7 @@ main:
         clc
         jsr initial_plot_bank1
         jsr initial_plot_bank2
-        lda bank_number
-        cmp #1
-        bne not_bank1
-        clc
-        jsr plot_char_bank1
-        jmp not_space
-
-        not_bank1:
-        jsr plot_char_bank2
+        jsr plot_char
 
         not_space:
         ; --- Full redraw test code (end) ---
@@ -448,7 +476,7 @@ check_beneath:
 
     lda player_y
     cmp #21
-    bpl check_beneath_exit
+    bcs check_beneath_demise_exit
 
     adc #3
     sta $71
@@ -487,6 +515,14 @@ check_beneath:
     check_beneath_fall_exit:
     clc
     rts
+
+    check_beneath_demise_exit:
+
+    jsr plot_char       ; Unplot the character.
+
+    lda #1
+    sta player_lost
+    dec player_lives
 
     check_beneath_exit:
 
@@ -1685,8 +1721,21 @@ player_sprites_low:  .byte <char_area, <[char_area + 48], <[char_area + 96], <[c
 player_sprites_high: .byte >char_area, >[char_area + 48], >[char_area + 96], >[char_area + 144]
 player_y_offset:     .byte 0, 4
 
+plot_char:
+
+    lda bank_number
+    cmp #1
+    beq plot_char_bank1
+    bne plot_char_bank2
+
 plot_char_bank1:            ; plots the player character on bank 1
 
+    lda player_lost
+    cmp #0
+    beq plot_char_bank1_continue
+    rts
+
+    plot_char_bank1_continue:
     ldx player_animation
     lda player_sprites_low,x
     sta $70
@@ -1719,6 +1768,12 @@ plot_char_bank1:            ; plots the player character on bank 1
 
 plot_char_bank2:            ; plots the player character on bank 2
 
+    lda player_lost
+    cmp #0
+    beq plot_char_bank2_continue
+    rts
+
+    plot_char_bank2_continue:
     ldx player_animation
     lda player_sprites_low,x
     sta $70
@@ -2334,3 +2389,32 @@ plot16x16_y0:           ; $70,$71=source address
 
     rts
 
+track_position:
+
+    clc
+
+    lda scroll_offset_high
+    cmp tracking_high
+    beq track_position_loop_check_low
+    bcs track_position_scroll_left
+    bcc track_position_scroll_right
+
+    track_position_loop_check_low:
+    lda scroll_offset_low
+    cmp tracking_low
+    beq track_position_exit
+    bcs track_position_scroll_left
+
+    track_position_scroll_right:
+    jsr scroll_right_update
+    sec
+    rts
+
+    track_position_scroll_left:
+    jsr scroll_left_update
+    sec
+    rts
+
+    track_position_exit:
+    clc
+    rts
