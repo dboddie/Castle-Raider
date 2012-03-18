@@ -2016,6 +2016,10 @@ check_move:
     cmp #0                  ; stop moving.
     bne check_move_exit_not_ok
 
+    lda player_jumping      ; If some tiles are not empty while jumping then
+    cmp #0                  ; stop moving.
+    bne check_move_exit_not_ok
+
     lda $73                 ; If more than the lowest tile is blocked then
     cmp #$01                ; stop moving.
     bne check_move_exit_not_ok
@@ -2050,8 +2054,8 @@ player_move_left:
     clc
     rts
 
-jump_steps_y:    .byte 0,2,2,1,0
-jump_offsets_ys: .byte 0,0,1,1,0
+jump_steps_y:    .byte 0,2,1,1,0,0
+jump_offsets_ys: .byte 0,0,0,1,0,0
 
 player_jump:
 
@@ -2118,8 +2122,8 @@ player_jump:
     sta player_ys
 
     inx
-    cpx #4
-    bpl player_jump_stop_jumping
+    cpx #6                          ; After the end of the list of offsets,
+    bcs player_jump_stop_jumping    ; stop jumping.
 
     stx player_jumping
     clc
@@ -2184,8 +2188,8 @@ player_drop:
     lda fall_offsets_ys,x
     sta player_ys
 
-    cpx #2
-    beq player_drop_exit
+    cpx #2                  ; Do not increment the falling counter beyond the
+    beq player_drop_exit    ; last falling offset.
 
     inx
     stx player_falling
