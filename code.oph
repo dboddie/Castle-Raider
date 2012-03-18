@@ -1992,13 +1992,13 @@ check_move:
 
     check_move_loop:
 
+        asl $73
         clc
         jsr check_tile
         cmp #0
         beq check_move_next
 
         lda $73     ; Set a bit to indicate that this tile is occupied.
-        asl
         ora #1
         sta $73
 
