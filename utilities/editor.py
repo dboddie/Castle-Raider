@@ -19,7 +19,7 @@ class LevelWidget(QWidget):
         
         self.tile_images = tile_images
         self.currentTile = "."
-        self.maximum_width = 512
+        self.maximum_width = 1024
         
         self.initRows()
         
@@ -181,7 +181,7 @@ class LevelWidget(QWidget):
         r = self._row_from_y(event.y())
         c = self._column_from_x(event.x())
         
-        if 0 <= r < 16 and 0 <= c < 512:
+        if 0 <= r < 16 and 0 <= c < self.maximum_width:
         
             self.rows[r][c] = tile
             self.update(QRect(self._x_from_column(c), self._y_from_row(r),
