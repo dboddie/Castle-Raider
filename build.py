@@ -180,12 +180,17 @@ extras_oph = \
 
 if __name__ == "__main__":
 
-    if len(sys.argv) != 2:
+    if not 2 <= len(sys.argv) <= 3:
     
-        sys.stderr.write("Usage: %s <new UEF file>\n" % sys.argv[0])
+        sys.stderr.write("Usage: %s <new UEF file> [level file]\n" % sys.argv[0])
         sys.exit(1)
     
     out_uef_file = sys.argv[1]
+    
+    if len(sys.argv) == 2:
+        level_file = "levels/default.txt"
+    else:
+        level_file = sys.argv[2]
     
     # Memory map
     #
@@ -227,7 +232,7 @@ if __name__ == "__main__":
     char_data = makesprites.read_sprites(char_sprites)
     
     levels_address = 0x1fd0
-    level_data = makelevels.create_levels(tiles, levels_address)
+    level_data = makelevels.create_level(tiles, levels_address, level_file)
     
     level_extent = len(makelevels.level[0]) - 40
     

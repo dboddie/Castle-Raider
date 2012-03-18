@@ -19,6 +19,7 @@ class LevelWidget(QWidget):
         
         self.tile_images = tile_images
         self.currentTile = "."
+        self.maximum_width = 512
         
         self.initRows()
         
@@ -34,7 +35,7 @@ class LevelWidget(QWidget):
         
         for i in range(16):
         
-            row = ["."] * 512
+            row = ["."] * self.maximum_width
             self.level_width = max(len(row), self.level_width)
             self.rows.append(row)
         
@@ -49,10 +50,53 @@ class LevelWidget(QWidget):
             self.rows = []
             
             for row in rows:
-                self.rows.append(map(str, row))
+            
+                new_row = map(str, row)
+                
+                if len(new_row) < self.maximum_width:
+                    new_row += (self.maximum_width - len(new_row)) * ["."]
+                elif len(new_row) > self.maximum_width:
+                    new_row = new_row[:self.maximum_width]
+                
+                self.rows.append(new_row)
                 self.level_width = max(len(row), self.level_width)
             
             self.special = special
+            return True
+        
+        except IOError:
+            return False
+    
+    def saveLevel(self, path):
+    
+        try:
+            f = open(unicode(path), "w")
+            
+            level_width = 40
+            
+            for row in self.rows:
+            
+                i = len(row) - 1
+                
+                while i > 39:
+                    if row[i] != ".":
+                        break
+                    else:
+                        i -= 1
+                
+                level_width = max(level_width, i + 1)
+            
+            for row in self.rows:
+                f.write("".join(row[:level_width]) + "\n")
+            
+            f.write("\n")
+            
+            for ch, (n, flags, initial) in self.special.items():
+                f.write("%s %s %i %i\n" % (ch, n, flags, initial))
+            
+            f.close()
+            
+            self.level_width = min(self.level_width, level_width)
             return True
         
         except IOError:
@@ -113,7 +157,7 @@ class LevelWidget(QWidget):
     
     def sizeHint(self):
     
-        return QSize(max(self.screen_width, self.level_width * 4) * self.xs,
+        return QSize(max(self.screen_width, self.maximum_width * 4) * self.xs,
                      self.screen_height * self.ys)
     
     def _row_from_y(self, y):
@@ -191,6 +235,15 @@ class EditorWindow(QMainWindow):
         openAction.setShortcut(QKeySequence.Open)
         openAction.triggered.connect(self.openLevel)
         
+        self.saveAction = fileMenu.addAction(self.tr("&Save"))
+        self.saveAction.setShortcut(QKeySequence.Save)
+        self.saveAction.triggered.connect(self.saveLevel)
+        self.saveAction.setEnabled(False)
+        
+        saveAsAction = fileMenu.addAction(self.tr("Save &As..."))
+        saveAsAction.setShortcut(QKeySequence.SaveAs)
+        saveAsAction.triggered.connect(self.saveAsLevel)
+        
         quitAction = fileMenu.addAction(self.tr("E&xit"))
         quitAction.setShortcut(self.tr("Ctrl+Q"))
         quitAction.triggered.connect(self.close)
@@ -218,15 +271,36 @@ class EditorWindow(QMainWindow):
     
         path = QFileDialog.getOpenFileName(self, self.tr("Open Level"),
                                            self.path)
-        
         if not path.isEmpty():
         
             if self.levelWidget.loadLevel(unicode(path)):
                 self.path = path
-                self.levelWidget.adjustSize()
+                self.levelWidget.update()
+                self.saveAction.setEnabled(True)
+                self.setWindowTitle(self.tr(path))
             else:
                 QMessageBox.warning(self, self.tr("Open Level"),
                                     self.tr("Failed to open level: %1").arg(path))
+    
+    def saveLevel(self):
+    
+        if not self.levelWidget.saveLevel(unicode(self.path)):
+            QMessageBox.warning(self, self.tr("Save Level"),
+                                self.tr("Failed to save level: %1").arg(self.path))
+    
+    def saveAsLevel(self):
+    
+        path = QFileDialog.getSaveFileName(self, self.tr("Save Level"),
+                                           self.path)
+        if not path.isEmpty():
+        
+            if self.levelWidget.saveLevel(unicode(path)):
+                self.path = path
+                self.saveAction.setEnabled(True)
+                self.setWindowTitle(self.tr(path))
+            else:
+                QMessageBox.warning(self, self.tr("Save Level"),
+                                    self.tr("Failed to save level: %1").arg(path))
     
     def setCurrentTile(self):
     

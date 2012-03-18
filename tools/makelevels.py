@@ -109,11 +109,11 @@ def create_level_data(level, tiles):
     
     return data
 
-def create_levels(tile_paths, levels_address):
+def create_level(tile_paths, levels_address, level_path):
 
     global level, special
     
-    level, special = load_level("levels/default.txt")
+    level, special = load_level(level_path)
     
     tiles = {}
     for key, value in tile_ref.items():
