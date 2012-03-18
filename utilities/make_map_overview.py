@@ -7,14 +7,19 @@ from tools import makelevels
 
 if __name__ == "__main__":
 
-    if len(sys.argv) != 2:
+    if not 2 <= len(sys.argv) <= 3:
     
-        sys.stderr.write("Usage: %s <image file>\n" % sys.argv[0])
+        sys.stderr.write("Usage: %s <image file> [level file]\n" % sys.argv[0])
         sys.exit(1)
     
     output_path = sys.argv[1]
     
-    level = makelevels.level
+    if len(sys.argv) == 2:
+        level_file = "levels/default.txt"
+    else:
+        level_file = sys.argv[2]
+    
+    level, special = makelevels.load_level(level_file)
     
     width = 0
     height = len(level) + 6
@@ -57,8 +62,8 @@ if __name__ == "__main__":
         x = 0
         for tile in row:
         
-            if tile in makelevels.special:
-                n, flags, initial = makelevels.special[tile]
+            if tile in special:
+                n, flags, initial = special[tile]
                 if initial:
                     tile = n
                 else:
