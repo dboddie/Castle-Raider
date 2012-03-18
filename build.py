@@ -116,14 +116,7 @@ def address_length_end(address, data):
     return address_low, address_high, length_low, length_high, end_low, end_high
 
 
-tiles = ["images/blank.png", "images/brick.png",
-         "images/grass.png", "images/grass2.png",
-         "images/ground.png", "images/rock.png",
-         "images/floor.png", "images/door.png",
-         "images/window-topleft.png", "images/window-topright.png",
-         "images/brick-left.png", "images/brick-right.png",
-         "images/rope.png", "images/flag.png",
-         "images/gate.png", "images/foliage.png"]
+tiles = map(lambda tile: makelevels.tile_ref[tile], makelevels.tile_order)
 
 char_sprites = ["images/left1.png", "images/left2.png",
                 "images/right1.png", "images/right2.png",
@@ -236,7 +229,7 @@ if __name__ == "__main__":
     levels_address = 0x1fd0
     level_data = makelevels.create_levels(tiles, levels_address)
     
-    level_extent = len(makelevels.levels[0][0]) - 40
+    level_extent = len(makelevels.level[0]) - 40
     
     # Visibility flags for special scenery.
     tile_initial_visibility_address = 0x1fd0

@@ -14,7 +14,7 @@ if __name__ == "__main__":
     
     output_path = sys.argv[1]
     
-    level = makelevels.levels[0]
+    level = makelevels.level
     
     width = 0
     height = len(level) + 6
