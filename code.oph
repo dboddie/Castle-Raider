@@ -206,6 +206,8 @@ player_move:
     bne player_move_not_moving_left
 
     jsr player_move_left
+    clc
+    rts
 
     player_move_not_moving_left:
     cmp #2
@@ -278,6 +280,13 @@ player_move:
     lda #19
     jsr $fff4
     jsr plot_player                 ; unplot
+
+    lda scroll_offset_low
+    sta tracking_low
+    lda scroll_offset_high
+    sta tracking_high
+    lda player_y
+    sta tracking_y
 
     jsr player_jump
 
