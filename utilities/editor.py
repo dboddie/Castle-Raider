@@ -1,5 +1,22 @@
 #!/usr/bin/env python
 
+"""
+Copyright (C) 2012 David Boddie <david@boddie.org.uk>
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+"""
+
 import os, sys
 
 from PyQt4.QtCore import *
@@ -22,6 +39,10 @@ class LevelWidget(QWidget):
         self.maximum_width = 1024
         
         self.initRows()
+        
+        font = QFont("Monospace")
+        font.setPixelSize(min(4 * self.xs - 2, 8 * self.ys - 2))
+        self.setFont(font)
         
         self.setAutoFillBackground(True)
         p = QPalette()
@@ -125,6 +146,7 @@ class LevelWidget(QWidget):
         painter = QPainter()
         painter.begin(self)
         painter.fillRect(event.rect(), QBrush(Qt.black))
+        painter.setPen(Qt.white)
         
         y1 = event.rect().top()
         y2 = event.rect().bottom()
@@ -145,13 +167,19 @@ class LevelWidget(QWidget):
                 
                     n, flags, initial = self.special[tile]
                     if initial:
-                        tile = n
+                        tile_image = self.tile_images[n]
                     else:
-                        tile = "."
+                        tile_image = self.tile_images["."]
+                else:
+                    tile_image = self.tile_images[tile]
                 
-                tile_image = self.tile_images[tile]
                 painter.drawImage(c * 4 * self.xs, (6 + r) * 8 * self.ys,
                                   tile_image)
+                
+                if tile in self.special:
+                    tx = ((c + 0.5) * 4 * self.xs) - self.font().pixelSize()*0.5
+                    ty = ((6.5 + r) * 8 * self.ys) + self.font().pixelSize()*0.5
+                    painter.drawText(tx, ty, tile)
         
         painter.end()
     
@@ -186,6 +214,27 @@ class LevelWidget(QWidget):
             self.rows[r][c] = tile
             self.update(QRect(self._x_from_column(c), self._y_from_row(r),
                               4 * self.xs, 8 * self.ys))
+    def newSpecial(self):
+    
+        if len(self.special) < 15:
+        
+            i = ord("a")
+            while i <= ord("z"):
+            
+                if not self.special.has_key(chr(i)):
+                    break
+                i += 1
+            
+            if ord("a") <= ord(self.currentTile) <= ord("z") or self.currentTile == ".":
+                tile = makelevels.tile_order[1]
+            else:
+                tile = self.currentTile
+            
+            self.special[chr(i)] = (tile, len(self.special) + 1, 1)
+            return chr(i)
+        
+        else:
+            return ""
 
 
 class EditorWindow(QMainWindow):
@@ -251,17 +300,21 @@ class EditorWindow(QMainWindow):
     def createToolBars(self):
     
         self.tilesToolBar = self.addToolBar(self.tr("Tiles"))
-        tileGroup = QActionGroup(self)
+        self.tileGroup = QActionGroup(self)
         
         for symbol in makelevels.tile_order:
         
             icon = QIcon(QPixmap.fromImage(self.tile_images[symbol]))
             action = self.tilesToolBar.addAction(icon, symbol)
             action.setCheckable(True)
-            tileGroup.addAction(action)
+            self.tileGroup.addAction(action)
             action.triggered.connect(self.setCurrentTile)
         
-        tileGroup.actions()[0].setChecked(True)
+        self.tileGroup.actions()[0].trigger()
+        
+        self.specialToolBar = self.addToolBar(self.tr("Special"))
+        action = self.specialToolBar.addAction("New")
+        action.triggered.connect(self.addSpecial)
     
     def newLevel(self):
     
@@ -305,6 +358,56 @@ class EditorWindow(QMainWindow):
     def setCurrentTile(self):
     
         self.levelWidget.currentTile = unicode(self.sender().text())
+    
+    def addSpecial(self):
+    
+        symbol = self.levelWidget.newSpecial()
+        
+        if symbol:
+        
+            icon = self.updateSpecialIcon(symbol)
+            action = self.specialToolBar.addAction(icon, symbol)
+            action.setCheckable(True)
+            self.tileGroup.addAction(action)
+            
+            editAction = action.menu().addAction(self.tr("&Edit..."))
+            removeAction = action.menu().addAction(self.tr("&Remove"))
+            
+            editAction.triggered.connect(self.editSpecial)
+            removeAction.triggered.connect(self.removeSpecial)
+            
+            action.triggered.connect(self.setCurrentTile)
+            action.trigger()
+    
+    def editSpecial(self):
+    
+        
+        
+    
+    def removeSpecial(self):
+    
+        symbol = unicode(self.sender().text())
+        ### Remove the associated action and update the level widget.
+    
+    def updateSpecialIcon(self, symbol):
+    
+        font = QFont("Monospace")
+        font.setPixelSize(min(4 * self.xs - 2, 8 * self.ys - 2))
+        
+        tile = self.levelWidget.special[symbol][0]
+        pixmap = QPixmap.fromImage(self.tile_images[tile])
+        
+        painter = QPainter()
+        painter.begin(pixmap)
+        painter.setPen(Qt.white)
+        painter.setFont(font)
+        
+        tx = (0.5 * 4 * self.xs) - font.pixelSize()*0.5
+        ty = (0.5 * 8 * self.ys) + font.pixelSize()*0.5
+        painter.drawText(tx, ty, symbol)
+        painter.end()
+        
+        return QIcon(pixmap)
     
     def sizeHint(self):
     

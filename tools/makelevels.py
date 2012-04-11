@@ -60,11 +60,12 @@ def load_level(path):
     # containing corresponding tiles and flags. The flag is an offset into the
     # visibility table, the initial values for which are below.
     special = {}
+    flag = 1
     for line in lines[16:]:
     
         if line:
-            ch, n, flags, initial = line.split()
-            special[ch] = (n, int(flags), int(initial))
+            ch, tile, initial = line.split()
+            special[ch] = (tile, flag, int(initial))
     
     return level, special
 
