@@ -280,7 +280,11 @@ if __name__ == "__main__":
     system("ophis loader.oph LOADER")
     loader_code = open("LOADER").read()
     
-    files = [("LOADER", loader_start, loader_start, loader_code),
+    bootloader_start = 0xe00
+    bootloader_code = "\r\x00\x0a\x0f*RUN LOADER\r\xff"
+    
+    files = [("CASTLE", bootloader_start, bootloader_start, bootloader_code),
+             ("LOADER", loader_start, loader_start, loader_code),
              ("TILES", sprite_area_address, sprite_area_address, sprite_data),
              ("SPRITES", char_area_address, char_area_address, char_data),
              ("LEVELS", levels_address, levels_address, level_data),
