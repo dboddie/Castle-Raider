@@ -46,10 +46,15 @@ tile_ref = {".": "images/blank.png",
             "{": "images/rope.png",
             "?": "images/flag.png",
             "I": "images/gate.png",
-            "%": "images/foliage.png"}
+            "%": "images/foliage.png",
+            "(": "images/arch-topleft.png",
+            ")": "images/arch-topright.png",
+            "^": "images/arch-top.png",
+            "_": "images/arch-bottom.png"}
 
 tile_order = (".", "@", "+", "~", "#", "X", "-", "|",
-              "/", "\\", "[", "]", "{", "?", "I", "%")
+              "/", "\\", "[", "]", "{", "?", "I", "%",
+              "(", ")", "^", "_")
 
 def load_level(path):
 
@@ -66,6 +71,7 @@ def load_level(path):
         if line:
             ch, tile, initial = line.split()
             special[ch] = (tile, flag, int(initial))
+            flag += 1
     
     return level, special
 

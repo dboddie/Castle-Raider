@@ -112,8 +112,11 @@ class LevelWidget(QWidget):
             
             f.write("\n")
             
-            for ch, (n, flags, initial) in self.special.items():
-                f.write("%s %s %i %i\n" % (ch, n, flags, initial))
+            special_items = self.special.items()
+            special_items.sort()
+            
+            for ch, (n, flags, initial) in special_items:
+                f.write("%s %s %i\n" % (ch, n, initial))
             
             f.close()
             
@@ -237,6 +240,54 @@ class LevelWidget(QWidget):
             return ""
 
 
+class SelectorModel(QAbstractListModel):
+
+    def __init__(self, actionGroup, parent):
+    
+        QAbstractListModel.__init__(self, parent)
+        self.actionGroup = actionGroup
+    
+    def rowCount(self, index):
+    
+        if not index.isValid():
+            return len(self.actionGroup.actions()) - len(makelevels.tile_order)
+        else:
+            return 0
+    
+    def flags(self, index):
+    
+        return Qt.ItemIsEnabled | Qt.ItemIsUserCheckable | Qt.ItemIsEditable
+    
+    def data(self, index, role):
+    
+        if role != Qt.DisplayRole and role != Qt.CheckStateRole:
+            return QVariant()
+        
+        actions = self.actionGroup.actions()
+        row = index.row()
+        minimum = len(makelevels.tile_order)
+        
+        if 0 <= row < len(actions) - minimum and index.column() == 0:
+            if role == Qt.DisplayRole:
+                return QVariant(actions[row + minimum].text())
+            elif role == Qt.CheckStateRole:
+                return QVariant(actions[row + minimum].data().toBool())
+        
+        return QVariant()
+    
+    def setData(self, index, value, role):
+    
+        if index.isValid() and index.column() == 0 and role == Qt.CheckStateRole:
+            row = index.row()
+            actions = self.actionGroup.actions()
+            minimum = len(makelevels.tile_order)
+            value = actions[row + minimum].data().toBool()
+            actions[row + minimum].setData(not value)
+            self.dataChanged.emit(index, index)
+            return True
+        else:
+            return False
+
 class EditorWindow(QMainWindow):
 
     def __init__(self):
@@ -315,6 +366,12 @@ class EditorWindow(QMainWindow):
         self.specialToolBar = self.addToolBar(self.tr("Special"))
         action = self.specialToolBar.addAction("New")
         action.triggered.connect(self.addSpecial)
+        
+        specialSelector = QComboBox()
+        specialSelector.setModel(SelectorModel(self.tileGroup, self))
+        self.specialToolBar.addWidget(specialSelector)
+        
+        tilesMenu = self.menuBar().addMenu(self.tr("&Tiles"))
     
     def newLevel(self):
     
@@ -329,6 +386,25 @@ class EditorWindow(QMainWindow):
             if self.levelWidget.loadLevel(unicode(path)):
                 self.path = path
                 self.levelWidget.update()
+                
+                self.specialToolBar.clear()
+                
+                for action in self.specialToolBar.actions():
+                    self.tileGroup.removeAction(action)
+                
+                specialKeys = self.levelWidget.special.keys()
+                specialKeys.sort()
+                
+                for symbol in specialKeys:
+                    self._addSpecialAction(symbol)
+                
+                action = self.specialToolBar.addAction("New")
+                action.triggered.connect(self.addSpecial)
+                
+                specialSelector = QComboBox()
+                specialSelector.setModel(SelectorModel(self.tileGroup, self))
+                self.specialToolBar.addWidget(specialSelector)
+                
                 self.saveAction.setEnabled(True)
                 self.setWindowTitle(self.tr(path))
             else:
@@ -364,25 +440,21 @@ class EditorWindow(QMainWindow):
         symbol = self.levelWidget.newSpecial()
         
         if symbol:
+            self._addSpecialAction(symbol)
+    
+    def _addSpecialAction(self, symbol):
+    
+        icon = self.updateSpecialIcon(symbol)
+        action = self.specialToolBar.addAction(icon, symbol)
+        action.setCheckable(True)
+        self.tileGroup.addAction(action)
         
-            icon = self.updateSpecialIcon(symbol)
-            action = self.specialToolBar.addAction(icon, symbol)
-            action.setCheckable(True)
-            self.tileGroup.addAction(action)
-            
-            editAction = action.menu().addAction(self.tr("&Edit..."))
-            removeAction = action.menu().addAction(self.tr("&Remove"))
-            
-            editAction.triggered.connect(self.editSpecial)
-            removeAction.triggered.connect(self.removeSpecial)
-            
-            action.triggered.connect(self.setCurrentTile)
-            action.trigger()
+        action.triggered.connect(self.setCurrentTile)
+        action.trigger()
     
     def editSpecial(self):
     
-        
-        
+        pass
     
     def removeSpecial(self):
     
