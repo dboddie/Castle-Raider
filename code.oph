@@ -2257,7 +2257,8 @@ read_sprite_address:        ; $76,$77=span address
     cmp #$10
     bcc read_sprite_address_next
 
-    jsr read_visible_sprite
+    jsr read_visible_sprite     ; check whether the sprite is visible
+                                ; (it represents a special tile)
 
     read_sprite_address_next:
     clc
@@ -2281,7 +2282,8 @@ read_left_sprite_address:       ; A=tile number in high 4 bits
     cmp #$10
     bcc read_left_sprite_address_next
 
-    jsr read_visible_sprite
+    jsr read_visible_sprite     ; check whether the sprite is visible
+                                ; (it represents a special tile)
 
     read_left_sprite_address_next:
     clc
@@ -2305,7 +2307,8 @@ read_rotated_sprite_address:    ; A=tile number
     cmp #$10
     bcc read_rotated_sprite_address_next
 
-    jsr read_visible_sprite
+    jsr read_visible_sprite     ; check whether the sprite is visible
+                                ; (it represents a special tile)
 
     read_rotated_sprite_address_next:
     clc
@@ -2329,7 +2332,8 @@ read_right_sprite_address:      ; A=tile number in high 4 bits
     cmp #$10
     bcc read_right_sprite_address_next
 
-    jsr read_visible_sprite
+    jsr read_visible_sprite     ; check whether the sprite is visible
+                                ; (it represents a special tile)
 
     read_right_sprite_address_next:
     clc
