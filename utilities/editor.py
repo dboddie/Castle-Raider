@@ -169,10 +169,11 @@ class LevelWidget(QWidget):
                 if tile in self.special:
                 
                     n, flags, initial = self.special[tile]
-                    if initial:
-                        tile_image = self.tile_images[n]
-                    else:
-                        tile_image = self.tile_images["."]
+                    tile_image = self.tile_images[n]
+                    #if initial:
+                    #    tile_image = self.tile_images[n]
+                    #else:
+                    #    tile_image = self.tile_images["."]
                 else:
                     tile_image = self.tile_images[tile]
                 
