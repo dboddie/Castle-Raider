@@ -119,64 +119,10 @@ def address_length_end(address, data):
 tiles = map(lambda tile: makelevels.tile_ref[tile], makelevels.tile_order)
 
 char_sprites = ["images/left1.png", "images/left2.png",
-                "images/right1.png", "images/right2.png",
-                "images/birdl1.png","images/birdl2.png",
-                "images/birdr1.png","images/birdr2.png"]
+                "images/right1.png", "images/right2.png"]
 
-constants_oph = \
-""".alias sprite_area_low              $%02x
-.alias sprite_area_high             $%02x
-.alias sprite_area_length_low       $%02x
-.alias sprite_area_length_high      $%02x
-.alias sprite_area_end_low          $%02x
-.alias sprite_area_end_high         $%02x
-.alias left_sprites_low             $%02x
-.alias left_sprites_high            $%02x
-.alias rotated_sprites_low          $%02x
-.alias rotated_sprites_high         $%02x
-.alias right_sprites_low            $%02x
-.alias right_sprites_high           $%02x
+objects = ["images/key.png", "images/torch.png"]
 
-.alias levels_address_low           $%02x
-.alias levels_address_high          $%02x
-.alias levels_length_low            $%02x
-.alias levels_length_high           $%02x
-.alias levels_end_low               $%02x
-.alias levels_end_high              $%02x
-.alias level_extent                 %i
-.alias level_extent_low             $%02x
-.alias level_extent_high            $%02x
-
-.alias tile_visibility_address      $%x
-.alias tile_visibility_low          $%02x
-.alias tile_visibility_high         $%02x
-
-.alias char_area                    $%x
-.alias char_area_low                $%02x
-.alias char_area_high               $%02x
-.alias char_area_length_low         $%02x
-.alias char_area_length_high        $%02x
-.alias char_area_end_low            $%02x
-.alias char_area_end_high           $%02x
-
-.alias top_panel_address_low       $%02x
-.alias top_panel_address_high      $%02x
-.alias top_panel_length_low        $%02x
-.alias top_panel_length_high       $%02x
-.alias top_panel_end_low           $%02x
-.alias top_panel_end_high          $%02x
-"""
-
-extras_oph = \
-"""
-.alias code_start_address           $%02x
-.alias code_start_low               $%02x
-.alias code_start_high              $%02x
-.alias code_length_low              $%02x
-.alias code_length_high             $%02x
-.alias code_end_low                 $%02x
-.alias code_end_high                $%02x
-"""
 
 if __name__ == "__main__":
 
@@ -231,6 +177,10 @@ if __name__ == "__main__":
     char_area_address = 0x2d00
     char_data = makesprites.read_sprites(char_sprites)
     
+    objects_address = char_area_address + len(char_data)
+    objects_sprites = makesprites.read_tiles(objects)
+    objects_data = makesprites.read_object_data(objects_sprites)
+    
     levels_address = 0x1fd0
     level_data = makelevels.create_level(tiles, levels_address, level_file)
     
@@ -251,31 +201,100 @@ if __name__ == "__main__":
     panel_address = 0x3000
     panel = makesprites.read_sprites(["images/panel.png"])
     
-    # Create a tuple of template values.
+    # Create the contents of a file containing constant values.
     
-    values = address_length_end(sprite_area_address, sprite_data) + \
-        (left_sprites_low, left_sprites_high,
+    constants_oph = (
+        ".alias sprite_area_low              $%02x\n"
+        ".alias sprite_area_high             $%02x\n"
+        ".alias sprite_area_length_low       $%02x\n"
+        ".alias sprite_area_length_high      $%02x\n"
+        ".alias sprite_area_end_low          $%02x\n"
+        ".alias sprite_area_end_high         $%02x\n"
+        "\n"
+        ) % address_length_end(sprite_area_address, sprite_data)
+    
+    constants_oph += (
+        ".alias left_sprites_low             $%02x\n"
+        ".alias left_sprites_high            $%02x\n"
+        ".alias rotated_sprites_low          $%02x\n"
+        ".alias rotated_sprites_high         $%02x\n"
+        ".alias right_sprites_low            $%02x\n"
+        ".alias right_sprites_high           $%02x\n"
+        "\n"
+        ) % (left_sprites_low, left_sprites_high,
          rotated_sprites_low, rotated_sprites_high,
-         right_sprites_low, right_sprites_high) + \
-        address_length_end(levels_address, level_data) + \
-        (level_extent, level_extent & 0xff, level_extent >> 8,
-         tile_visibility_address, tile_visibility_low, tile_visibility_high,
-         char_area_address,) + \
-        address_length_end(char_area_address, char_data) + \
-        address_length_end(panel_address, panel)
+         right_sprites_low, right_sprites_high)
+    
+    constants_oph += (
+        ".alias levels_address_low           $%02x\n"
+        ".alias levels_address_high          $%02x\n"
+        ".alias levels_length_low            $%02x\n"
+        ".alias levels_length_high           $%02x\n"
+        ".alias levels_end_low               $%02x\n"
+        ".alias levels_end_high              $%02x\n"
+        ".alias level_extent                 %i\n"
+        ".alias level_extent_low             $%02x\n"
+        ".alias level_extent_high            $%02x\n"
+        "\n"
+        ) % (address_length_end(levels_address, level_data) + (
+            level_extent, level_extent & 0xff, level_extent >> 8))
+    
+    constants_oph += (
+        ".alias tile_visibility_address      $%x\n"
+        ".alias tile_visibility_low          $%02x\n"
+        ".alias tile_visibility_high         $%02x\n"
+        "\n"
+        ) % (tile_visibility_address, tile_visibility_low, tile_visibility_high)
+    
+    constants_oph += (
+        ".alias char_area                    $%x\n"
+        ".alias char_area_low                $%02x\n"
+        ".alias char_area_high               $%02x\n"
+        ".alias char_area_length_low         $%02x\n"
+        ".alias char_area_length_high        $%02x\n"
+        ".alias char_area_end_low            $%02x\n"
+        ".alias char_area_end_high           $%02x\n"
+        "\n"
+        ) % ((char_area_address,) + \
+        address_length_end(char_area_address, char_data))
+    
+    constants_oph += (
+        ".alias top_panel_address_low       $%02x\n"
+        ".alias top_panel_address_high      $%02x\n"
+        ".alias top_panel_length_low        $%02x\n"
+        ".alias top_panel_length_high       $%02x\n"
+        ".alias top_panel_end_low           $%02x\n"
+        ".alias top_panel_end_high          $%02x\n"
+        "\n"
+        ) % address_length_end(panel_address, panel)
+    
+    constants_oph += (
+        ".alias objects_address             $%02x\n"
+        ".alias objects_address_low         $%02x\n"
+        ".alias objects_address_high        $%02x\n"
+        "\n"
+        ) % (objects_address, objects_address & 0xff, objects_address >> 8)
     
     # Assemble the main game code and loader code.
     
-    open("constants.oph", "w").write(constants_oph % values)
+    open("constants.oph", "w").write(constants_oph)
     
     system("ophis code.oph CODE")
     code = open("CODE").read()
     
     loader_start = 0x3500
     
-    values = values + (code_start,) + address_length_end(code_start, code)
+    extras_oph = constants_oph + (
+        ".alias code_start_address           $%02x\n"
+        ".alias code_start_low               $%02x\n"
+        ".alias code_start_high              $%02x\n"
+        ".alias code_length_low              $%02x\n"
+        ".alias code_length_high             $%02x\n"
+        ".alias code_end_low                 $%02x\n"
+        ".alias code_end_high                $%02x\n"
+        ) % ((code_start,) + address_length_end(code_start, code))
     
-    open("constants.oph", "w").write((constants_oph + extras_oph) % values)
+    open("constants.oph", "w").write(extras_oph)
     
     system("ophis loader.oph LOADER")
     loader_code = open("LOADER").read()
@@ -286,7 +305,8 @@ if __name__ == "__main__":
     files = [("CASTLE", bootloader_start, bootloader_start, bootloader_code),
              ("LOADER", loader_start, loader_start, loader_code),
              ("TILES", sprite_area_address, sprite_area_address, sprite_data),
-             ("SPRITES", char_area_address, char_area_address, char_data),
+             ("SPRITES", char_area_address, char_area_address,
+                         char_data + objects_data),
              ("LEVELS", levels_address, levels_address, level_data),
              ("PANEL", panel_address, panel_address, panel),
              ("CODE", code_start, code_start, code)]

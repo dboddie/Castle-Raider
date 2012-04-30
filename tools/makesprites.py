@@ -138,6 +138,9 @@ def compress(data):
 
 def read_tile_data(sprites):
 
+    """Creates edges and rotated versions of original sprites, appending the
+    new versions to the list, and returning a string containing the data.
+    """
     number = len(sprites)
     
     # Add left edge sprites for bank 2.
@@ -199,6 +202,9 @@ def read_tiles(paths):
 
 def read_object_tiles(paths):
 
+    """Creates rotated versions of original sprites, appending the new versions
+    to the list, and returning a string containing the data.
+    """
     sprites = []
     for path in paths:
     
@@ -215,7 +221,33 @@ def read_object_tiles(paths):
         sprites.append(right)
     
     return sprites
+
+def read_object_data(sprites):
+
+    number = len(sprites)
     
+    # Add rotated sprites for 2 pixel offset plotting.
+    for i in range(number):
+    
+        sprite = sprites[i]
+        
+        lines = []
+        for j in range(len(sprite)):
+        
+            line = sprite[j]
+            lines.append(line[len(line)/2:] + line[:len(line)/2])
+        
+        sprites.append(lines)
+    
+    data = ""
+    for lines in sprites:
+    
+        data += read_sprite(lines)
+    
+    print "%i bytes (%04x) of object data" % (len(data), len(data))
+    
+    return data
+
 def read_sprites(paths):
 
     sprites = []

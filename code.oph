@@ -2373,52 +2373,50 @@ read_visible_sprite:
     lda $8d
     rts
 
-plot16x16_y0:           ; $70,$71=source address
+plot4x8_x0_y0:          ; $70,$71=source address
                         ; $72,$73=destination address
-    ldy #31
+    ldy #7
 
-    plotloop16x16_y0_0:
+    plot4x8_x0_y0_loop:
         lda ($70),y
         eor ($72),y
         sta ($72),y
         dey
-        bpl plotloop16x16_y0_0
+        bpl plot4x8_x0_y0_loop
     clc
-
-    lda $72
-    adc #$20
-    sta $72
-    lda $73
-    adc #$01
-    sta $73     ; 0x140 - 32
-    clc
-
-    ldy #63
-
-    plotloop16x16_y0_1:
-        lda ($70),y
-        eor ($72),y
-        sta ($72),y
-        dey
-        cpy #32
-        bpl plotloop16x16_y0_1
-    clc
-
     rts
 
-track_position:
+plot4x8_x1_y0:          ; $70,$71=source address
+                        ; $72,$73=destination address
+    ldy #7
+
+    plot4x8_x1_y0_loop:
+        lda ($70),y
+        eor ($72),y
+        sta ($72),y
+        dey
+        bpl plot4x8_x1_y0_loop
+    clc
+    rts
+
+track_position: ; Scroll back to the last stored position.
 
     clc
 
     lda scroll_offset_high
     cmp tracking_high
-    beq track_position_loop_check_low
+    beq track_position_check_low
     bcs track_position_scroll_left
     bcc track_position_scroll_right
 
-    track_position_loop_check_low:
+    track_position_check_low:
     lda scroll_offset_low
     cmp tracking_low
+    beq track_position_check_bank
+
+    track_position_check_bank:
+    lda bank_number
+    cmp #1
     beq track_position_exit
     bcs track_position_scroll_left
 
