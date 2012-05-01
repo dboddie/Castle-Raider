@@ -141,7 +141,7 @@ if __name__ == "__main__":
     # Memory map
     code_start = 0x0e00
     
-    data_start = 0x1f60
+    data_start = 0x1f40
     # Working information about tile visibility.
     tile_visibility_address       = data_start
     # Low and high bytes are adjusted by 16 bytes so that entries can be
@@ -185,10 +185,10 @@ if __name__ == "__main__":
     special_tile_numbers_high     = (special_tile_numbers_address - 0x10) >> 8
     
     # Visibility flags for special tiles.
-    initial_tile_visibility_address = level_data_start + 0x10
+    initial_tile_visibility_address = level_data_start + 0x20
     
     # Low bytes for the addresses of the rows.
-    row_table_low                 = level_data_start + 0x20
+    row_table_low                 = level_data_start + 0x40
     # High bytes for the addresses of the rows.
     row_table_high                = row_table_low + 0x10
     level_data                    = row_table_high + 0x10

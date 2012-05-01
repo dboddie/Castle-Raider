@@ -471,14 +471,11 @@ check_beneath:
     sta $70
 
     jsr check_tile
-    cmp #0
-    bne check_beneath_exit
+    bcs check_beneath_exit
 
-    clc
     inc $70
     jsr check_tile
-    cmp #0
-    bne check_beneath_exit
+    bcs check_beneath_exit
 
     lda bank_number         ; When half way across a cell, check another cell
     cmp #2                  ; beneath the player since they could be standing
@@ -487,8 +484,7 @@ check_beneath:
     clc
     inc $70
     jsr check_tile
-    cmp #0
-    bne check_beneath_exit
+    bcs check_beneath_exit
 
     check_beneath_fall:
 
@@ -512,10 +508,10 @@ check_beneath:
     dec player_lives
 
     check_beneath_exit:
+    clc
 
     lda #0
     sta player_falling
-    clc
     rts
 
 clear_bank1:
@@ -1808,12 +1804,12 @@ plot_player:
 check_tile:         ; $70=x position (0-39)
                     ; $71=y position (0-23) (measured from the top of the
                     ;           playing area, not the top row of the scenery)
+                    ; returns C set if tile found or C clear if not
 
     lda $71         ; For y positions less than 8 do not check the
     cmp #8          ; corresponding row.
     bcs check_tile_row
 
-    lda #0
     rts
 
     check_tile_row:
@@ -1877,16 +1873,17 @@ check_tile:         ; $70=x position (0-39)
         jmp check_tile_spans_loop
 
     check_tile_spans_endloop:
-    clc
 
-    lda #0          ; In theory, we should never reach here.
+    clc             ; In theory, we should never reach here.
     rts
 
-check_tile_visible:
-
+check_tile_visible:             ; A=tile number
+                                ; returns C set if tile is visible or C
+                                ; clear if not
     cmp #$10
     bcs check_tile_visible_special
 
+    cmp #1
     rts
 
     check_tile_visible_special:
@@ -1895,13 +1892,11 @@ check_tile_visible:
     cmp #0
     bne check_tile_visible_next
 
-    lda #0
-    clc
+    clc                         ; not visible, so clear C to indicate this
     rts
 
-    check_tile_visible_next:
-    lda ($84),y                 ; load the tile number from a table
-    clc
+    check_tile_visible_next:    ; the tile is visible
+    sec
     rts
 
 check_move_right:
@@ -1982,8 +1977,8 @@ check_move:
         asl $73
         clc
         jsr check_tile
-        cmp #0
-        beq check_move_next
+        bcc check_move_next
+        clc
 
         lda $73     ; Set a bit to indicate that this tile is occupied.
         ora #1
@@ -2071,16 +2066,12 @@ player_jump:
         lda player_x
         sta $70
         jsr check_tile
-        cmp #0
-            bne player_jump_stop_jumping
-        clc
+        bcs player_jump_stop_jumping
 
         inc $70
 
         jsr check_tile
-        cmp #0
-            bne player_jump_stop_jumping
-        clc
+        bcs player_jump_stop_jumping
 
         lda bank_number     ; When half way across a cell, check another cell
         cmp #2                      ; above the player since they could be
@@ -2090,8 +2081,7 @@ player_jump:
             inc $70
 
             jsr check_tile
-            cmp #0
-            bne player_jump_stop_jumping
+            bcs player_jump_stop_jumping
 
         player_jump_move_up:
 
@@ -2241,7 +2231,7 @@ read_sprite_address:        ; $76,$77=span address
     read_sprite_address_next:
     clc
 
-    and #$0f                    ; mask off the top 3 bits,
+    and #$1f                    ; mask off the top 3 bits,
     asl
     asl
     asl
@@ -2266,7 +2256,7 @@ read_left_sprite_address:       ; A=tile number in high 4 bits
     read_left_sprite_address_next:
     clc
 
-    and #$0f                    ; mask off the top 3 bits,
+    and #$1f                    ; mask off the top 3 bits,
     asl
     asl
     asl
@@ -2291,7 +2281,7 @@ read_rotated_sprite_address:    ; A=tile number
     read_rotated_sprite_address_next:
     clc
 
-    and #$0f                    ; mask off the top 3 bits,
+    and #$1f                    ; mask off the top 3 bits,
     asl
     asl
     asl
@@ -2316,7 +2306,7 @@ read_right_sprite_address:      ; A=tile number in high 4 bits
     read_right_sprite_address_next:
     clc
 
-    and #$0f                    ; mask off the top 3 bits,
+    and #$1f                    ; mask off the top 3 bits,
     asl
     asl
     asl

@@ -46,10 +46,13 @@ tile_ref = {".": "images/blank.png",
             "{": "images/rope.png",
             "?": "images/flag.png",
             "I": "images/gate.png",
-            "%": "images/foliage.png"}
+            "%": "images/foliage.png",  # End of scenery tile sprites
+                                        # Start of collectable item sprites
+            "K": "images/key.png"}
 
 tile_order = (".", "@", "+", "=", "#", "X", "-", "|",
-              "/", "\\", "[", "]", "{", "?", "I", "%")
+              "/", "\\", "[", "]", "{", "?", "I", "%",
+              "K")
 
 def load_level(path):
 
@@ -122,8 +125,7 @@ def create_level(tile_paths, levels_address, level_path):
     for key, value in tile_ref.items():
         tiles[key] = tile_paths.index(value)
     
-    special_tile_numbers_table_size = 16
-    visibility_table_size = 16
+    special_tile_numbers_table_size = visibility_table_size = 32
     row_table_size = (16 * 2)
     
     data = ""
@@ -166,7 +168,7 @@ def create_level(tile_paths, levels_address, level_path):
     special_tile_numbers = []
     default_tile = [".", 0]
     
-    for i in range(16, 32):
+    for i in range(16, 16 + special_tile_numbers_table_size):
         special_tile_numbers.append(tiles[special_visibility.get(i, default_tile)[0]])
         initial_visibility.append(special_visibility.get(i, default_tile)[1])
     
