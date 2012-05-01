@@ -17,30 +17,6 @@
 
 .include "constants.oph"
 
-.alias max_row_offsets      $1f80 ; the furthest they can be displaced to the right
-.alias player_x             $1f90
-.alias player_y             $1f91
-.alias bank_number          $1f92
-.alias player_animation     $1f93
-.alias player_jumping       $1f94
-.alias player_moving        $1f95
-.alias player_falling       $1f96
-.alias player_ys            $1f97
-.alias player_lives         $1f98
-.alias player_lost          $1f99
-.alias tracking_low         $1f9a
-.alias tracking_high        $1f9b
-.alias tracking_y           $1f9c
-
-.alias initial_row_tiles    $1fa0 ; the tile occurring at the left edge of the screen
-.alias row_indices          $1fb0 ; indices into each row of the level data
-.alias initial_row_offsets  $1fc0 ; current displacements for the rows
-.alias tile_initial_visibility_address  $1fd0
-.alias row_table_low        $1fe0 ; low bytes for the addresses of the rows
-.alias row_table_high       $1ff0 ; high bytes for the addresses of the rows
-.alias level_data_low       $00
-.alias level_data_high      $20
-
 .alias scroll_offset_low    $8e
 .alias scroll_offset_high   $8f
 

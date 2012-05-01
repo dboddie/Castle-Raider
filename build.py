@@ -139,20 +139,46 @@ if __name__ == "__main__":
         level_file = sys.argv[2]
     
     # Memory map
-    #
-    # 0e00      code
-    # 1f70      tile visibility flags
-    # 1f80      max row offsets
-    # 1f90      player information
-    # 1fa0      initial row tiles
-    # 1fb0      row indices
-    # 1fc0      initial row offsets
-    # 1fd0      initial tile visibility flags
-    # 1fe0      row table low
-    # 1ff0      row table high
-    # 2000      level data
+    code_start = 0x0e00
+    
+    data_start = 0x1f70
+    tile_visibility_flags         = data_start
+    # The furthest that spans can be displaced to the right.
+    max_row_offsets               = tile_visibility_flags + 0x10
+    
+    player_information            = max_row_offsets + 0x10
+    player_x                      = player_information + 0
+    player_y                      = player_information + 1
+    bank_number                   = player_information + 2
+    player_animation              = player_information + 3
+    player_jumping                = player_information + 4
+    player_moving                 = player_information + 5
+    player_falling                = player_information + 6
+    player_ys                     = player_information + 7
+    player_lives                  = player_information + 8
+    player_lost                   = player_information + 9
+    tracking_low                  = player_information + 10
+    tracking_high                 = player_information + 11
+    tracking_y                    = player_information + 12
+    
+    # The tile type occurring at the left edge of the screen.
+    initial_row_tiles             = player_information + 0x10
+    # Indices into each row of the level data.
+    row_indices                   = initial_row_tiles + 0x10
+    # Current displacements for the rows.
+    initial_row_offsets           = row_indices + 0x10
+    initial_tile_visibility_flags = initial_row_offsets + 0x10
+    # Low bytes for the addresses of the rows.
+    row_table_low                 = initial_tile_visibility_flags + 0x10
+    # High bytes for the addresses of the rows.
+    row_table_high                = row_table_low + 0x10
+    level_data                    = row_table_high + 0x10
+    level_data_low                = level_data & 0xff
+    level_data_high               = level_data >> 8
+    
     # 2a00      tile sprites
-    # 2d00      character sprites
+    # 2d00      character and object sprites
+    # 2f80      object positions
     # 3000      bank 1 (panel)
     # 3500             (loader code)
     # 5800      bank 2
@@ -177,9 +203,14 @@ if __name__ == "__main__":
     char_area_address = 0x2d00
     char_data = makesprites.read_sprites(char_sprites)
     
+    all_objects = len(objects)
+    
     objects_address = char_area_address + len(char_data)
     objects_sprites = makesprites.read_tiles(objects)
     objects_data = makesprites.read_object_data(objects_sprites)
+    objects_rotated_address = objects_address + (all_objects * 8)
+    
+    objects_positions = 0x2f80
     
     levels_address = 0x1fd0
     level_data = makelevels.create_level(tiles, levels_address, level_file)
@@ -195,15 +226,47 @@ if __name__ == "__main__":
     tile_visibility_low = tile_visibility_address & 0xff
     tile_visibility_high = tile_visibility_address >> 8
     
-    code_start = 0x0e00
-    data_start = 0x1f70
-    
     panel_address = 0x3000
     panel = makesprites.read_sprites(["images/panel.png"])
     
     # Create the contents of a file containing constant values.
     
     constants_oph = (
+        ".alias max_row_offsets      $%x\n"
+        ".alias player_x             $%x\n"
+        ".alias player_y             $%x\n"
+        ".alias bank_number          $%x\n"
+        ".alias player_animation     $%x\n"
+        ".alias player_jumping       $%x\n"
+        ".alias player_moving        $%x\n"
+        ".alias player_falling       $%x\n"
+        ".alias player_ys            $%x\n"
+        ".alias player_lives         $%x\n"
+        ".alias player_lost          $%x\n"
+        ".alias tracking_low         $%x\n"
+        ".alias tracking_high        $%x\n"
+        ".alias tracking_y           $%x\n"
+        "\n"
+        ) % (max_row_offsets, player_x, player_y, bank_number,
+             player_animation, player_jumping, player_moving,
+             player_falling, player_ys, player_lives, player_lost,
+             tracking_low, tracking_high, tracking_y)
+    
+    constants_oph += (
+        ".alias initial_row_tiles    $%x\n"
+        ".alias row_indices          $%x\n"
+        ".alias initial_row_offsets  $%x\n"
+        ".alias tile_initial_visibility_address  $%x\n"
+        ".alias row_table_low        $%x\n"
+        ".alias row_table_high       $%x\n"
+        ".alias level_data_low       $%02x\n"
+        ".alias level_data_high      $%02x\n"
+        "\n"
+        ) % (initial_row_tiles, row_indices, initial_row_offsets,
+             tile_initial_visibility_address, row_table_low,
+             row_table_high, level_data_low, level_data_high)
+    
+    constants_oph += (
         ".alias sprite_area_low              $%02x\n"
         ".alias sprite_area_high             $%02x\n"
         ".alias sprite_area_length_low       $%02x\n"
@@ -269,11 +332,17 @@ if __name__ == "__main__":
         ) % address_length_end(panel_address, panel)
     
     constants_oph += (
-        ".alias objects_address             $%02x\n"
-        ".alias objects_address_low         $%02x\n"
-        ".alias objects_address_high        $%02x\n"
+        ".alias object_sprites             $%x\n"
+        ".alias object_sprites_low         $%02x\n"
+        ".alias object_sprites_high        $%02x\n"
+        ".alias object_rotated             $%x\n"
+        ".alias object_rotated_low         $%02x\n"
+        ".alias object_rotated_high        $%02x\n"
+        ".alias object_positions           $%x\n"
         "\n"
-        ) % (objects_address, objects_address & 0xff, objects_address >> 8)
+        ) % (objects_address, objects_address & 0xff, objects_address >> 8,
+             objects_rotated_address, objects_rotated_address & 0xff,
+             objects_rotated_address >> 8, objects_positions)
     
     # Assemble the main game code and loader code.
     
@@ -334,7 +403,7 @@ if __name__ == "__main__":
     
     char_area_finish = char_area_address + len(char_data)
     print "SPRITES runs from %04x to %04x" % (char_area_address, char_area_finish)
-    if char_area_finish > panel_address:
+    if char_area_finish > objects_positions:
         sys.stderr.write("SPRITES overruns following data.\n")
         sys.exit(1)
     
