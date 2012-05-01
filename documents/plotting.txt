@@ -237,5 +237,23 @@ whether the tile is visible or not.
 
 The bottom four bits are the tile number.
 If the top 4 bits are 0 then the tile is always shown.
-If the top 4 bits are non-zero then the top 4 bits are an offset into a
-tile visibility table.
+
+    0000tttt -> tile number
+
+If the top 4 bits are non-zero then the byte is an offset into a tile
+visibility table and a tile number table. The base address for each table
+is chosen appropriately so that we avoid having to subtract 16 from the
+offset.
+
+    xxxxxxxx -> offset into visibility and tile number tables
+
+    tile_visibility_table:
+    [16 bytes]
+    tile_visibility_table_start:
+    [values]
+
+    tile_number_table:
+    [16 bytes]
+    tile_number_table_start:
+    [values]
+

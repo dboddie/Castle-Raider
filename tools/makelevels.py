@@ -60,7 +60,7 @@ def load_level(path):
     # containing corresponding tiles and flags. The flag is an offset into the
     # visibility table, the initial values for which are below.
     special = {}
-    flag = 1
+    flag = 16
     for line in lines[16:]:
     
         if line:
@@ -87,7 +87,8 @@ def create_level_data(level, tiles):
             
             if ch in special:
                 n, flags, initial = special[ch]
-                c = tiles[n] | (flags << 4)
+                # Special tiles have values greater than or equal to 16.
+                c = flags
             else:
                 c = tiles[ch]
             
@@ -121,6 +122,7 @@ def create_level(tile_paths, levels_address, level_path):
     for key, value in tile_ref.items():
         tiles[key] = tile_paths.index(value)
     
+    special_tile_numbers_table_size = 16
     visibility_table_size = 16
     row_table_size = (16 * 2)
     
@@ -132,7 +134,7 @@ def create_level(tile_paths, levels_address, level_path):
     r = 0
     for row in level_data:
     
-        row_addresses.append(levels_address + visibility_table_size + row_table_size + len(data))
+        row_addresses.append(levels_address + special_tile_numbers_table_size + visibility_table_size + row_table_size + len(data))
         row_data = ""
         
         for tile, number in row:
@@ -157,15 +159,18 @@ def create_level(tile_paths, levels_address, level_path):
     
     print "%i bytes (%04x) of level data" % (len(data), len(data))
     
-    # Create a table of initial visibility values.
-    # (The 0 entry is for normal tiles.)
+    # Create a table of special tile numbers and initial visibility values.
     
-    special_values = dict(map(lambda (c, f, i): (f, i), special.values()))
+    special_visibility = dict(map(lambda (c, f, i): (f, (c, i)), special.values()))
     initial_visibility = []
+    special_tile_numbers = []
+    default_tile = [".", 0]
     
-    for i in range(16):
-        initial_visibility.append(special_values.get(i, 1))
+    for i in range(16, 32):
+        special_tile_numbers.append(tiles[special_visibility.get(i, default_tile)[0]])
+        initial_visibility.append(special_visibility.get(i, default_tile)[1])
     
+    special_tiles_table = "".join(map(chr, special_tile_numbers))
     visibility_table = "".join(map(chr, initial_visibility))
     
     # Create a table of row offsets.
@@ -173,6 +178,6 @@ def create_level(tile_paths, levels_address, level_path):
             "".join(map(lambda x: chr(x >> 8), row_addresses))
     
     # Append the data to the table of row offsets.
-    data = visibility_table + table + data
+    data = special_tiles_table + visibility_table + table + data
     
     return data

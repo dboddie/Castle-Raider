@@ -121,7 +121,7 @@ tiles = map(lambda tile: makelevels.tile_ref[tile], makelevels.tile_order)
 char_sprites = ["images/left1.png", "images/left2.png",
                 "images/right1.png", "images/right2.png"]
 
-objects = ["images/key.png", "images/torch.png"]
+#objects = ["images/key.png", "images/torch.png"]
 
 
 if __name__ == "__main__":
@@ -141,12 +141,16 @@ if __name__ == "__main__":
     # Memory map
     code_start = 0x0e00
     
-    data_start = 0x1f70
+    data_start = 0x1f60
     # Working information about tile visibility.
-    tile_visibility_flags         = data_start
+    tile_visibility_address       = data_start
+    # Low and high bytes are adjusted by 16 bytes so that entries can be
+    # addressed directly, starting with an index of 16.
+    tile_visibility_low = (tile_visibility_address - 0x10) & 0xff
+    tile_visibility_high = (tile_visibility_address - 0x10) >> 8
     
     # The furthest that spans can be displaced to the right.
-    max_row_offsets               = tile_visibility_flags + 0x10
+    max_row_offsets               = tile_visibility_address + 0x10
     
     player_information            = max_row_offsets + 0x10
     player_x                      = player_information + 0
@@ -171,11 +175,20 @@ if __name__ == "__main__":
     initial_row_offsets           = row_indices + 0x10
     
     # Level data
+    level_data_start = initial_row_offsets + 0x10
     
     # Visibility flags for special tiles.
-    initial_tile_visibility_flags = initial_row_offsets + 0x10
+    special_tile_numbers_address  = level_data_start
+    # Low and high bytes are adjusted by 16 bytes so that entries can be
+    # addressed directly, starting with an index of 16.
+    special_tile_numbers_low      = (special_tile_numbers_address - 0x10) & 0xff
+    special_tile_numbers_high     = (special_tile_numbers_address - 0x10) >> 8
+    
+    # Visibility flags for special tiles.
+    initial_tile_visibility_address = level_data_start + 0x10
+    
     # Low bytes for the addresses of the rows.
-    row_table_low                 = initial_tile_visibility_flags + 0x10
+    row_table_low                 = level_data_start + 0x20
     # High bytes for the addresses of the rows.
     row_table_high                = row_table_low + 0x10
     level_data                    = row_table_high + 0x10
@@ -209,28 +222,19 @@ if __name__ == "__main__":
     char_area_address = 0x2d00
     char_data = makesprites.read_sprites(char_sprites)
     
-    all_objects = len(objects)
-    
-    objects_address = char_area_address + len(char_data)
-    objects_sprites = makesprites.read_tiles(objects)
-    objects_data = makesprites.read_object_data(objects_sprites)
-    objects_rotated_address = objects_address + (all_objects * 8)
+    #all_objects = len(objects)
+    #
+    #objects_address = char_area_address + len(char_data)
+    #objects_sprites = makesprites.read_tiles(objects)
+    #objects_data = makesprites.read_object_data(objects_sprites)
+    #objects_rotated_address = objects_address + (all_objects * 8)
     
     objects_positions = 0x2f80
     
-    levels_address = 0x1fd0
+    levels_address = level_data_start
     level_data = makelevels.create_level(tiles, levels_address, level_file)
     
     level_extent = len(makelevels.level[0]) - 40
-    
-    # Visibility flags for special scenery.
-    tile_initial_visibility_address = 0x1fd0
-    tile_initial_visibility_low = tile_initial_visibility_address & 0xff
-    tile_initial_visibility_high = tile_initial_visibility_address >> 8
-    
-    tile_visibility_address = 0x1f70
-    tile_visibility_low = tile_visibility_address & 0xff
-    tile_visibility_high = tile_visibility_address >> 8
     
     panel_address = 0x3000
     panel = makesprites.read_sprites(["images/panel.png"])
@@ -259,18 +263,19 @@ if __name__ == "__main__":
              tracking_low, tracking_high, tracking_y)
     
     constants_oph += (
-        ".alias initial_row_tiles    $%x\n"
-        ".alias row_indices          $%x\n"
-        ".alias initial_row_offsets  $%x\n"
-        ".alias tile_initial_visibility_address  $%x\n"
-        ".alias row_table_low        $%x\n"
-        ".alias row_table_high       $%x\n"
-        ".alias level_data_low       $%02x\n"
-        ".alias level_data_high      $%02x\n"
+        ".alias initial_row_tiles               $%x\n"
+        ".alias row_indices                     $%x\n"
+        ".alias initial_row_offsets             $%x\n"
+        ".alias special_tile_numbers_address    $%x\n"
+        ".alias initial_tile_visibility_address $%x\n"
+        ".alias row_table_low                   $%x\n"
+        ".alias row_table_high                  $%x\n"
+        ".alias level_data_low                  $%02x\n"
+        ".alias level_data_high                 $%02x\n"
         "\n"
         ) % (initial_row_tiles, row_indices, initial_row_offsets,
-             tile_initial_visibility_address, row_table_low,
-             row_table_high, level_data_low, level_data_high)
+             special_tile_numbers_address, initial_tile_visibility_address,
+             row_table_low, row_table_high, level_data_low, level_data_high)
     
     constants_oph += (
         ".alias sprite_area_low              $%02x\n"
@@ -309,11 +314,15 @@ if __name__ == "__main__":
             level_extent, level_extent & 0xff, level_extent >> 8))
     
     constants_oph += (
+        ".alias special_tile_numbers_low     $%02x\n"
+        ".alias special_tile_numbers_high    $%02x\n"
         ".alias tile_visibility_address      $%x\n"
         ".alias tile_visibility_low          $%02x\n"
         ".alias tile_visibility_high         $%02x\n"
         "\n"
-        ) % (tile_visibility_address, tile_visibility_low, tile_visibility_high)
+        ) % (special_tile_numbers_low, special_tile_numbers_high,
+             tile_visibility_address, tile_visibility_low,
+             tile_visibility_high)
     
     constants_oph += (
         ".alias char_area                    $%x\n"
@@ -337,18 +346,18 @@ if __name__ == "__main__":
         "\n"
         ) % address_length_end(panel_address, panel)
     
-    constants_oph += (
-        ".alias object_sprites             $%x\n"
-        ".alias object_sprites_low         $%02x\n"
-        ".alias object_sprites_high        $%02x\n"
-        ".alias object_rotated             $%x\n"
-        ".alias object_rotated_low         $%02x\n"
-        ".alias object_rotated_high        $%02x\n"
-        ".alias object_positions           $%x\n"
-        "\n"
-        ) % (objects_address, objects_address & 0xff, objects_address >> 8,
-             objects_rotated_address, objects_rotated_address & 0xff,
-             objects_rotated_address >> 8, objects_positions)
+    #constants_oph += (
+    #    ".alias object_sprites             $%x\n"
+    #    ".alias object_sprites_low         $%02x\n"
+    #    ".alias object_sprites_high        $%02x\n"
+    #    ".alias object_rotated             $%x\n"
+    #    ".alias object_rotated_low         $%02x\n"
+    #    ".alias object_rotated_high        $%02x\n"
+    #    ".alias object_positions           $%x\n"
+    #    "\n"
+    #    ) % (objects_address, objects_address & 0xff, objects_address >> 8,
+    #         objects_rotated_address, objects_rotated_address & 0xff,
+    #         objects_rotated_address >> 8, objects_positions)
     
     # Assemble the main game code and loader code.
     
@@ -380,8 +389,7 @@ if __name__ == "__main__":
     files = [("CASTLE", bootloader_start, bootloader_start, bootloader_code),
              ("LOADER", loader_start, loader_start, loader_code),
              ("TILES", sprite_area_address, sprite_area_address, sprite_data),
-             ("SPRITES", char_area_address, char_area_address,
-                         char_data + objects_data),
+             ("SPRITES", char_area_address, char_area_address, char_data),
              ("LEVELS", levels_address, levels_address, level_data),
              ("PANEL", panel_address, panel_address, panel),
              ("CODE", code_start, code_start, code)]

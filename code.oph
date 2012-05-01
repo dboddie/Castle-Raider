@@ -46,14 +46,11 @@ init:
     ldx #15
 
     init_tile_visibility_loop:
-        lda tile_initial_visibility_address,x
+        lda initial_tile_visibility_address,x
         sta tile_visibility_address,x
         dex
-        bne init_tile_visibility_loop
+        bpl init_tile_visibility_loop
     clc
-
-    lda #1
-    sta tile_visibility_address
 
     lda #1              ; Use 1 and 2 for banks 1 and 2.
     sta bank_number
@@ -62,6 +59,11 @@ init:
     sta $82
     lda #tile_visibility_high
     sta $83
+
+    lda #special_tile_numbers_low
+    sta $84
+    lda #special_tile_numbers_high
+    sta $85
 
 main:
 
@@ -1882,24 +1884,24 @@ check_tile:         ; $70=x position (0-39)
 
 check_tile_visible:
 
-    sta $8d
+    cmp #$10
+    bcs check_tile_visible_special
 
-    and #$f0
-    lsr
-    lsr
-    lsr
-    lsr
+    rts
 
+    check_tile_visible_special:
     tay
-    lda ($82),y
+    lda ($82),y                 ; load the visibility of the tile
     cmp #0
     bne check_tile_visible_next
 
     lda #0
+    clc
     rts
 
     check_tile_visible_next:
-    lda $8d
+    lda ($84),y                 ; load the tile number from a table
+    clc
     rts
 
 check_move_right:
@@ -2329,16 +2331,8 @@ read_right_sprite_address:      ; A=tile number in high 4 bits
 
 read_visible_sprite:
 
-    sta $8d
-
-    and #$f0
-    lsr
-    lsr
-    lsr
-    lsr
-
     tay
-    lda ($82),y
+    lda ($82),y                 ; load the visibility of the tile
     cmp #0
     bne read_visible_sprite_visible
 
@@ -2346,7 +2340,7 @@ read_visible_sprite:
     rts
 
     read_visible_sprite_visible:
-    lda $8d
+    lda ($84),y                 ; load the tile number from a table
     rts
 
 plot4x8_x0_y0:          ; $70,$71=source address
