@@ -142,7 +142,9 @@ if __name__ == "__main__":
     code_start = 0x0e00
     
     data_start = 0x1f70
+    # Working information about tile visibility.
     tile_visibility_flags         = data_start
+    
     # The furthest that spans can be displaced to the right.
     max_row_offsets               = tile_visibility_flags + 0x10
     
@@ -165,8 +167,12 @@ if __name__ == "__main__":
     initial_row_tiles             = player_information + 0x10
     # Indices into each row of the level data.
     row_indices                   = initial_row_tiles + 0x10
-    # Current displacements for the rows.
+    # Initial displacements for the rows.
     initial_row_offsets           = row_indices + 0x10
+    
+    # Level data
+    
+    # Visibility flags for special tiles.
     initial_tile_visibility_flags = initial_row_offsets + 0x10
     # Low bytes for the addresses of the rows.
     row_table_low                 = initial_tile_visibility_flags + 0x10
