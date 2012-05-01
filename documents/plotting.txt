@@ -232,5 +232,10 @@ Level Format
 
     (type,number), ...
 
-Each type is a tile number (0-127) where the top 4 bits are used to indicate
+Each type is a tile number (0-255) where the top 4 bits are used to indicate
 whether the tile is visible or not.
+
+The bottom four bits are the tile number.
+If the top 4 bits are 0 then the tile is always shown.
+If the top 4 bits are non-zero then the top 4 bits are an offset into a
+tile visibility table.
