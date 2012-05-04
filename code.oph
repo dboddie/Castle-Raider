@@ -43,7 +43,7 @@ init:
 
     ; Initialise the tile visibility values.
 
-    ldx #15
+    ldx #31
 
     init_tile_visibility_loop:
         lda initial_tile_visibility_address,x
@@ -1887,7 +1887,7 @@ check_tile_visible:             ; A=tile number
     rts
 
     check_tile_visible_special:
-    tay
+    tay                         ; transfer the tile number to Y
     lda ($82),y                 ; load the visibility of the tile
     cmp #0
     bne check_tile_visible_next
@@ -1896,6 +1896,16 @@ check_tile_visible:             ; A=tile number
     rts
 
     check_tile_visible_next:    ; the tile is visible
+
+    cpy #$20                    ; check for collectable objects
+    bcc check_tile_visible_exit ; skipping special tiles used for scenery
+
+    clc
+    lda #0
+    sta ($82),y                 ; make the tile invisible
+    rts
+
+    check_tile_visible_exit:
     sec
     rts
 

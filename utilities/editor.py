@@ -251,7 +251,7 @@ class SelectorModel(QAbstractListModel):
     def rowCount(self, index):
     
         if not index.isValid():
-            return len(self.actionGroup.actions()) - len(makelevels.tile_order)
+            return len(self.actionGroup.actions()) - min(len(makelevels.tile_order), 16)
         else:
             return 0
     
@@ -266,7 +266,7 @@ class SelectorModel(QAbstractListModel):
         
         actions = self.actionGroup.actions()
         row = index.row()
-        minimum = len(makelevels.tile_order)
+        minimum = min(len(makelevels.tile_order), 16)
         
         if 0 <= row < len(actions) - minimum and index.column() == 0:
             if role == Qt.DisplayRole:
@@ -281,7 +281,7 @@ class SelectorModel(QAbstractListModel):
         if index.isValid() and index.column() == 0 and role == Qt.CheckStateRole:
             row = index.row()
             actions = self.actionGroup.actions()
-            minimum = len(makelevels.tile_order)
+            minimum = min(len(makelevels.tile_order), 16)
             value = actions[row + minimum].data().toBool()
             actions[row + minimum].setData(not value)
             self.dataChanged.emit(index, index)
@@ -354,7 +354,7 @@ class EditorWindow(QMainWindow):
         self.tilesToolBar = self.addToolBar(self.tr("Tiles"))
         self.tileGroup = QActionGroup(self)
         
-        for symbol in makelevels.tile_order:
+        for symbol in makelevels.tile_order[:16]:
         
             icon = QIcon(QPixmap.fromImage(self.tile_images[symbol]))
             action = self.tilesToolBar.addAction(icon, symbol)

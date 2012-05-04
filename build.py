@@ -141,7 +141,9 @@ if __name__ == "__main__":
     # Memory map
     code_start = 0x0e00
     
-    data_start = 0x1f40
+    number_of_special_tiles = 32
+    
+    data_start = 0x1f30
     # Working information about tile visibility.
     tile_visibility_address       = data_start
     # Low and high bytes are adjusted by 16 bytes so that entries can be
@@ -150,7 +152,7 @@ if __name__ == "__main__":
     tile_visibility_high = (tile_visibility_address - 0x10) >> 8
     
     # The furthest that spans can be displaced to the right.
-    max_row_offsets               = tile_visibility_address + 0x10
+    max_row_offsets               = tile_visibility_address + number_of_special_tiles
     
     player_information            = max_row_offsets + 0x10
     player_x                      = player_information + 0
@@ -185,10 +187,10 @@ if __name__ == "__main__":
     special_tile_numbers_high     = (special_tile_numbers_address - 0x10) >> 8
     
     # Visibility flags for special tiles.
-    initial_tile_visibility_address = level_data_start + 0x20
+    initial_tile_visibility_address = special_tile_numbers_address + number_of_special_tiles
     
     # Low bytes for the addresses of the rows.
-    row_table_low                 = level_data_start + 0x40
+    row_table_low                 = initial_tile_visibility_address + number_of_special_tiles
     # High bytes for the addresses of the rows.
     row_table_high                = row_table_low + 0x10
     level_data                    = row_table_high + 0x10
@@ -196,7 +198,7 @@ if __name__ == "__main__":
     level_data_high               = level_data >> 8
     
     # 2a00      tile sprites
-    # 2d00      character and object sprites
+    # 2e00      character and object sprites
     # 2f80      object positions
     # 3000      bank 1 (panel)
     # 3500             (loader code)
@@ -219,7 +221,7 @@ if __name__ == "__main__":
     right_sprites_low = right_sprites & 0xff
     right_sprites_high = right_sprites >> 8
     
-    char_area_address = 0x2d00
+    char_area_address = 0x2e00
     char_data = makesprites.read_sprites(char_sprites)
     
     #all_objects = len(objects)
@@ -232,7 +234,7 @@ if __name__ == "__main__":
     objects_positions = 0x2f80
     
     levels_address = level_data_start
-    level_data = makelevels.create_level(tiles, levels_address, level_file)
+    level_data = makelevels.create_level(tiles, levels_address, level_file, number_of_special_tiles)
     
     level_extent = len(makelevels.level[0]) - 40
     
