@@ -1897,8 +1897,15 @@ check_tile_visible:             ; A=tile number
 
     check_tile_visible_next:    ; the tile is visible
 
-    cpy #$20                        ; check for collectable objects
+    cpy #$20                    ; check for collectable objects
     bcs check_tile_visible_object
+
+    ; Non-collectable (scenery) objects
+
+    cpy #$16                    ; Only the first six scenery objects (#$10-#$16)
+    bcs check_tile_visible_exit ; are doors that can be opened with a key.
+                                ; Any other visible scenery objects cannot be
+                                ; walked through.
 
     sty $8c                     ; temporarily store the special tile number
     tya                         ; a special scenery tile

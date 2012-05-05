@@ -49,11 +49,18 @@ tile_ref = {".": "images/blank.png",
             "%": "images/foliage.png",  # End of scenery tile sprites
                                         # Start of collectable item sprites
             "K": "images/key.png",
-            "L": "images/key1.png"}
+            "L": "images/key1.png",
+            "M": "images/key2.png",
+            "N": "images/key3.png",
+            "A": "images/axe.png",
+            "C": "images/crown-left.png",
+            "D": "images/crown-right.png"}
 
 tile_order = (".", "@", "+", "=", "#", "X", "-", "|",
               "/", "\\", "[", "]", "{", "?", "I", "%",
-              "K", "L")
+              # Collectable items after the first 16 tiles are ignored by
+              # the editor.
+              "K", "L", "M", "N", "A", "C", "D")
 
 def load_level(path):
 
