@@ -1897,12 +1897,20 @@ check_tile_visible:             ; A=tile number
 
     check_tile_visible_next:    ; the tile is visible
 
-    cpy #$20                    ; check for collectable objects
-    bcc check_tile_visible_exit ; skipping special tiles used for scenery
+    cpy #$20                        ; check for collectable objects
+    bcs check_tile_visible_object
 
-    clc
-    lda #0
-    sta ($82),y                     ; make the tile invisible
+    sty $8c                     ; temporarily store the special tile number
+    tya                         ; a special scenery tile
+    adc #$10                    ; check the corresponding collectable tile
+    tay
+    lda ($82),y
+    cmp #0
+    bne check_tile_visible_exit ; if visible (i.e. not collected) then exit
+
+    jmp check_tile_visible_make_invisible
+
+    check_tile_visible_object:
 
     lda ($84),y                     ; load the tile number
     jsr read_sprite_address_next    ; $70,$71=sprite address
@@ -1937,6 +1945,12 @@ check_tile_visible:             ; A=tile number
 
     jsr plot_tile_bank
 
+    check_tile_visible_make_invisible:
+
+    ldy $8c                         ; restore the special tile number
+    clc
+    lda #0
+    sta ($82),y                     ; make the tile invisible
     rts
 
     check_tile_visible_exit:
@@ -2417,6 +2431,8 @@ track_position: ; Scroll back to the last stored position.
     lda scroll_offset_low
     cmp tracking_low
     beq track_position_check_bank
+    bcs track_position_scroll_left
+    bcc track_position_scroll_right
 
     track_position_check_bank:
     lda bank_number
