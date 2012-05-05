@@ -43,7 +43,7 @@ tile_ref = {".": "images/blank.png",
             "\\": "images/window-topright.png",
             "[": "images/brick-left.png",
             "]": "images/brick-right.png",
-            "{": "images/rope.png",
+            "{": "images/stalactite.png",
             "?": "images/flag.png",
             "I": "images/gate.png",
             "%": "images/foliage.png",  # End of scenery tile sprites

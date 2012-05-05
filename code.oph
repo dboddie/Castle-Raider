@@ -1898,7 +1898,7 @@ check_tile_visible:             ; A=tile number
     check_tile_visible_next:    ; the tile is visible
 
     cpy #$20                    ; check for collectable objects
-    bcs check_tile_visible_object
+    bcs check_tile_collect_visible_object
 
     ; Non-collectable (scenery) objects
 
@@ -1915,9 +1915,31 @@ check_tile_visible:             ; A=tile number
     cmp #0
     bne check_tile_visible_exit ; if visible (i.e. not collected) then exit
 
-    jmp check_tile_visible_make_invisible
+    ldy $8c                     ; restore the special tile number
+    jmp make_tile_invisible     ; make the tile invisible and exit
 
-    check_tile_visible_object:
+    check_tile_collect_visible_object:
+
+    jsr plot_collected_object
+    jsr make_tile_invisible         ; make the tile invisible
+
+    cpy #$2c                        ; if the object is a piece of treasure
+    bcs check_tile_collect_treasure ; remove the second part of the object 
+    rts                             ; otherwise return with C clear
+
+    check_tile_collect_treasure:
+    tya
+    eor #1
+    tay
+
+    jsr plot_collected_object
+    jmp make_tile_invisible         ; make the tile invisible and exit
+
+    check_tile_visible_exit:
+    sec
+    rts
+
+plot_collected_object:  ; Y=special tile number
 
     lda ($84),y                     ; load the tile number
     jsr read_sprite_address_next    ; $70,$71=sprite address
@@ -1951,17 +1973,14 @@ check_tile_visible:             ; A=tile number
     clc
 
     jsr plot_tile_bank
-
-    check_tile_visible_make_invisible:
-
     ldy $8c                         ; restore the special tile number
-    clc
-    lda #0
-    sta ($82),y                     ; make the tile invisible
     rts
 
-    check_tile_visible_exit:
-    sec
+make_tile_invisible:    ; Y=special tile number
+
+    lda #0
+    sta ($82),y         ; make the tile invisible
+    clc
     rts
 
 check_move_right:
