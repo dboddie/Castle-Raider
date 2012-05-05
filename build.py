@@ -241,6 +241,13 @@ if __name__ == "__main__":
     panel_address = 0x3000
     panel = makesprites.read_sprites(["images/panel.png"])
     
+    top_panel_objects_bank1 = 0x31f0
+    top_panel_objects_bank1_low = top_panel_objects_bank1 & 0xff
+    top_panel_objects_bank1_high = top_panel_objects_bank1 >> 8
+    top_panel_objects_bank2 = 0x59f0
+    top_panel_objects_bank2_low = top_panel_objects_bank2 & 0xff
+    top_panel_objects_bank2_high = top_panel_objects_bank2 >> 8
+    
     # Create the contents of a file containing constant values.
     
     constants_oph = (
@@ -346,7 +353,16 @@ if __name__ == "__main__":
         ".alias top_panel_end_low           $%02x\n"
         ".alias top_panel_end_high          $%02x\n"
         "\n"
-        ) % address_length_end(panel_address, panel)
+        ".alias top_panel_objects_bank1_low     $%02x\n"
+        ".alias top_panel_objects_bank1_high    $%02x\n"
+        ".alias top_panel_objects_bank2_low     $%02x\n"
+        ".alias top_panel_objects_bank2_high    $%02x\n"
+        "\n"
+        ) % (address_length_end(panel_address, panel) + \
+            (top_panel_objects_bank1_low,
+             top_panel_objects_bank1_high,
+             top_panel_objects_bank2_low,
+             top_panel_objects_bank2_high))
     
     #constants_oph += (
     #    ".alias object_sprites             $%x\n"
@@ -404,6 +420,8 @@ if __name__ == "__main__":
     if code_finish > data_start:
         sys.stderr.write("CODE overruns following data.\n")
         sys.exit(1)
+    
+    print "data    runs from %04x to %04x" % (data_start, level_data_start)
     
     levels_finish = levels_address + len(level_data)
     print "LEVELS  runs from %04x to %04x" % (levels_address, levels_finish)

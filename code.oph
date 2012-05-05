@@ -466,14 +466,14 @@ check_beneath:
     bcs check_beneath_demise_exit
 
     adc #3
-    sta $71
+    sta $81
     lda player_x
-    sta $70
+    sta $80
 
     jsr check_tile
     bcs check_beneath_exit
 
-    inc $70
+    inc $80
     jsr check_tile
     bcs check_beneath_exit
 
@@ -482,7 +482,7 @@ check_beneath:
     bne check_beneath_fall  ; on one or more of three tiles.
 
     clc
-    inc $70
+    inc $80
     jsr check_tile
     bcs check_beneath_exit
 
@@ -1801,12 +1801,12 @@ plot_player:
         clc
         jmp plot_char_bank2
 
-check_tile:         ; $70=x position (0-39)
-                    ; $71=y position (0-23) (measured from the top of the
+check_tile:         ; $80=x position (0-39)
+                    ; $81=y position (0-23) (measured from the top of the
                     ;           playing area, not the top row of the scenery)
                     ; returns C set if tile found or C clear if not
 
-    lda $71         ; For y positions less than 8 do not check the
+    lda $81         ; For y positions less than 8 do not check the
     cmp #8          ; corresponding row.
     bcs check_tile_row
 
@@ -1820,7 +1820,7 @@ check_tile:         ; $70=x position (0-39)
     jsr read_row_address
 
     lda initial_row_offsets,x
-    cmp $70
+    cmp $80
     beq check_tile_spans
     bcc check_tile_spans
 
@@ -1842,7 +1842,7 @@ check_tile:         ; $70=x position (0-39)
         adc $74             ; Add to the row offset
         bcs check_tile_spans_loop_found
 
-        cmp $70
+        cmp $80
         beq check_tile_spans_loop_next
         bcc check_tile_spans_loop_next
 
@@ -1902,7 +1902,41 @@ check_tile_visible:             ; A=tile number
 
     clc
     lda #0
-    sta ($82),y                 ; make the tile invisible
+    sta ($82),y                     ; make the tile invisible
+
+    lda ($84),y                     ; load the tile number
+    jsr read_sprite_address_next    ; $70,$71=sprite address
+
+    sty $8c         ; temporarily store the special tile number
+    tya             ; tile 
+    and #$0f        ; convert the tile number into a screen position
+    asl
+    asl
+    asl
+    sta $8d                         ; temporarily store the screen offset
+    adc #top_panel_objects_bank1_low
+    sta $72
+    lda #top_panel_objects_bank1_high
+    adc #0
+    sta $73
+    clc
+
+    jsr plot_tile_bank
+
+    ldy $8c                         ; retrieve the special tile number
+    lda ($84),y                     ; load the tile number
+    jsr read_sprite_address_next    ; $70,$71=sprite address
+
+    lda $8d                         ; retrieve the screen offset
+    adc #top_panel_objects_bank2_low
+    sta $72
+    lda #top_panel_objects_bank2_high
+    adc #0
+    sta $73
+    clc
+
+    jsr plot_tile_bank
+
     rts
 
     check_tile_visible_exit:
@@ -1923,9 +1957,9 @@ check_move_right:
 
     lda player_x
     adc #2
-    sta $70
+    sta $80
     lda player_y
-    sta $71
+    sta $81
     clc
 
     jmp check_move  ; branch then exit
@@ -1960,47 +1994,47 @@ check_move_left:
     lda player_x
     sec
     sbc #1
-    sta $70
+    sta $80
     clc
     lda player_y
-    sta $71
+    sta $81
 
     ; fall through into the next routine
 
 check_move:
 
     lda #2          ; Start with an offset of 2 from the player's row number.
-    sta $72
+    sta $7c
 
     lda #0          ; Use a byte to record occupied tiles. Since we start at
-    sta $73         ; the player's top row, the order of bits is 0000tmb[f] for
+    sta $7d         ; the player's top row, the order of bits is 0000tmb[f] for
                     ; top, middle, bottom and an optional falling bit.
     lda player_falling
     cmp #0
     beq check_move_loop
 
-    inc $72         ; If the player is falling then we need to check an
+    inc $7c         ; If the player is falling then we need to check an
                     ; additional tile, below and to the left/right.
 
     check_move_loop:
 
-        asl $73
+        asl $7d
         clc
         jsr check_tile
         bcc check_move_next
         clc
 
-        lda $73     ; Set a bit to indicate that this tile is occupied.
+        lda $7d     ; Set a bit to indicate that this tile is occupied.
         ora #1
-        sta $73
+        sta $7d
 
         check_move_next:
 
-        inc $71
-        dec $72
+        inc $81
+        dec $7c
         bpl check_move_loop
 
-    lda $73                 ; If all tiles are empty then allow the move.
+    lda $7d                 ; If all tiles are empty then allow the move.
     cmp #0
     beq check_move_exit_ok
 
@@ -2012,7 +2046,7 @@ check_move:
     cmp #0                  ; stop moving.
     bne check_move_exit_not_ok
 
-    lda $73                 ; If more than the lowest tile is blocked then
+    lda $7d                 ; If more than the lowest tile is blocked then
     cmp #$01                ; stop moving.
     bne check_move_exit_not_ok
 
@@ -2055,30 +2089,30 @@ player_jump:
 
     ldx player_jumping      ; Load the number of rows to move.
     lda jump_steps_y,x
-    sta $72
+    sta $7c
 
     lda player_y
-    sta $71
+    sta $81
 
     player_jump_check_loop:
 
-        lda $72         ; If there are no more rows to move then stop jumping.
+        lda $7c         ; If there are no more rows to move then stop jumping.
         cmp #0
             beq player_jump_check_endloop
 
-        lda $71                         ; If the character reaches the top of
+        lda $81                         ; If the character reaches the top of
         cmp #0                          ; the screen then stop jumping.
             beq player_jump_check_endloop
 
-        dec $71
+        dec $81
         clc
 
         lda player_x
-        sta $70
+        sta $80
         jsr check_tile
         bcs player_jump_stop_jumping
 
-        inc $70
+        inc $80
 
         jsr check_tile
         bcs player_jump_stop_jumping
@@ -2088,17 +2122,17 @@ player_jump:
             bne player_jump_move_up ; under one or more of three tiles.
         clc
 
-            inc $70
+            inc $80
 
             jsr check_tile
             bcs player_jump_stop_jumping
 
         player_jump_move_up:
 
-            lda $71
+            lda $81
             sta player_y
 
-            dec $72
+            dec $7c
             jmp player_jump_check_loop
 
     player_jump_check_endloop:
