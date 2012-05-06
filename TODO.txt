@@ -4,3 +4,4 @@ Add support for plotting the view onto the level from any point in the level.
 Fix problem with plotting the second bank with the decorative test level.
 Ensure that the player simply falls when jumping against the end of the level.
 Add support for non-scenery objects in the plotting routines.
+Ensure that the player cannot jump when falling off the bottom of the level.
