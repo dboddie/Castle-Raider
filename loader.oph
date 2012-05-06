@@ -37,6 +37,14 @@ main:
     jsr set_core_palette
 
     ldx #0
+    title_text_loop:
+        lda title_text,x
+        jsr $ffee
+        inx
+        cpx #[title_text_end - title_text]
+        bne title_text_loop
+
+    ldx #0
     init_load_window_loop:
 
         lda init_load_window_vdu_bytes,x
@@ -193,3 +201,9 @@ code_block: .byte <code_file_name, >code_file_name
 code_file_name: .byte "CODE", 13
 
 init_load_window_vdu_bytes: .byte 28,0,28,19,27
+
+title_text: .byte "Castle Raider demo 1", 13, 10
+            .byte "Copyright (C) 2012", 13, 10
+            .byte "David Boddie", 13, 10
+            .byte "GNU GPL v3 or later"
+title_text_end:
