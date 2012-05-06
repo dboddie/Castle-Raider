@@ -115,8 +115,13 @@ class LevelWidget(QWidget):
             special_items = self.special.items()
             special_items.sort()
             
-            for ch, (n, flags, initial) in special_items:
-                f.write("%s %s %i\n" % (ch, n, initial))
+            for ch, (n, index, flags) in special_items:
+            
+                flags_word = []
+                for k, v in flags_values.items():
+                    if flags & v:
+                        flags_word.append(k)
+                f.write("%s %s %s\n" % (ch, n, ",".join(flags_word)))
             
             f.close()
             
@@ -168,7 +173,7 @@ class LevelWidget(QWidget):
                 
                 if tile in self.special:
                 
-                    n, flags, initial = self.special[tile]
+                    n, index, flags = self.special[tile]
                     tile_image = self.tile_images[n]
                     #if initial:
                     #    tile_image = self.tile_images[n]

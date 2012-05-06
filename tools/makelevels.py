@@ -54,13 +54,17 @@ tile_ref = {".": "images/blank.png",
             "N": "images/key3.png",
             "A": "images/axe.png",
             "C": "images/crown-left.png",
-            "D": "images/crown-right.png"}
+            "D": "images/crown-right.png",
+            "E": "images/chest-left.png",
+            "F": "images/chest-right.png"}
 
 tile_order = (".", "@", "+", "=", "#", "X", "-", "|",
               "/", "\\", "[", "]", "{", "?", "I", "%",
               # Collectable items after the first 16 tiles are ignored by
               # the editor.
-              "K", "L", "M", "N", "A", "C", "D")
+              "K", "L", "M", "N", "A", "C", "D", "E", "F")
+
+flags_values = {"visible": 0x80, "collectable": 0x40, "door": 0x20, "treasure": 0x10}
 
 def load_level(path):
 
@@ -68,16 +72,19 @@ def load_level(path):
     level = lines[:16]
     
     # The special dictionary maps symbols used in the level map to tuples
-    # containing corresponding tiles and flags. The flag is an offset into the
-    # visibility table, the initial values for which are below.
+    # containing corresponding tiles and indices. Each index is an offset into
+    # the visibility table, the initial values for which are below.
     special = {}
-    flag = 16
+    index = 16
     for line in lines[16:]:
     
         if line:
-            ch, tile, initial = line.split()
-            special[ch] = (tile, flag, int(initial))
-            flag += 1
+            ch, tile, flags_word = line.split()
+            flags = 0
+            for c in flags_word.split(","):
+                flags = flags | flags_values.get(c, 0)
+            special[ch] = (tile, index, flags)
+            index += 1
     
     return level, special
 
@@ -97,9 +104,9 @@ def create_level_data(level, tiles):
             ch = line[i]
             
             if ch in special:
-                n, flags, initial = special[ch]
+                n, index, flags = special[ch]
                 # Special tiles have values greater than or equal to 16.
-                c = flags
+                c = index
             else:
                 c = tiles[ch]
             
@@ -171,14 +178,16 @@ def create_level(tile_paths, levels_address, level_path, number_of_special_tiles
     
     # Create a table of special tile numbers and initial visibility values.
     
-    special_visibility = dict(map(lambda (c, f, i): (f, (c, i)), special.values()))
+    special_visibility = dict(map(lambda (c, index, flags): (index, (c, flags)), special.values()))
     initial_visibility = []
     special_tile_numbers = []
     default_tile = [".", 0]
     
     for i in range(16, 16 + special_tile_numbers_table_size):
-        special_tile_numbers.append(tiles[special_visibility.get(i, default_tile)[0]])
-        initial_visibility.append(special_visibility.get(i, default_tile)[1])
+    
+        c, flags = special_visibility.get(i, default_tile)
+        special_tile_numbers.append(tiles[c])
+        initial_visibility.append(flags)
     
     special_tiles_table = "".join(map(chr, special_tile_numbers))
     visibility_table = "".join(map(chr, initial_visibility))

@@ -1883,33 +1883,36 @@ check_tile_visible:             ; A=tile number
     cmp #$10
     bcs check_tile_visible_special
 
-    cmp #1
+    cmp #1                      ; Return C set for tiles 1-15; C clear for 0
     rts
 
     check_tile_visible_special:
     tay                         ; transfer the tile number to Y
     lda ($82),y                 ; load the visibility of the tile
-    cmp #0
-    bne check_tile_visible_next
+    cmp #$80
+    bcs check_tile_visible_next
 
     clc                         ; not visible, so clear C to indicate this
     rts
 
     check_tile_visible_next:    ; the tile is visible
 
-    cpy #$20                    ; check for collectable objects
+    and #$7f                    ; mask off the visible bit
+    cmp #$40                    ; check for collectable objects
     bcs check_tile_collect_visible_object
 
     ; Non-collectable (scenery) objects
 
-    cpy #$16                    ; Only the first six scenery objects (#$10-#$16)
-    bcs check_tile_visible_exit ; are doors that can be opened with a key.
-                                ; Any other visible scenery objects cannot be
-                                ; walked through.
+    and #$3f
+    cmp #$20                    ; check for doors that can be opened with a key
+    bcc check_tile_visible_exit ; any other visible scenery objects cannot be
+                                ; walked through
 
+    ; For doors, check the visibility of the corresponding key special tile.
+    clc
     sty $8c                     ; temporarily store the special tile number
     tya                         ; a special scenery tile
-    adc #$10                    ; check the corresponding collectable tile
+    eor #$01                    ; check the corresponding collectable tile
     tay
     lda ($82),y
     cmp #0
@@ -1920,14 +1923,19 @@ check_tile_visible:             ; A=tile number
 
     check_tile_collect_visible_object:
 
+    and #$1f                        ; mask off the visible bit
+    cmp #$10                        ; check for collectable objects
+    bcs check_tile_collect_treasure ; remove both parts of the object 
+
+    jsr plot_collected_object
+    jmp make_tile_invisible         ; make the tile invisible and exit
+
+    check_tile_collect_treasure:
+    clc
+
     jsr plot_collected_object
     jsr make_tile_invisible         ; make the tile invisible
 
-    cpy #$2c                        ; if the object is a piece of treasure
-    bcs check_tile_collect_treasure ; remove the second part of the object 
-    rts                             ; otherwise return with C clear
-
-    check_tile_collect_treasure:
     tya
     eor #1
     tay
@@ -2407,8 +2415,8 @@ read_visible_sprite:
 
     tay
     lda ($82),y                 ; load the visibility of the tile
-    cmp #0
-    bne read_visible_sprite_visible
+    cmp #$80
+    bcs read_visible_sprite_visible
 
     lda #0
     rts
