@@ -2493,43 +2493,28 @@ enemy_sprite_low:  .byte enemy_spr_low0, enemy_spr_sh_low0
 enemy_sprite_high: .byte enemy_spr_high0, enemy_spr_sh_high0
                    .byte enemy_spr_high1, enemy_spr_sh_high1
 
-plot_enemy_bank1:       ; A=enemy number
+plot_enemy_bank1:       ; X=enemy y offset,Y=offset of enemy y offset
 
-    asl
-    asl
-    tay
-    lda ($86),y                 ; type and dx
-    cmp #0
-    bne plot_enemy_bank1_next
-
-    clc
-    rts
-
-    plot_enemy_bank1_next:
-
-    ; Determine the sprite to use from the type and dx value.
-    tax                         ; convert the value to an offset into the
-    dex                         ; sprite address arrays and temporarily store
-    stx $8c                     ; the value
-    lda enemy_sprite_low,x      ; load the sprite address
-    sta $70
-    lda enemy_sprite_high,x
-    sta $71
-
-    iny
-    lda ($86),y                 ; x offset
-    asl
-    asl
-    asl                         ; x position
-    sta $72
-
-    iny
-    lda ($86),y                 ; y offset
-    tax
     lda bank1_char_rows_low,x   ; y position (low)
     adc $72
     sta $72
     lda bank1_char_rows_high,x  ; y position (high)
+    adc #0
+    sta $73
+    clc
+
+    iny
+    lda ($86),y                 ; dy offset
+    cmp #0
+    bne plot8x8_x0_y1
+    jmp plot8x8_x0_y0
+
+plot_enemy_bank2:       ; X=enemy y offset,Y=offset of enemy y offset
+
+    lda bank2_char_rows_low,x   ; y position (low)
+    adc $72
+    sta $72
+    lda bank2_char_rows_high,x  ; y position (high)
     adc #0
     sta $73
     clc
@@ -2572,3 +2557,60 @@ plot8x8_x0_y1:          ; $70,$71=source address
     rts
 
 plot8x8_lengths: .byte 15, 23
+
+plot_enemies:
+
+    lda #0
+
+    plot_enemies_loop:
+
+        sta $88                     ; store the offset temporarily
+
+        tay
+        lda ($86),y                 ; type and dx
+        cmp #0
+        beq plot_enemies_loop_next
+
+        ; Determine the sprite to use from the type and dx value.
+        tax                         ; convert the value to an offset into the
+        dex                         ; sprite address arrays and temporarily store
+        stx $8c                     ; the value
+        lda enemy_sprite_low,x      ; load the sprite address
+        sta $70
+        lda enemy_sprite_high,x
+        sta $71
+
+        iny
+        lda ($86),y                 ; x offset
+        asl
+        asl
+        asl                         ; x position
+        sta $72
+
+        iny
+        lda ($86),y                 ; y offset
+        tax
+
+        lda bank_number
+        cmp #1
+        bne plot_enemies_loop_bank2
+        clc
+
+        jsr plot_enemy_bank1
+        jmp plot_enemies_loop_next
+
+        plot_enemies_loop_bank2:
+        clc
+        jsr plot_enemy_bank2
+
+        plot_enemies_loop_next:
+        clc
+
+        lda $88
+        adc #4
+        cmp #$10
+        beq plot_enemies_exit
+
+    plot_enemies_exit:
+    clc
+    rts
