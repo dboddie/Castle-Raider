@@ -257,3 +257,10 @@ offset.
     tile_number_table_start:
     [values]
 
+
+Enemies
+-------
+
+Enemy table is 16 bytes.
+
+t_dx0 x0 y0 dy0 t_dx1 x1 y1 dy1 ... t_dx15 x15 y15 dy15

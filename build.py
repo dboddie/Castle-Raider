@@ -121,7 +121,8 @@ tiles = map(lambda tile: makelevels.tile_ref[tile], makelevels.tile_order)
 char_sprites = ["images/left1.png", "images/left2.png",
                 "images/right1.png", "images/right2.png"]
 
-#objects = ["images/key.png", "images/torch.png"]
+enemy_sprites = ["images/bat1.png", "images/bat2.png",
+                 "images/spider1.png", "images/spider2.png"]
 
 
 if __name__ == "__main__":
@@ -143,9 +144,13 @@ if __name__ == "__main__":
     
     number_of_special_tiles = 32
     
-    data_start = 0x1f30
+    data_start = 0x1f20
+    
+    # Enemy positions
+    enemy_positions_address       = data_start
+    
     # Working information about tile visibility.
-    tile_visibility_address       = data_start
+    tile_visibility_address       = enemy_positions_address + 0x10
     # Low and high bytes are adjusted by 16 bytes so that entries can be
     # addressed directly, starting with an index of 16.
     tile_visibility_low = (tile_visibility_address - 0x10) & 0xff
@@ -199,7 +204,6 @@ if __name__ == "__main__":
     
     # 2a00      tile sprites
     # 2e00      character and object sprites
-    # 2f80      object positions
     # 3000      bank 1 (panel)
     # 3500             (loader code)
     # 5800      bank 2
@@ -222,16 +226,17 @@ if __name__ == "__main__":
     right_sprites_high = right_sprites >> 8
     
     char_area_address = 0x2e00
-    char_data = makesprites.read_sprites(char_sprites)
+    char_data, offsets = makesprites.read_sprites(char_sprites, char_area_address)
     
-    #all_objects = len(objects)
-    #
-    #objects_address = char_area_address + len(char_data)
-    #objects_sprites = makesprites.read_tiles(objects)
-    #objects_data = makesprites.read_object_data(objects_sprites)
-    #objects_rotated_address = objects_address + (all_objects * 8)
+    enemy_sprites_address = char_area_address + len(char_data)
+    enemy_sprites_data, enemy_sprites_addresses = \
+        makesprites.read_sprites(enemy_sprites, enemy_sprites_address)
+    char_data += enemy_sprites_data
     
-    objects_positions = 0x2f80
+    enemy_sprites_shifted_address = enemy_sprites_address + len(enemy_sprites_data)
+    enemy_sprites_data, enemy_sprites_shifted_addresses = \
+        makesprites.read_shifted_sprites(enemy_sprites, enemy_sprites_shifted_address)
+    char_data += enemy_sprites_data
     
     levels_address = level_data_start
     level_data = makelevels.create_level(tiles, levels_address, level_file, number_of_special_tiles)
@@ -239,7 +244,7 @@ if __name__ == "__main__":
     level_extent = len(makelevels.level[0]) - 40
     
     panel_address = 0x3000
-    panel = makesprites.read_sprites(["images/panel.png"])
+    panel, offsets = makesprites.read_sprites(["images/panel.png"], panel_address)
     
     top_panel_objects_bank1 = 0x31f0
     top_panel_objects_bank1_low = top_panel_objects_bank1 & 0xff
@@ -364,18 +369,31 @@ if __name__ == "__main__":
              top_panel_objects_bank2_low,
              top_panel_objects_bank2_high))
     
-    #constants_oph += (
-    #    ".alias object_sprites             $%x\n"
-    #    ".alias object_sprites_low         $%02x\n"
-    #    ".alias object_sprites_high        $%02x\n"
-    #    ".alias object_rotated             $%x\n"
-    #    ".alias object_rotated_low         $%02x\n"
-    #    ".alias object_rotated_high        $%02x\n"
-    #    ".alias object_positions           $%x\n"
-    #    "\n"
-    #    ) % (objects_address, objects_address & 0xff, objects_address >> 8,
-    #         objects_rotated_address, objects_rotated_address & 0xff,
-    #         objects_rotated_address >> 8, objects_positions)
+    s = 0
+    for address in enemy_sprites_addresses:
+    
+        constants_oph += (
+            ".alias enemy_spr_low%i       $%02x\n"
+            ".alias enemy_spr_high%i      $%02x\n"
+            ) % (s, address & 0xff, s, address >> 8)
+        s += 1
+    
+    s = 0
+    for address in enemy_sprites_shifted_addresses:
+    
+        constants_oph += (
+            ".alias enemy_spr_sh_low%i       $%02x\n"
+            ".alias enemy_spr_sh_high%i      $%02x\n"
+            ) % (s, address & 0xff, s, address >> 8)
+        s += 1
+    
+    constants_oph += (
+        "\n"
+        ".alias enemy_positions_address     $%x\n"
+        ".alias enemy_positions_low         $%02x\n"
+        ".alias enemy_positions_high        $%02x\n"
+        ) % (enemy_positions_address, enemy_positions_address & 0xff,
+             enemy_positions_address >> 8)
     
     # Assemble the main game code and loader code.
     
@@ -437,7 +455,7 @@ if __name__ == "__main__":
     
     char_area_finish = char_area_address + len(char_data)
     print "SPRITES runs from %04x to %04x" % (char_area_address, char_area_finish)
-    if char_area_finish > objects_positions:
+    if char_area_finish > panel_address:
         sys.stderr.write("SPRITES overruns following data.\n")
         sys.exit(1)
     

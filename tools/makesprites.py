@@ -53,20 +53,27 @@ def read_png(path):
     
     return data
 
-
-def read_sprite(lines):
+def read_sprite(lines, shifted = False):
 
     data = ""
     
     # Read 8 rows at a time.
     for row in range(0, len(lines), 8):
     
+        if shifted:
+            width = len(lines[0]) + 4
+        else:
+            width = len(lines[0])
+        
         # Read 4 columns at a time.
-        for column in range(0, len(lines[0]), 4):
+        for column in range(0, width, 4):
         
             # Read the rows.
             for line in lines[row:row + 8]:
             
+                if shifted:
+                    line = [0, 0] + line + [0, 0]
+                
                 shift = 3
                 byte = 0
                 for pixel in line[column:column + 4]:
@@ -83,58 +90,6 @@ def read_sprite(lines):
                 data += chr(byte)
     
     return data
-
-def make_scanline_bytes(lines):
-
-    data = []
-    for line in lines:
-    
-        line_data = ""
-        # Read 4 columns at a time.
-        for column in range(0, len(lines[0]), 4):
-        
-            shift = 3
-            byte = 0
-            for pixel in line[column:column + 4]:
-            
-                if pixel == "1":
-                    byte = byte | (0x01 << shift)
-                elif pixel == "2":
-                    byte = byte | (0x10 << shift)
-                elif pixel == "3":
-                    byte = byte | (0x11 << shift)
-                
-                shift -= 1
-            
-            line_data += chr(byte)
-        
-        data.append(line_data)
-    
-    return data
-
-def compress(data):
-
-    output = []
-    current = None
-    length = 0
-    
-    for byte in data:
-    
-        if current != byte:
-            if length > 0:
-                output.append(current + chr(length))
-            current = byte
-            length = 1
-        else:
-            length += 1
-            if length == 255:
-                output.append(current + chr(length))
-                length = 0
-    
-    if length > 0:
-        output.append(current + chr(length))
-    
-    return "".join(output)
 
 def read_tile_data(sprites):
 
@@ -200,55 +155,7 @@ def read_tiles(paths):
     
     return sprites
 
-def read_object_tiles(paths):
-
-    """Creates rotated versions of original sprites, appending the new versions
-    to the list, and returning a string containing the data.
-    """
-    sprites = []
-    for path in paths:
-    
-        sprite = read_png(path)
-        left = []
-        right = []
-        
-        for line in sprite:
-        
-            left.append(line[:len(line)/2])
-            right.append(line[len(line)/2:])
-        
-        sprites.append(left)
-        sprites.append(right)
-    
-    return sprites
-
-def read_object_data(sprites):
-
-    number = len(sprites)
-    
-    # Add rotated sprites for 2 pixel offset plotting.
-    for i in range(number):
-    
-        sprite = sprites[i]
-        
-        lines = []
-        for j in range(len(sprite)):
-        
-            line = sprite[j]
-            lines.append(line[len(line)/2:] + line[:len(line)/2])
-        
-        sprites.append(lines)
-    
-    data = ""
-    for lines in sprites:
-    
-        data += read_sprite(lines)
-    
-    print "%i bytes (%04x) of object data" % (len(data), len(data))
-    
-    return data
-
-def read_sprites(paths):
+def read_sprites(paths, base_address = 0):
 
     sprites = []
     for path in paths:
@@ -256,31 +163,30 @@ def read_sprites(paths):
         sprites.append(read_png(path))
     
     data = ""
+    addresses = []
     for lines in sprites:
     
+        addresses.append(base_address + len(data))
         data += read_sprite(lines)
     
     print "%i bytes (%04x) of sprite data" % (len(data), len(data))
     
-    return data
+    return data, addresses
 
-def encode(data):
+def read_shifted_sprites(paths, base_address = 0):
 
-    new_data = ""
-    for c in data:
+    sprites = []
+    for path in paths:
     
-        i = ord(c)
-        new_data += chr(i & 0x0f) + chr((i & 0xf0) >> 4)
+        sprites.append(read_png(path))
     
-    return new_data
-
-def combine(encoded, overlay):
-
-    combined = ""
-    offset = 0
-    while offset < len(overlay):
-        combined += chr(ord(encoded[offset]) | ord(overlay[offset]))
-        offset += 1
+    data = ""
+    addresses = []
+    for lines in sprites:
     
-    combined += encoded[offset:]
-    return combined
+        addresses.append(base_address + len(data))
+        data += read_sprite(lines, shifted = True)
+    
+    print "%i bytes (%04x) of sprite data" % (len(data), len(data))
+    
+    return data, addresses
