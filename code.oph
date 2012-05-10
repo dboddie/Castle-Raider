@@ -85,7 +85,7 @@ init:
     
     lda #5
     sta enemy_positions_address
-    lda #20
+    lda #32
     sta [enemy_positions_address+1]
     lda #10
     sta [enemy_positions_address+2]
@@ -173,6 +173,9 @@ main:
         jsr plot_enemies        ; plot enemies
 
         main_loop_after_enemies:
+        clc
+
+        inc enemy_movement_counter
         clc
 
         ; --- Full redraw test code (begin) ---
@@ -2527,8 +2530,8 @@ plot_enemy_bank1:       ; X=enemy y offset,Y=offset of enemy y offset
     lda bank1_char_rows_low,x   ; y position (low)
     adc $72
     sta $72
-    lda bank1_char_rows_high,x  ; y position (high)
-    adc #0
+    lda $73
+    adc bank1_char_rows_high,x  ; y position (high)
     sta $73
     clc
 
@@ -2543,8 +2546,8 @@ plot_enemy_bank2:       ; X=enemy y offset,Y=offset of enemy y offset
     lda bank2_char_rows_low,x   ; y position (low)
     adc $72
     sta $72
-    lda bank2_char_rows_high,x  ; y position (high)
-    adc #0
+    lda $73
+    adc bank2_char_rows_high,x  ; y position (high)
     sta $73
     clc
 
@@ -2640,6 +2643,10 @@ plot_enemies_pre_loop:
         asl
         asl                         ; x position
         sta $72
+        lda #0
+        adc #0
+        sta $73
+        clc
 
         iny
         lda ($86),y                 ; y offset
@@ -2662,8 +2669,6 @@ plot_enemies_pre_loop:
 move_enemies:
 
     ; Check the enemy movement counter and perform updates now if necessary.
-    inc enemy_movement_counter
-    clc
     lda enemy_movement_counter
     and #$07
     beq move_enemies_pre_loop
