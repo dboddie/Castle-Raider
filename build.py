@@ -385,7 +385,7 @@ if __name__ == "__main__":
         constants_oph += (
             ".alias enemy_spr_sh_low%i       $%02x\n"
             ".alias enemy_spr_sh_high%i      $%02x\n"
-            ) % (s, address & 0xff, s, address >> 8)
+            ) % (s, shifted_address & 0xff, s, shifted_address >> 8)
         
         s += 1
     

@@ -83,9 +83,9 @@ init:
         dex
         bpl init_enemy_positions_loop
     
-    lda #1
-    sta enemy_positions_address
     lda #5
+    sta enemy_positions_address
+    lda #20
     sta [enemy_positions_address+1]
     lda #10
     sta [enemy_positions_address+2]
@@ -345,7 +345,7 @@ scroll_right_update:
     sta player_animation
 
     jsr plot_char_bank2     ; plot the player on bank 2
-    jsr move_enemies
+    jsr scroll_enemies_right
     jsr plot_enemies_bank2  ; plot the enemies, too
 
     clc
@@ -376,7 +376,7 @@ scroll_right_update:
     sta player_animation
 
     jsr plot_char_bank1     ; plot the player on bank 1
-    jsr move_enemies
+    jsr scroll_enemies_right
     jsr plot_enemies_bank1  ; plot the enemies, too
 
     clc
@@ -415,7 +415,7 @@ scroll_left_update:
     sta player_animation
 
     jsr plot_char_bank2     ; plot the player on bank 2
-    jsr move_enemies
+    jsr scroll_enemies_left
     jsr plot_enemies_bank2  ; plot the enemies, too
 
     lda scroll_offset_low   ; Decrease the scroll offset after showing bank 2.
@@ -445,7 +445,7 @@ scroll_left_update:
     sta player_animation
 
     jsr plot_char_bank1     ; plot the player on bank 1
-    jsr move_enemies
+    jsr scroll_enemies_left
     jsr plot_enemies_bank1  ; plot the enemies, too
 
     clc
@@ -2556,7 +2556,7 @@ plot_enemy_bank2:       ; X=enemy y offset,Y=offset of enemy y offset
 plot8x8_x0_y0:          ; $70,$71=source address
                         ; $72,$73=destination address
     lda $8c
-    and #$02
+    and #$02            ; dx
     lsr
     tax
     ldy plot8x8_lengths,x
@@ -2573,7 +2573,7 @@ plot8x8_x0_y0:          ; $70,$71=source address
 plot8x8_x0_y1:          ; $70,$71=source address
                         ; $72,$73=destination address
     lda $8c
-    and #$02
+    and #$02            ; dx
     lsr
     tax
     ldy plot8x8_lengths,x
@@ -2620,14 +2620,15 @@ plot_enemies_pre_loop:
         sta $88                     ; store the offset temporarily
 
         tay
-        lda ($86),y                 ; type and dx
+        lda ($86),y                 ; type, animation and dx
         cmp #0
         beq plot_enemies_loop_next
 
         ; Determine the sprite to use from the type and dx value.
         lsr                         ; convert the value to an offset into the
-        tax                         ; sprite address arrays and temporarily store
-        stx $8c                     ; the value
+        clc
+        tax                         ; sprite address arrays and temporarily
+        stx $8c                     ; store the value
         lda enemy_sprite_low,x      ; load the sprite address
         sta $70
         lda enemy_sprite_high,x
@@ -2694,5 +2695,87 @@ move_enemies_pre_loop:
         beq move_enemies_exit
 
     move_enemies_exit:
+    clc
+    rts
+
+scroll_enemies_left:
+
+    lda #0
+
+    scroll_enemies_left_loop:
+
+        sta $88                     ; store the offset temporarily
+
+        tay
+        lda ($86),y                 ; type, animation flag and dx
+        cmp #0
+        beq move_enemies_loop_next
+
+        ; Move the enemy right on screen.
+
+        eor #$04                    ; toggle dx
+        sta ($86),y
+
+        and #$04
+        bne scroll_enemies_left_loop_dx_only
+
+        clc
+        iny
+        lda ($86),y                 ; x offset
+        adc #1
+        sta ($86),y                 ; x offset
+
+        scroll_enemies_left_loop_dx_only:
+        clc
+
+        scroll_enemies_left_loop_next:
+
+        lda $88
+        adc #4
+        cmp #$10
+        beq move_enemies_exit
+
+    scroll_enemies_left_exit:
+    clc
+    rts
+
+scroll_enemies_right:
+
+    lda #0
+
+    scroll_enemies_right_loop:
+
+        sta $88                     ; store the offset temporarily
+
+        tay
+        lda ($86),y                 ; type, animation flag and dx
+        cmp #0
+        beq move_enemies_loop_next
+
+        ; Move the enemy left on screen.
+
+        eor #$04                    ; toggle dx
+        sta ($86),y
+
+        and #$04
+        beq scroll_enemies_right_loop_dx_only
+
+        iny
+        lda ($86),y                 ; x offset
+        sec
+        sbc #1
+        sta ($86),y                 ; x offset
+
+        scroll_enemies_right_loop_dx_only:
+        clc
+
+        scroll_enemies_right_loop_next:
+
+        lda $88
+        adc #4
+        cmp #$10
+        beq move_enemies_exit
+
+    scroll_enemies_right_exit:
     clc
     rts
