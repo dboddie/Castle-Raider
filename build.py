@@ -173,6 +173,7 @@ if __name__ == "__main__":
     tracking_low                  = player_information + 10
     tracking_high                 = player_information + 11
     tracking_y                    = player_information + 12
+    enemy_movement_counter        = player_information + 15
     
     # The tile type occurring at the left edge of the screen.
     initial_row_tiles             = player_information + 0x10
@@ -277,6 +278,10 @@ if __name__ == "__main__":
              tracking_low, tracking_high, tracking_y)
     
     constants_oph += (
+        ".alias enemy_movement_counter      $%x\n"
+        ) % enemy_movement_counter
+
+    constants_oph += (
         ".alias initial_row_tiles               $%x\n"
         ".alias row_indices                     $%x\n"
         ".alias initial_row_offsets             $%x\n"
@@ -370,21 +375,18 @@ if __name__ == "__main__":
              top_panel_objects_bank2_high))
     
     s = 0
-    for address in enemy_sprites_addresses:
+    for address, shifted_address in zip(enemy_sprites_addresses, enemy_sprites_shifted_addresses):
     
         constants_oph += (
             ".alias enemy_spr_low%i       $%02x\n"
             ".alias enemy_spr_high%i      $%02x\n"
             ) % (s, address & 0xff, s, address >> 8)
-        s += 1
-    
-    s = 0
-    for address in enemy_sprites_shifted_addresses:
-    
+        
         constants_oph += (
             ".alias enemy_spr_sh_low%i       $%02x\n"
             ".alias enemy_spr_sh_high%i      $%02x\n"
             ) % (s, address & 0xff, s, address >> 8)
+        
         s += 1
     
     constants_oph += (

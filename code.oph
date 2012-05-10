@@ -70,6 +70,9 @@ init:
     lda #enemy_positions_high
     sta $87
 
+    lda #0
+    sta enemy_movement_counter
+
     ; Initialise the enemy positions.
 
     ldx #15
@@ -99,6 +102,7 @@ main:
     jsr show_bank2          ; Hide the bank being plotted.
     jsr initial_plot_bank1
     jsr plot_char_bank1
+    jsr plot_enemies_bank1  ; Show any initial enemies.
     jsr show_bank1          ; Show the completed bank.
     jsr initial_plot_bank2
 
@@ -158,6 +162,17 @@ main:
 
         main_loop_next:
 
+        lda player_moving
+        cmp #0
+        bne main_loop_after_enemies
+
+        lda #19
+        jsr $fff4
+        jsr plot_enemies        ; unplot enemies
+        jsr move_enemies
+        jsr plot_enemies        ; plot enemies
+
+        main_loop_after_enemies:
         clc
 
         ; --- Full redraw test code (begin) ---
@@ -329,7 +344,9 @@ scroll_right_update:
     ora #$02
     sta player_animation
 
-    jsr plot_char_bank2 ; plot the player on bank 2
+    jsr plot_char_bank2     ; plot the player on bank 2
+    jsr move_enemies
+    jsr plot_enemies_bank2  ; plot the enemies, too
 
     clc
     rts
@@ -358,7 +375,9 @@ scroll_right_update:
     ora #$02
     sta player_animation
 
-    jsr plot_char_bank1 ; plot the player on bank 1
+    jsr plot_char_bank1     ; plot the player on bank 1
+    jsr move_enemies
+    jsr plot_enemies_bank1  ; plot the enemies, too
 
     clc
     rts
@@ -395,7 +414,9 @@ scroll_left_update:
     and #$01
     sta player_animation
 
-    jsr plot_char_bank2 ; plot the player on bank 2
+    jsr plot_char_bank2     ; plot the player on bank 2
+    jsr move_enemies
+    jsr plot_enemies_bank2  ; plot the enemies, too
 
     lda scroll_offset_low   ; Decrease the scroll offset after showing bank 2.
     sec
@@ -423,14 +444,17 @@ scroll_left_update:
     and #$01
     sta player_animation
 
-    jsr plot_char_bank1 ; plot the player on bank 1
+    jsr plot_char_bank1     ; plot the player on bank 1
+    jsr move_enemies
+    jsr plot_enemies_bank1  ; plot the enemies, too
 
     clc
     rts
 
 scroll_update_bank2_bank1:
 
-    jsr plot_char_bank2 ; unplot the player on bank 2
+    jsr plot_char_bank2     ; unplot the player on bank 2
+    jsr plot_enemies_bank2  ; unplot the enemies, too
 
     lda player_falling
     cmp #0
@@ -460,7 +484,8 @@ scroll_update_bank2_bank1:
 
 scroll_update_bank1_bank2:
 
-    jsr plot_char_bank1 ; unplot the player on bank 1
+    jsr plot_char_bank1     ; unplot the player on bank 1
+    jsr plot_enemies_bank1  ; unplot the enemies, too
 
     lda player_falling
     cmp #0
@@ -683,17 +708,17 @@ plot_bank1r:
             asl
             asl
             asl                 ; n*8
-            sta $7a
+            sta $8c
             lda #0
             adc #0
-            sta $7b
+            sta $8d
             clc
 
             lda $72
-            adc $7a
+            adc $8c
             sta $72
             lda $73
-            adc $7b
+            adc $8d
             sta $73             ; x ($72,$73)
             clc
 
@@ -805,17 +830,17 @@ plot_bank1l:
             asl
             asl
             asl                 ; n*8
-            sta $7a
+            sta $8c
             lda #0
             adc #0
-            sta $7b
+            sta $8d
             clc
 
             lda $72
-            adc $7a
+            adc $8c
             sta $72
             lda $73
-            adc $7b
+            adc $8d
             sta $73             ; x ($72,$73)
             clc
 
@@ -1074,17 +1099,17 @@ plot_bank2r:
             asl
             asl
             asl                     ; (n - 1)*8
-            sta $7a
+            sta $8c
             lda #0
             adc #0
-            sta $7b
+            sta $8d
             clc
 
             lda $72
-            adc $7a
+            adc $8c
             sta $72
             lda $73
-            adc $7b
+            adc $8d
             sta $73                 ; x ($72,$73)
             clc
 
@@ -1291,17 +1316,17 @@ plot_bank2l:
             asl
             asl
             asl                     ; (n - 1)*8
-            sta $7a
+            sta $8c
             lda #0
             adc #0
-            sta $7b
+            sta $8d
             clc
 
             lda $72
-            adc $7a
+            adc $8c
             sta $72
             lda $73
-            adc $7b
+            adc $8d
             sta $73                 ; x ($72,$73)
             clc
 
@@ -1642,7 +1667,7 @@ plot8x24_y1:            ; $70,$71=source address
                         ; $72,$73=destination address
 
     lda #2
-    sta $8a
+    sta $8d
 
     plot8x24_y1_loop:
 
@@ -1698,7 +1723,7 @@ plot8x24_y1:            ; $70,$71=source address
             cpx #2
             bne plot8x24_y1_lower_loop_outer
 
-        dec $8a
+        dec $8d
         bmi plot8x24_y1_exit
 
         clc
@@ -2488,10 +2513,14 @@ track_position: ; Scroll back to the last stored position.
 
 ; Enemy plotting routines
 
-enemy_sprite_low:  .byte enemy_spr_low0, enemy_spr_sh_low0
-                   .byte enemy_spr_low1, enemy_spr_sh_low1
-enemy_sprite_high: .byte enemy_spr_high0, enemy_spr_sh_high0
-                   .byte enemy_spr_high1, enemy_spr_sh_high1
+enemy_sprite_low:  .byte enemy_spr_low0, enemy_spr_low1
+                   .byte enemy_spr_sh_low0, enemy_spr_sh_low1
+                   .byte enemy_spr_low2, enemy_spr_low3
+                   .byte enemy_spr_sh_low2, enemy_spr_sh_low3
+enemy_sprite_high: .byte enemy_spr_high0, enemy_spr_high1
+                   .byte enemy_spr_sh_high0, enemy_spr_sh_high1
+                   .byte enemy_spr_high2, enemy_spr_high3
+                   .byte enemy_spr_sh_high2, enemy_spr_sh_high3
 
 plot_enemy_bank1:       ; X=enemy y offset,Y=offset of enemy y offset
 
@@ -2527,7 +2556,8 @@ plot_enemy_bank2:       ; X=enemy y offset,Y=offset of enemy y offset
 plot8x8_x0_y0:          ; $70,$71=source address
                         ; $72,$73=destination address
     lda $8c
-    and #$01
+    and #$02
+    lsr
     tax
     ldy plot8x8_lengths,x
 
@@ -2538,12 +2568,13 @@ plot8x8_x0_y0:          ; $70,$71=source address
         dey
         bpl plot8x8_x0_y0_loop
     clc
-    rts
+    jmp plot_enemies_loop_next
 
 plot8x8_x0_y1:          ; $70,$71=source address
                         ; $72,$73=destination address
     lda $8c
-    and #$01
+    and #$02
+    lsr
     tax
     ldy plot8x8_lengths,x
 
@@ -2554,11 +2585,33 @@ plot8x8_x0_y1:          ; $70,$71=source address
         dey
         bpl plot8x8_x0_y1_loop
     clc
-    rts
+    jmp plot_enemies_loop_next
 
 plot8x8_lengths: .byte 15, 23
 
 plot_enemies:
+
+    lda bank_number
+    cmp #1
+    bne plot_enemies_bank2
+
+plot_enemies_bank1:
+
+    lda #<plot_enemy_bank1
+    sta $7a
+    lda #>plot_enemy_bank1
+    sta $7b
+
+    jmp plot_enemies_pre_loop
+
+plot_enemies_bank2:
+
+    lda #<plot_enemy_bank2
+    sta $7a
+    lda #>plot_enemy_bank2
+    sta $7b
+
+plot_enemies_pre_loop:
 
     lda #0
 
@@ -2572,8 +2625,8 @@ plot_enemies:
         beq plot_enemies_loop_next
 
         ; Determine the sprite to use from the type and dx value.
-        tax                         ; convert the value to an offset into the
-        dex                         ; sprite address arrays and temporarily store
+        lsr                         ; convert the value to an offset into the
+        tax                         ; sprite address arrays and temporarily store
         stx $8c                     ; the value
         lda enemy_sprite_low,x      ; load the sprite address
         sta $70
@@ -2591,17 +2644,7 @@ plot_enemies:
         lda ($86),y                 ; y offset
         tax
 
-        lda bank_number
-        cmp #1
-        bne plot_enemies_loop_bank2
-        clc
-
-        jsr plot_enemy_bank1
-        jmp plot_enemies_loop_next
-
-        plot_enemies_loop_bank2:
-        clc
-        jsr plot_enemy_bank2
+        jmp ($7a)
 
         plot_enemies_loop_next:
         clc
@@ -2612,5 +2655,44 @@ plot_enemies:
         beq plot_enemies_exit
 
     plot_enemies_exit:
+    clc
+    rts
+
+move_enemies:
+
+    ; Check the enemy movement counter and perform updates now if necessary.
+    inc enemy_movement_counter
+    clc
+    lda enemy_movement_counter
+    and #$07
+    beq move_enemies_pre_loop
+
+    clc
+    rts
+
+move_enemies_pre_loop:
+
+    lda #0
+
+    move_enemies_loop:
+
+        sta $88                     ; store the offset temporarily
+
+        tay
+        lda ($86),y                 ; type, animation flag and dx
+        cmp #0
+        beq move_enemies_loop_next
+
+        eor #$02                    ; flip the least significant bit
+        sta ($86),y                 ; store the changed type
+
+        move_enemies_loop_next:
+
+        lda $88
+        adc #4
+        cmp #$10
+        beq move_enemies_exit
+
+    move_enemies_exit:
     clc
     rts
