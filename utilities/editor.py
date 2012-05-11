@@ -113,14 +113,21 @@ class LevelWidget(QWidget):
             f.write("\n")
             
             special_items = self.special.items()
-            special_items.sort()
+            sorted_special_items = []
             
             for ch, (n, index, flags) in special_items:
+                sorted_special_items.append((index, ch, n, flags))
+            
+            sorted_special_items.sort()
+            
+            for index, ch, n, flags in sorted_special_items:
             
                 flags_word = []
-                for k, v in flags_values.items():
+                for k, v in makelevels.flags_values.items():
                     if flags & v:
                         flags_word.append(k)
+                if not flags_word:
+                    flags_word.append("undefined")
                 f.write("%s %s %s\n" % (ch, n, ",".join(flags_word)))
             
             f.close()

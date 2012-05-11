@@ -278,7 +278,7 @@ if __name__ == "__main__":
              tracking_low, tracking_high, tracking_y)
     
     constants_oph += (
-        ".alias enemy_movement_counter      $%x\n"
+        ".alias enemy_movement_counter          $%x\n"
         ) % enemy_movement_counter
 
     constants_oph += (
