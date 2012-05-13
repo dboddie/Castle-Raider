@@ -80,6 +80,8 @@ main:
     ldy #>code_block
     jsr $ffdd
 
+    jsr cassette_quit
+
     lda #140
     jsr $fff4   ; *TAPE (reclaim any workspace used on high PAGE systems)
 
@@ -225,6 +227,17 @@ cassette_init:
     lda #<cassette_interrupt_routine
     sta $204
     lda #>cassette_interrupt_routine
+    sta $205
+
+    cli         ; enable interrupts
+    rts
+
+cassette_quit:
+    sei         ; disable interrupts
+
+    lda cassette_original_irq1v_low
+    sta $204
+    lda cassette_original_irq1v_high
     sta $205
 
     cli         ; enable interrupts
