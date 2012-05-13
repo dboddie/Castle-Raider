@@ -44,6 +44,8 @@ main:
         cpx #[title_text_end - title_text]
         bne title_text_loop
 
+    jsr cassette_init
+
     ldx #0
     init_load_window_loop:
 
@@ -200,10 +202,56 @@ code_block: .byte <code_file_name, >code_file_name
 
 code_file_name: .byte "CODE", 13
 
-init_load_window_vdu_bytes: .byte 28,0,28,19,27
+init_load_window_vdu_bytes: .byte 28,0,28,19,26
 
 title_text: .byte "Castle Raider demo 1", 13, 10
             .byte "Copyright (C) 2012", 13, 10
             .byte "David Boddie", 13, 10
             .byte "GNU GPL v3 or later"
 title_text_end:
+
+cassette_original_irq1v:
+cassette_original_irq1v_low: .byte 0
+cassette_original_irq1v_high: .byte 0
+
+cassette_init:
+    sei         ; disable interrupts
+
+    lda $204
+    sta cassette_original_irq1v_low
+    lda $205
+    sta cassette_original_irq1v_high
+
+    lda #<cassette_interrupt_routine
+    sta $204
+    lda #>cassette_interrupt_routine
+    sta $205
+
+    cli         ; enable interrupts
+    rts
+
+cassette_index: .byte 0
+cassette_value: .byte 1
+
+cassette_interrupt_routine:
+    pha
+    txa
+    pha
+
+    lda cassette_value
+    ldx cassette_index
+    sta $5e60,x
+
+    inx
+    stx cassette_index
+    bne cassette_interrupt_routine_continue
+
+    inc cassette_value
+
+    cassette_interrupt_routine_continue:
+    clc
+
+    pla
+    tax
+    pla
+    jmp (cassette_original_irq1v)
