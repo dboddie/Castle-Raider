@@ -206,9 +206,10 @@ code_file_name: .byte "CODE", 13
 
 init_load_window_vdu_bytes: .byte 28,0,28,19,26
 
-title_text: .byte "Castle Raider demo 1", 13, 10
-            .byte "Copyright (C) 2012", 13, 10
-            .byte "David Boddie", 13, 10
+title_text: .byte "   Castle Raider", 13, 10, 13, 10
+            .byte " Prerelease version", 13, 10
+            .byte " Copyright (C) 2012", 13, 10
+            .byte "    David Boddie", 13, 10
             .byte "GNU GPL v3 or later"
 title_text_end:
 
