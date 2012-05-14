@@ -217,6 +217,31 @@ cassette_original_irq1v_low: .byte 0
 cassette_original_irq1v_high: .byte 0
 
 cassette_init:
+
+    ldx #0
+    lda cassette_markers,x      ; total number of markers
+    sta $72
+
+    inx
+    ldy #0
+    cassette_init_values_loop:
+
+        lda cassette_markers,x      ; load the address of each marker
+        sta $70
+        inx
+        lda cassette_markers,x
+        sta $71
+        inx
+        lda cassette_markers,x      ; store the inverse value in the address
+        eor #$ff
+        sta ($70),y
+        inx
+
+        dec $72
+        bpl cassette_init_values_loop
+
+    stx cassette_markers_end
+
     sei         ; disable interrupts
 
     lda $204
@@ -243,28 +268,59 @@ cassette_quit:
     cli         ; enable interrupts
     rts
 
-cassette_index: .byte 0
-cassette_value: .byte 1
+cassette_marker_index: .byte 1
+cassette_markers_end:  .byte 0
+cassette_screen_index: .byte 0
 
 cassette_interrupt_routine:
     pha
     txa
     pha
+    tya
+    pha
 
-    lda cassette_value
-    ldx cassette_index
-    sta $5e60,x
+    ldx cassette_marker_index       ; load the current index to a marker
+    cpx cassette_markers_end        ; compare it to the end index
+    beq cassette_interrupt_routine_continue
+
+    lda cassette_markers,x          ; load the address to check
+    sta $70
+    inx
+    lda cassette_markers,x
+    sta $71
+
+    ldy #0
+    lda ($70),y                     ; load the marker value
+    inx
+    cmp cassette_markers,x          ; compare it with the value in the table
+    bne cassette_interrupt_routine_continue
+    clc
 
     inx
-    stx cassette_index
-    bne cassette_interrupt_routine_continue
+    stx cassette_marker_index       ; store the new index
 
-    inc cassette_value
+    lda #$0f
+    ldy #3
+    ldx cassette_screen_index   ; load the position on the screen to plot to
+    cassette_interrupt_routine_plot_loop:
+
+        sta $5e60,x
+        inx
+        dey
+        bpl cassette_interrupt_routine_plot_loop
+
+    lda cassette_screen_index
+    adc #8
+    sta cassette_screen_index
 
     cassette_interrupt_routine_continue:
     clc
 
     pla
+    tay
+    pla
     tax
     pla
     jmp (cassette_original_irq1v)
+
+cassette_markers:

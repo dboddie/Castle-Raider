@@ -414,12 +414,34 @@ if __name__ == "__main__":
         ".alias code_length_high             $%02x\n"
         ".alias code_end_low                 $%02x\n"
         ".alias code_end_high                $%02x\n"
+        "\n"
         ) % ((code_start,) + address_length_end(code_start, code))
+    
+    marker_info = [(sprite_area_address, sprite_data),
+                   (char_area_address, char_data),
+                   (levels_address, level_data),
+                   (panel_address, panel),
+                   (code_start, code)]
+    markers = ""
+    n = 0
+    
+    for address, data in marker_info:
+    
+        ptr = 128
+        while ptr < len(data):
+        
+            low = (address + ptr) & 0xff
+            high = (address + ptr) >> 8
+            markers += chr(low) + chr(high) + data[ptr]
+            ptr += 256
+            n += 1
+    
+    markers = chr(n) + markers
     
     open("constants.oph", "w").write(extras_oph)
     
     system("ophis loader.oph LOADER")
-    loader_code = open("LOADER").read()
+    loader_code = open("LOADER").read() + markers
     
     bootloader_start = 0xe00
     bootloader_code = "\r\x00\x0a\x0f*RUN LOADER\r\xff"
