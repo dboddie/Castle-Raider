@@ -83,14 +83,14 @@ init:
         dex
         bpl init_enemy_positions_loop
     
-;    lda #5
-;    sta enemy_positions_address
-;    lda #32
-;    sta [enemy_positions_address+1]
-;    lda #10
-;    sta [enemy_positions_address+2]
-;    lda #0
-;    sta [enemy_positions_address+3]
+    lda #1
+    sta enemy_positions_address
+    lda #32
+    sta [enemy_positions_address+1]
+    lda #10
+    sta [enemy_positions_address+2]
+    lda #0
+    sta [enemy_positions_address+3]
 
 main:
 
@@ -2690,6 +2690,33 @@ move_enemies_pre_loop:
         beq move_enemies_loop_next
 
         eor #$02                    ; flip the least significant bit
+        sta $7c                     ; temporarily store the type/dx byte
+
+        and #$0c
+        cmp #$04
+        bne move_enemies_loop_not_bat
+
+        ldy #2
+        lda ($86),y
+        cmp player_y
+        beq move_enemies_loop_update_type
+        bcs move_enemies_loop_bat_up
+
+        adc #1                      ; move the bat down
+        sta ($86),y
+        jmp move_enemies_loop_update_type
+
+        move_enemies_loop_bat_up:
+        sbc #1                      ; C is already set
+        sta ($86),y
+        jmp move_enemies_loop_update_type
+
+        move_enemies_loop_not_bat:
+
+        move_enemies_loop_update_type:
+
+        lda $7c                     ; retrieve the type/dx byte
+        ldy #0
         sta ($86),y                 ; store the changed type
 
         move_enemies_loop_next:
@@ -2714,7 +2741,7 @@ scroll_enemies_left:
         tay
         lda ($86),y                 ; type, animation flag and dx
         cmp #0
-        beq move_enemies_loop_next
+        beq scroll_enemies_left_loop_next
 
         ; Move the enemy right on screen.
 
@@ -2754,7 +2781,7 @@ scroll_enemies_right:
         tay
         lda ($86),y                 ; type, animation flag and dx
         cmp #0
-        beq move_enemies_loop_next
+        beq scroll_enemies_right_loop_next
 
         ; Move the enemy left on screen.
 
