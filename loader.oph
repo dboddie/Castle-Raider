@@ -273,7 +273,7 @@ cassette_markers_end:  .byte 0
 cassette_screen_index: .byte 0
 
 cassette_screen_value:  .byte 1
-cassette_screen_values: .byte $0f, $0c
+cassette_screen_values: .byte $f0, $c0
 
 cassette_interrupt_routine:
     pha

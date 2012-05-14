@@ -2741,8 +2741,7 @@ scroll_enemies_left:
         beq move_enemies_exit
 
     scroll_enemies_left_exit:
-    clc
-    rts
+    jmp move_enemies
 
 scroll_enemies_right:
 
@@ -2782,5 +2781,4 @@ scroll_enemies_right:
         beq move_enemies_exit
 
     scroll_enemies_right_exit:
-    clc
-    rts
+    jmp move_enemies
