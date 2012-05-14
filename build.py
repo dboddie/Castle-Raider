@@ -427,13 +427,13 @@ if __name__ == "__main__":
     
     for address, data in marker_info:
     
-        ptr = 128
+        ptr = 64
         while ptr < len(data):
         
             low = (address + ptr) & 0xff
             high = (address + ptr) >> 8
             markers += chr(low) + chr(high) + data[ptr]
-            ptr += 256
+            ptr += 128
             n += 1
     
     markers = chr(n) + markers

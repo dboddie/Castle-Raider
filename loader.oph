@@ -272,6 +272,9 @@ cassette_marker_index: .byte 1
 cassette_markers_end:  .byte 0
 cassette_screen_index: .byte 0
 
+cassette_screen_value:  .byte 1
+cassette_screen_values: .byte $0f, $0c
+
 cassette_interrupt_routine:
     pha
     txa
@@ -299,16 +302,23 @@ cassette_interrupt_routine:
     inx
     stx cassette_marker_index       ; store the new index
 
-    lda #$0f
+    ldx cassette_screen_value
+    lda cassette_screen_values,x
     ldy #3
     ldx cassette_screen_index   ; load the position on the screen to plot to
     cassette_interrupt_routine_plot_loop:
 
-        sta $5e60,x
+        sta $7610,x
         inx
         dey
         bpl cassette_interrupt_routine_plot_loop
 
+    dec cassette_screen_value
+    bpl cassette_interrupt_routine_continue
+    clc
+
+    lda #1
+    sta cassette_screen_value
     lda cassette_screen_index
     adc #8
     sta cassette_screen_index
