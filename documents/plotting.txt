@@ -257,6 +257,17 @@ offset.
     tile_number_table_start:
     [values]
 
+The offsets into the level data for each row are two-byte addresses, so the
+data for each row can start anywhere in memory. However, the total number of
+spans in each row is limited by the row indices which are one byte each. Since
+each span can represent at most 256 tiles, the maximum possible level width is
+256 * 256 tiles. The screen is 40 tiles wide, so a level of 65536 tiles is
+1638.4 screens wide.
+
+In the initial memory map for the game, there is about 2560 bytes to use for
+the row spans, which gives an average of 160 bytes per row, or 80 spans. This
+would still yield a possible 20480 tiles or 512 screens.
+
 
 Enemies
 -------
