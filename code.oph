@@ -17,6 +17,7 @@
 
 .include "constants.oph"
 
+.alias scrolled             $7f
 .alias scroll_offset_low    $8e
 .alias scroll_offset_high   $8f
 
@@ -115,6 +116,9 @@ main:
 
     main_loop:
 
+        lda #0
+        sta scrolled
+
         main_loop_check_lost:
 
         lda player_lost
@@ -162,7 +166,7 @@ main:
 
         main_loop_next:
 
-        lda player_moving
+        lda scrolled
         cmp #0
         bne main_loop_after_enemies
 
@@ -336,6 +340,9 @@ scroll_right_update:
     scroll_right_update_ok_to_scroll:
     clc
 
+    lda #1
+    sta scrolled
+
     jsr plot_bank2r
     lda #19
     jsr $fff4
@@ -356,6 +363,9 @@ scroll_right_update:
 
     scroll_right_update_show_bank1:
     clc
+
+    lda #1
+    sta scrolled
 
     lda scroll_offset_low   ; Increase the scroll offset before showing bank 1.
     adc #1
@@ -404,6 +414,9 @@ scroll_left_update:
     scroll_left_update_ok_to_scroll:
     clc
 
+    lda #1
+    sta scrolled
+
     jsr scroll_left
 
     jsr plot_bank2l
@@ -435,6 +448,9 @@ scroll_left_update:
 
     scroll_left_update_show_bank1:
     clc
+
+    lda #1
+    sta scrolled
 
     jsr plot_bank1l
     lda #19
@@ -2660,7 +2676,7 @@ plot_enemies_pre_loop:
         lda $88
         adc #4
         cmp #$10
-        beq plot_enemies_exit
+        bne plot_enemies_loop
 
     plot_enemies_exit:
     clc
@@ -2720,11 +2736,14 @@ move_enemies_pre_loop:
         sta ($86),y                 ; store the changed type
 
         move_enemies_loop_next:
+        clc
 
         lda $88
         adc #4
         cmp #$10
         beq move_enemies_exit
+
+        jmp move_enemies_loop
 
     move_enemies_exit:
     clc
@@ -2761,11 +2780,12 @@ scroll_enemies_left:
         clc
 
         scroll_enemies_left_loop_next:
+        clc
 
         lda $88
         adc #4
         cmp #$10
-        beq move_enemies_exit
+        bne scroll_enemies_left_loop
 
     scroll_enemies_left_exit:
     jmp move_enemies
@@ -2801,11 +2821,12 @@ scroll_enemies_right:
         clc
 
         scroll_enemies_right_loop_next:
+        clc
 
         lda $88
         adc #4
         cmp #$10
-        beq move_enemies_exit
+        bne scroll_enemies_right_loop
 
     scroll_enemies_right_exit:
     jmp move_enemies
