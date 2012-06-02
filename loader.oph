@@ -44,6 +44,8 @@ main:
         cpx #[title_text_end - title_text]
         bne title_text_loop
 
+    jsr draw_title
+
     jsr cassette_init
 
     ldx #0
@@ -212,6 +214,10 @@ title_text: .byte "   Castle Raider", 13, 10, 13, 10
             .byte "    David Boddie", 13, 10
             .byte "GNU GPL v3 or later"
 title_text_end:
+
+draw_title:
+
+    
 
 cassette_original_irq1v:
 cassette_original_irq1v_low: .byte 0

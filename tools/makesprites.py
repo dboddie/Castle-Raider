@@ -28,6 +28,11 @@ palette = {"\x00\x00\x00": 0,
            "\x00\xff\xff": 2,
            "\xff\xff\xff": 3}
 
+palette_rgb = {(0, 0, 0): 0,
+               (255, 0, 0): 1,
+               (0, 255, 0): 2,
+               (255, 255, 0): 3}
+
 def read_png(path):
 
     im = Image.open(path).convert("RGB")
@@ -190,3 +195,27 @@ def read_shifted_sprites(paths, base_address = 0):
     print "%i bytes (%04x) of sprite data" % (len(data), len(data))
     
     return data, addresses
+
+def read_title(path):
+
+    image = Image.open(path)
+    
+    columns = []
+    
+    for x in range(image.size[0]):
+    
+        colour = palette_rgb[image.getpixel((x, 0))]
+        column = []
+        
+        for y in range(image.size[1]):
+        
+            new_colour = palette_rgb[image.getpixel((x, y))]
+            
+            if new_colour != colour:
+                column += [y, new_colour]
+                colour = new_colour
+        
+        columns.append(len(column))
+        columns += column
+    
+    return "".join(map(chr, columns))

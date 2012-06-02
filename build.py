@@ -254,6 +254,8 @@ if __name__ == "__main__":
     top_panel_objects_bank2_low = top_panel_objects_bank2 & 0xff
     top_panel_objects_bank2_high = top_panel_objects_bank2 >> 8
     
+    title_data = makesprites.read_title("images/title.png")
+    
     # Create the contents of a file containing constant values.
     
     constants_oph = (
@@ -406,17 +408,6 @@ if __name__ == "__main__":
     
     loader_start = 0x3500
     
-    extras_oph = constants_oph + (
-        ".alias code_start_address           $%02x\n"
-        ".alias code_start_low               $%02x\n"
-        ".alias code_start_high              $%02x\n"
-        ".alias code_length_low              $%02x\n"
-        ".alias code_length_high             $%02x\n"
-        ".alias code_end_low                 $%02x\n"
-        ".alias code_end_high                $%02x\n"
-        "\n"
-        ) % ((code_start,) + address_length_end(code_start, code))
-    
     marker_info = [(sprite_area_address, sprite_data),
                    (char_area_address, char_data),
                    (levels_address, level_data),
@@ -437,6 +428,20 @@ if __name__ == "__main__":
             n += 1
     
     markers = chr(n) + markers
+    
+    extras_oph = constants_oph + (
+        ".alias code_start_address           $%02x\n"
+        ".alias code_start_low               $%02x\n"
+        ".alias code_start_high              $%02x\n"
+        ".alias code_length_low              $%02x\n"
+        ".alias code_length_high             $%02x\n"
+        ".alias code_end_low                 $%02x\n"
+        ".alias code_end_high                $%02x\n"
+        "\n"
+        ".alias title_start                  $%02x\n"
+        "\n"
+        ) % ((code_start,) + address_length_end(code_start, code) + \
+             (loader_start + len(markers),))
     
     open("constants.oph", "w").write(extras_oph)
     
