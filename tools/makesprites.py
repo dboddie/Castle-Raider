@@ -198,6 +198,14 @@ def read_shifted_sprites(paths, base_address = 0):
 
 def read_title(path):
 
+    """Read the image from the given path and produce a sequence of column
+    data that describes the locations of colour changes in each column.
+    Each column is represented by pairs of row indices, each stored in the low
+    and high halves of a byte. The row indices are one less than their actual
+    values, and each column does not include information about the initial
+    colour change to red and the final change to black. Each set of indices is
+    terminated by 0xff.
+    """
     image = Image.open(path)
     
     columns = []
@@ -206,16 +214,23 @@ def read_title(path):
     
         colour = palette_rgb[image.getpixel((x, 0))]
         column = []
+        i = 0
         
         for y in range(image.size[1]):
         
             new_colour = palette_rgb[image.getpixel((x, y))]
             
             if new_colour != colour:
-                column += [y, new_colour]
                 colour = new_colour
+                if i % 2 == 0:
+                    column += [y - 1]
+                else:
+                    column[-1] = column[-1] | ((y - 1) << 4)
+                i += 1
         
-        columns.append(len(column))
+        if not column or column[-1] & 0xf0 != 0xf0:
+            column.append(0xff)
+        
         columns += column
     
     return "".join(map(chr, columns))

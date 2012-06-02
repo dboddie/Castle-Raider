@@ -208,8 +208,8 @@ code_file_name: .byte "CODE", 13
 
 init_load_window_vdu_bytes: .byte 28,0,28,19,26
 
-title_text: .byte "   Castle Raider", 13, 10, 13, 10
-            .byte "Pre-release  version", 13, 10
+title_text: .byte "   Castle Raider", 13, 10
+            .byte "Pre-release  version"
             .byte " Copyright (C) 2012", 13, 10
             .byte "    David Boddie", 13, 10
             .byte "GNU GPL v3 or later"
@@ -217,7 +217,118 @@ title_text_end:
 
 draw_title:
 
-    
+    lda #$c8
+    sta $72
+    lda #$60
+    sta $73
+
+    lda #0
+    sta $84                     ; column counter
+
+    ldx #0
+    draw_title_loop:
+
+        lda #0                  ; low/high byte flag
+        sta $83
+
+        lda #0                  ; row counter
+        sta $82
+
+        lda #$0f                ; start with red
+        sta $81
+
+        draw_title_read_next:
+
+        ldy $83                 ; read the low/high flag
+        ; load the index of the next colour change
+        lda [cassette_markers + markers_length],x
+
+        cpy #0
+        bne draw_title_read_next_high
+
+        clc
+        and #$0f
+        inc $83
+        jmp draw_title_column_loop_begin
+
+        draw_title_read_next_high:
+        clc
+        dec $83
+        and #$f0
+        lsr
+        lsr
+        lsr
+        lsr
+        inx                     ; the next value will come from the next byte
+
+        draw_title_column_loop_begin:
+        sta $80                 ; store the next index
+
+        draw_title_column_loop:
+
+            lda $81             ; load the current colour
+            ldy #7
+            draw_title_block_loop:
+
+                sta ($72),y
+                dey
+                bpl draw_title_block_loop
+            
+            clc
+
+            lda $72             ; move to the next row on the screen
+            adc #$40
+            sta $72
+            lda $73
+            adc #$01
+            sta $73
+            clc
+
+            lda $82
+            cmp #$0f            ; if the last row, plot the next column
+            beq draw_title_loop_next
+
+            cmp $80             ; compare with the next index
+            bne draw_title_column_loop_continue
+
+            inc $82                     ; increment the row counter
+            lda $81
+            eor #$f0                    ; red <-> yellow
+            sta $81
+
+            jmp draw_title_read_next
+
+            draw_title_column_loop_continue:
+
+            inc $82                     ; increment the row counter
+            jmp draw_title_column_loop
+
+        draw_title_loop_next:
+
+        sec
+        lda $72
+        sbc #$f8
+        sta $72
+        lda $73
+        sbc #$13
+        sta $73
+        clc
+
+        lda $83                         ; if we encounter a 0xff padding byte
+        cmp #0                          ; then increment X to skip past it
+        beq draw_title_loop_no_increment
+
+        inx
+
+        draw_title_loop_no_increment:
+
+        inc $84
+        lda $84
+        cmp #38
+        bne draw_title_loop
+
+    clc
+    rts
 
 cassette_original_irq1v:
 cassette_original_irq1v_low: .byte 0

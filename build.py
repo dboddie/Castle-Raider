@@ -438,18 +438,19 @@ if __name__ == "__main__":
         ".alias code_end_low                 $%02x\n"
         ".alias code_end_high                $%02x\n"
         "\n"
-        ".alias title_start                  $%02x\n"
+        ".alias markers_length               $%02x\n"
         "\n"
         ) % ((code_start,) + address_length_end(code_start, code) + \
-             (loader_start + len(markers),))
+             (len(markers),))
     
     open("constants.oph", "w").write(extras_oph)
     
     system("ophis loader.oph LOADER")
-    loader_code = open("LOADER").read() + markers
+    loader_code = open("LOADER").read() + markers + title_data
     
     bootloader_start = 0xe00
-    bootloader_code = "\r\x00\x0a\x0f*RUN LOADER\r\xff"
+    bootloader_code = ("\r\x00\x0a\x0d*FX 229,1"
+                       "\r\x00\x14\x0f*RUN LOADER\r\xff\x0a\x14\x00")
     
     files = [("CASTLE", bootloader_start, bootloader_start, bootloader_code),
              ("LOADER", loader_start, loader_start, loader_code),
