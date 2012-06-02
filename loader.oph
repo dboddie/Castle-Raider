@@ -45,6 +45,8 @@ main:
         bne title_text_loop
 
     jsr draw_title
+    clc
+    rts
 
     jsr cassette_init
 
@@ -305,6 +307,16 @@ draw_title:
 
         draw_title_loop_next:
 
+        lda #$0f
+        ldy #7
+        draw_title_after_block_loop:
+
+            sta ($72),y
+            dey
+            bpl draw_title_after_block_loop
+
+        clc
+
         sec
         lda $72
         sbc #$f8
@@ -325,8 +337,10 @@ draw_title:
         inc $84
         lda $84
         cmp #38
-        bne draw_title_loop
+        beq draw_title_exit
+        jmp draw_title_loop
 
+    draw_title_exit:
     clc
     rts
 
