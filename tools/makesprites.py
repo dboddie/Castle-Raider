@@ -213,6 +213,7 @@ def read_title(path):
     for x in range(image.size[0]):
     
         colour = palette_rgb[image.getpixel((x, 0))]
+        previous_row = 0
         column = []
         i = 0
         
@@ -223,13 +224,17 @@ def read_title(path):
             if new_colour != colour:
                 colour = new_colour
                 if i % 2 == 0:
-                    column += [y - 1]
+                    column += [y - previous_row - 1]
                 else:
-                    column[-1] = column[-1] | ((y - 1) << 4)
+                    column[-1] = column[-1] | ((y - previous_row - 1) << 4)
+                
+                previous_row = y
                 i += 1
         
-        if not column or column[-1] & 0xf0 != 0xf0:
+        if not column:
             column.append(0xff)
+        elif previous_row < 16:
+            column.append(16 - previous_row - 1)
         
         columns += column
     
