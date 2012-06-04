@@ -437,6 +437,11 @@ update_column:      ; $72,$73=address of column top
         sta $73
         clc
 
+        lda $81
+        ldy $74
+        dey
+        sta ($72),y
+
         lda $82
         cmp #$10            ; if the last row, plot the next column
         bcs update_column_loop_next
@@ -450,7 +455,7 @@ update_column:      ; $72,$73=address of column top
     update_column_loop_next:
     clc
 
-    lda #$0f                ; plot the top of the last row
+    lda #$0f
     ldy $74
     sta ($72),y
 
@@ -463,6 +468,7 @@ update_column:      ; $72,$73=address of column top
     clc
 
     lda #$00                ; plot a black line at the bottom of the column
+    ldy $74
     sta ($76),y
 
     lda #$0f                ; plot the top of the last row
@@ -472,12 +478,20 @@ update_column:      ; $72,$73=address of column top
     clc
     rts
 
+title_offsets: .byte 3, 2, 2, 1, 1, 1, 2, 2, 3, 4, 5, 6, 6, 7, 7, 7, 6, 6, 5, 4
+
 update_title:
 
-    lda #3
-    sta $74
+    lda #0
+    sta $78             ; last column to update
+
+    lda #0
+    sta $79             ; index of offset to use for the last column
 
     update_title_outer_loop:
+
+        lda $79         ; copy the index into another register for use in the
+        sta $80         ; inner loop
 
         lda #$88
         sta $72
@@ -491,6 +505,10 @@ update_title:
         sta $75
 
         update_title_loop:
+
+            ldx $80                 ; look up the offset to use
+            lda title_offsets,x
+            sta $74
 
             jsr update_column
 
@@ -511,18 +529,44 @@ update_title:
 
             update_title_loop_no_increment:
 
-            inc $84
+            dec $80
+            bpl update_title_loop_no_index_reset
+
+            lda #19
+            sta $80
+
+            update_title_loop_no_index_reset:
+            clc
+
             lda $84
-            cmp #38
+            cmp $78                     ; update up until the last column
             beq update_title_loop_exit
+            inc $84
             jmp update_title_loop
 
         update_title_loop_exit:
 
-;        inc $74
-;        lda $74
-;        cmp #8
-;        bne update_title_outer_loop
+        lda $78
+        cmp #37
+        bcs update_title_outer_loop_next
+
+        inc $78
+
+        update_title_outer_loop_next:
+        clc
+
+        inc $79
+        lda $79
+        cmp #20
+        bne update_title_outer_loop_no_index_reset
+
+        lda #0
+        sta $79
+
+        update_title_outer_loop_no_index_reset:
+        clc
+
+        jmp update_title_outer_loop
 
     clc
     rts
