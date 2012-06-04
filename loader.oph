@@ -45,6 +45,7 @@ main:
         bne title_text_loop
 
     jsr draw_title
+    jsr update_title
     clc
     rts
 
@@ -219,15 +220,30 @@ title_text_end:
 
 draw_title:
 
-    lda #0
+    lda #7
     sta $74
 
     draw_title_outer_loop:
 
-        lda #$c8
+        lda $74
+        cmp #4
+        bcc draw_title_outer_loop_upper
+
+        lda #$c4
         sta $72
         lda #$60
         sta $73
+
+        jmp draw_title_outer_loop_columns
+
+        draw_title_outer_loop_upper:
+
+        lda #$8c
+        sta $72
+        lda #$5f
+        sta $73
+
+        draw_title_outer_loop_columns:
 
         lda #0
         sta $84                     ; column counter
@@ -262,11 +278,10 @@ draw_title:
 
         draw_title_loop_exit:
 
-        inc $74
-        lda $74
-        cmp #8
-        bne draw_title_outer_loop
+        dec $74
+        bpl draw_title_outer_loop
 
+    draw_title_exit:
     clc
     rts
 
@@ -360,7 +375,7 @@ update_table_low:  .byte $40, $80, $c0, $00, $40, $80, $c0, $00
 update_table_high: .byte $01, $02, $03, $05, $06, $07, $08, $0a
                    .byte $0b, $0c, $0d, $0f, $10, $11, $12, $14
 
-draw_update:        ; $72,$73=address of column top
+update_column:      ; $72,$73=address of column top
                     ; $74=sub-row plot offset
                     ; $75=offset into title data
 
@@ -373,7 +388,12 @@ draw_update:        ; $72,$73=address of column top
     lda #$0f                ; start with red
     sta $81
 
-    draw_update_loop:
+    lda #$00                ; plot a black line at the top of the column
+    ldy $74
+    dey
+    sta ($72),y
+
+    update_column_loop:
 
         lda $81             ; load the current colour
         ldy $74
@@ -384,14 +404,14 @@ draw_update:        ; $72,$73=address of column top
         lda [cassette_markers + markers_length],x
 
         cpy #0
-        bne draw_update_read_next_high
+        bne update_column_read_next_high
 
         clc
         and #$0f
         inc $83
-        jmp draw_update_skip_rows
+        jmp update_column_skip_rows
 
-        draw_update_read_next_high:
+        update_column_read_next_high:
         clc
         dec $83
         and #$f0
@@ -401,7 +421,7 @@ draw_update:        ; $72,$73=address of column top
         lsr
         inc $75                 ; the next value will come from the next byte
 
-        draw_update_skip_rows:
+        update_column_skip_rows:
         clc
 
         tax
@@ -419,33 +439,49 @@ draw_update:        ; $72,$73=address of column top
 
         lda $82
         cmp #$10            ; if the last row, plot the next column
-        bcs draw_update_loop_next
+        bcs update_column_loop_next
 
         lda $81
         eor #$f0                    ; red <-> yellow
         sta $81
 
-        jmp draw_update_loop
+        jmp update_column_loop
 
-    draw_update_loop_next:
+    update_column_loop_next:
+    clc
 
-    lda #$0f
+    lda #$0f                ; plot the top of the last row
     ldy $74
     sta ($72),y
+
+    lda $72
+    adc #$40
+    sta $76
+    lda $73
+    adc #$01
+    sta $77
+    clc
+
+    lda #$00                ; plot a black line at the bottom of the column
+    sta ($76),y
+
+    lda #$0f                ; plot the top of the last row
+    dey
+    sta ($76),y
 
     clc
     rts
 
 update_title:
 
-    lda #0
+    lda #3
     sta $74
 
     update_title_outer_loop:
 
-        lda #$c8
+        lda #$88
         sta $72
-        lda #$60
+        lda #$5f
         sta $73
 
         lda #0
@@ -456,7 +492,7 @@ update_title:
 
         update_title_loop:
 
-            jsr draw_update
+            jsr update_column
 
             sec
             lda $72
@@ -483,10 +519,10 @@ update_title:
 
         update_title_loop_exit:
 
-        inc $74
-        lda $74
-        cmp #8
-        bne update_title_outer_loop
+;        inc $74
+;        lda $74
+;        cmp #8
+;        bne update_title_outer_loop
 
     clc
     rts
