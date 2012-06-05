@@ -478,7 +478,7 @@ update_column:      ; $72,$73=address of column top
     clc
     rts
 
-title_offsets: .byte 3, 2, 2, 1, 1, 1, 2, 2, 3, 4, 5, 6, 6, 7, 7, 7, 6, 6, 5, 4
+title_offsets: .byte 3, 2, 2, 1, 1, 2, 2, 3, 4, 5, 6, 6, 7, 7, 6, 6, 5, 4
 
 update_title:
 
@@ -532,7 +532,7 @@ update_title:
             dec $80
             bpl update_title_loop_no_index_reset
 
-            lda #19
+            lda #17
             sta $80
 
             update_title_loop_no_index_reset:
@@ -557,7 +557,7 @@ update_title:
 
         inc $79
         lda $79
-        cmp #20
+        cmp #18
         bne update_title_outer_loop_no_index_reset
 
         lda #0
