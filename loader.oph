@@ -595,7 +595,15 @@ update_title3:
     cmp $78                     ; update up until the last column
     beq update_title_loop_exit
     inc $84
-    
+
+    lda $8f
+    cmp #0
+    bne update_title3_break
+
+    jmp update_title2
+
+    update_title3_break:
+
     lda #<update_title2
     sta $7a
     lda #>update_title2
