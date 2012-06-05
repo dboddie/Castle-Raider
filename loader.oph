@@ -45,9 +45,25 @@ main:
         bne title_text_loop
 
     jsr draw_title
-    jsr update_title
+
+    jsr init_update_title
+
+    lda #0                  ; clear polling flag to indicate that the animation
+    sta $8f                 ; is not running as an interrupt routine
+
+    title_animation_loop:
+
+        jsr update_title
+
+        ldx #157            ; (SPACE)
+        jsr check_key
+        cpy #255
+        bne title_animation_loop
+
     clc
-    rts
+
+    lda #1                  ; set polling flag to ensure that the interrupt
+    sta $8f                 ; routine gives enough time to the OS
 
     jsr cassette_init
 
@@ -167,6 +183,12 @@ copy_panel:
         bne copy_top_panel_loop
 
     clc
+    rts
+
+check_key:      ; x=key code
+    lda #129    ; returns y=255 or 0
+    ldy #255
+    jsr $fff4
     rts
 
 tiles_block: .byte <tiles_file_name, >tiles_file_name
@@ -375,6 +397,45 @@ update_table_low:  .byte $40, $80, $c0, $00, $40, $80, $c0, $00
 update_table_high: .byte $01, $02, $03, $05, $06, $07, $08, $0a
                    .byte $0b, $0c, $0d, $0f, $10, $11, $12, $14
 
+title_offsets: .byte 3, 2, 2, 1, 1, 2, 2, 3, 4, 5, 6, 6, 7, 7, 6, 6, 5, 4
+
+init_update_title:
+
+    lda #0
+    sta $78             ; last column to update
+
+    lda #0
+    sta $79             ; index of offset to use for the last column
+
+    lda #<update_title1
+    sta $7a
+    lda #>update_title1
+    sta $7b
+
+    rts
+
+update_title1:
+
+    lda $79         ; copy the index into another register for use in the
+    sta $80         ; inner loop
+
+    lda #$88
+    sta $72
+    lda #$5f
+    sta $73
+
+    lda #0
+    sta $84                     ; column counter
+
+    lda #0
+    sta $75
+
+update_title2:
+
+    ldx $80                 ; look up the offset to use
+    lda title_offsets,x
+    sta $74
+
 update_column:      ; $72,$73=address of column top
                     ; $74=sub-row plot offset
                     ; $75=offset into title data
@@ -393,7 +454,18 @@ update_column:      ; $72,$73=address of column top
     dey
     sta ($72),y
 
-    update_column_loop:
+    lda $8f                 ; if not running as an interrupt, jump straight
+    cmp #0                  ; into the column loop
+    beq update_column_loop
+
+    lda #<update_column_loop
+    sta $7a
+    lda #>update_column_loop
+    sta $7b
+
+    rts
+
+update_column_loop:
 
         lda $81             ; load the current colour
         ldy $74
@@ -450,7 +522,11 @@ update_column:      ; $72,$73=address of column top
         eor #$f0                    ; red <-> yellow
         sta $81
 
-        jmp update_column_loop
+        lda $8f
+        cmp #0
+        beq update_column_loop
+
+        rts                 ; keep $7a,$7b the same (loop)
 
     update_column_loop_next:
     clc
@@ -475,101 +551,92 @@ update_column:      ; $72,$73=address of column top
     dey
     sta ($76),y
 
+    lda $8f                 ; if not running as an interrupt, jump straight
+    cmp #0                  ; into the next part of the routine
+    beq update_title3
+
+    lda #<update_title3
+    sta $7a
+    lda #>update_title3
+    sta $7b
+
     clc
     rts
 
-title_offsets: .byte 3, 2, 2, 1, 1, 2, 2, 3, 4, 5, 6, 6, 7, 7, 6, 6, 5, 4
+update_title3:
+
+    sec
+    lda $72
+    sbc #$f8
+    sta $72
+    lda $73
+    sbc #$13
+    sta $73
+    clc
+
+    lda $83                         ; if we encounter a 0xff padding byte
+    cmp #0                          ; then increment X to skip past it
+    beq update_title_loop_no_increment
+
+    inc $75
+
+    update_title_loop_no_increment:
+
+    dec $80
+    bpl update_title_loop_no_index_reset
+
+    lda #17
+    sta $80
+
+    update_title_loop_no_index_reset:
+    clc
+
+    lda $84
+    cmp $78                     ; update up until the last column
+    beq update_title_loop_exit
+    inc $84
+    
+    lda #<update_title2
+    sta $7a
+    lda #>update_title2
+    sta $7b
+
+    clc                         ; loop back to update_title2
+    rts
+
+    update_title_loop_exit:
+
+    lda $78
+    cmp #37
+    bcs update_title_outer_loop_next
+
+    inc $78
+
+    update_title_outer_loop_next:
+    clc
+
+    inc $79
+    lda $79
+    cmp #18
+    bne update_title_outer_loop_no_index_reset
+
+    lda #0
+    sta $79
+
+    update_title_outer_loop_no_index_reset:
+    clc
+
+    lda #<update_title1
+    sta $7a
+    lda #>update_title1
+    sta $7b
+
+    rts
 
 update_title:
 
-    lda #0
-    sta $78             ; last column to update
-
-    lda #0
-    sta $79             ; index of offset to use for the last column
-
-    update_title_outer_loop:
-
-        lda $79         ; copy the index into another register for use in the
-        sta $80         ; inner loop
-
-        lda #$88
-        sta $72
-        lda #$5f
-        sta $73
-
-        lda #0
-        sta $84                     ; column counter
-
-        lda #0
-        sta $75
-
-        update_title_loop:
-
-            ldx $80                 ; look up the offset to use
-            lda title_offsets,x
-            sta $74
-
-            jsr update_column
-
-            sec
-            lda $72
-            sbc #$f8
-            sta $72
-            lda $73
-            sbc #$13
-            sta $73
-            clc
-
-            lda $83                         ; if we encounter a 0xff padding byte
-            cmp #0                          ; then increment X to skip past it
-            beq update_title_loop_no_increment
-
-            inc $75
-
-            update_title_loop_no_increment:
-
-            dec $80
-            bpl update_title_loop_no_index_reset
-
-            lda #17
-            sta $80
-
-            update_title_loop_no_index_reset:
-            clc
-
-            lda $84
-            cmp $78                     ; update up until the last column
-            beq update_title_loop_exit
-            inc $84
-            jmp update_title_loop
-
-        update_title_loop_exit:
-
-        lda $78
-        cmp #37
-        bcs update_title_outer_loop_next
-
-        inc $78
-
-        update_title_outer_loop_next:
-        clc
-
-        inc $79
-        lda $79
-        cmp #18
-        bne update_title_outer_loop_no_index_reset
-
-        lda #0
-        sta $79
-
-        update_title_outer_loop_no_index_reset:
-        clc
-
-        jmp update_title_outer_loop
-
-    clc
-    rts
+    jmp ($7a)               ; jump to the current title routine
+                            ; the routine will use rts to return
 
 cassette_original_irq1v:
 cassette_original_irq1v_low: .byte 0
@@ -579,7 +646,7 @@ cassette_init:
 
     ldx #0
     lda cassette_markers,x      ; total number of markers
-    sta $72
+    sta $7c
 
     inx
     ldy #0
@@ -596,7 +663,7 @@ cassette_init:
         sta ($70),y
         inx
 
-        dec $72
+        dec $7c
         bpl cassette_init_values_loop
 
     stx cassette_markers_end
@@ -629,7 +696,7 @@ cassette_quit:
 
 cassette_marker_index: .byte 1
 cassette_markers_end:  .byte 0
-cassette_screen_index: .byte 0
+cassette_screen_index: .byte 4
 
 cassette_screen_value:  .byte 1
 cassette_screen_values: .byte $f0, $c0
@@ -684,6 +751,8 @@ cassette_interrupt_routine:
 
     cassette_interrupt_routine_continue:
     clc
+
+    jsr update_title
 
     pla
     tay
