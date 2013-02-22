@@ -403,7 +403,7 @@ if __name__ == "__main__":
     
     open("constants.oph", "w").write(constants_oph)
     
-    system("ophis code.oph CODE")
+    system("ophis code.oph -o CODE")
     code = open("CODE").read()
     
     loader_start = 0x3500
@@ -445,7 +445,7 @@ if __name__ == "__main__":
     
     open("constants.oph", "w").write(extras_oph)
     
-    system("ophis loader.oph LOADER")
+    system("ophis loader.oph -o LOADER")
     loader_code = open("LOADER").read() + markers + title_data
     
     bootloader_start = 0xe00
