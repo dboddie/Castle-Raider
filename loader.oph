@@ -760,7 +760,7 @@ cassette_interrupt_routine:
     cassette_interrupt_routine_continue:
     clc
 
-    jsr update_title
+;    jsr update_title
 
     pla
     tay

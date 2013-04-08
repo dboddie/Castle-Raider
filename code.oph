@@ -84,14 +84,14 @@ init:
         dex
         bpl init_enemy_positions_loop
     
-    lda #1
-    sta enemy_positions_address
-    lda #32
-    sta [enemy_positions_address+1]
-    lda #10
-    sta [enemy_positions_address+2]
-    lda #0
-    sta [enemy_positions_address+3]
+    ;lda #1
+    ;sta enemy_positions_address
+    ;lda #32
+    ;sta [enemy_positions_address+1]
+    ;lda #10
+    ;sta [enemy_positions_address+2]
+    ;lda #0
+    ;sta [enemy_positions_address+3]
 
 main:
 
