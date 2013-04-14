@@ -1,4 +1,4 @@
-; Copyright (C) 2011 David Boddie <david@boddie.org.uk>
+; Copyright (C) 2013 David Boddie <david@boddie.org.uk>
 ;
 ; This program is free software: you can redistribute it and/or modify
 ; it under the terms of the GNU General Public License as published by
@@ -801,7 +801,7 @@ plot_bank1l:
             sta $73
             clc
 
-            lda initial_row_tiles,x     ; Load the initial tile type,
+            lda initial_row_tiles,x     ; Load the initial tile type.
             jsr read_sprite_address
 
             jmp plot_bank1l_offset_loop
@@ -1471,7 +1471,6 @@ initial_plot_bank1:
             jmp initial_plot_bank1_span_loop
 
         initial_plot_bank1_span_endloop:
-        clc
 
         dex
         bpl initial_plot_bank1_row_loop
@@ -1523,17 +1522,18 @@ initial_plot_bank2:
         lda bank2_rows_high,x
         sta $73                 ; x ($72,$73)
 
-        lda #0
+        lda #0                  ; horizontal screen offset
         sta $74
+        sta $79
 
         lda initial_row_offsets,x
-        cmp #0
-        beq initial_plot_bank2_span_loop
-        sta $78
-        dec $78
+        cmp #0                              ; If at the start of a span, just
+        beq initial_plot_bank2_span_loop    ; go straight into the loop.
+        sta $78                             ; Otherwise, store a decremented
+        dec $78                             ; span length.
 
-        lda initial_row_tiles,x         ; Load the initial tile type,
-        sta $79
+        lda initial_row_tiles,x             ; Use the current tile type for the
+        sta $79                             ; span.
         jsr read_rotated_sprite_address
 
         jsr initial_plot_bank2_tile_loop
@@ -1543,10 +1543,6 @@ initial_plot_bank2:
         bcs initial_plot_bank2_span_endloop
 
         initial_plot_bank2_span_loop:
-
-            lda $74
-            cmp #0
-            beq initial_plot_bank2_span_loop_skip_merged
 
             lda $79                         ; Read the current type and the
             jsr read_right_sprite_address   ; corresponding right edge sprite.
@@ -1597,7 +1593,6 @@ initial_plot_bank2:
             jmp initial_plot_bank2_span_loop
 
         initial_plot_bank2_span_endloop:
-        clc
 
         dex
         bmi initial_plot_bank2_row_endloop
