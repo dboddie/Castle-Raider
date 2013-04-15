@@ -2191,8 +2191,8 @@ player_move_left:
     clc
     rts
 
-jump_steps_y:    .byte 0,2,1,1,0,0
-jump_offsets_ys: .byte 0,0,0,1,0,0
+jump_steps_y:    .byte 0,1,1,1,1,0,0,0
+jump_offsets_ys: .byte 0,0,0,0,1,0,0,0
 
 player_jump:
 
@@ -2200,53 +2200,41 @@ player_jump:
 
     ldx player_jumping      ; Load the number of rows to move.
     lda jump_steps_y,x
-    sta $7c
+
+    cmp #0                  ; If there are no rows to move then stop jumping.
+        beq player_jump_check_after
 
     lda player_y
     sta $81
 
-    player_jump_check_loop:
+    dec $81
+    clc
 
-        lda $7c         ; If there are no more rows to move then stop jumping.
-        cmp #0
-            beq player_jump_check_endloop
+    lda player_x
+    sta $80
+    jsr check_tile
+    bcs player_jump_stop_jumping
 
-        lda $81                         ; If the character reaches the top of
-        cmp #0                          ; the screen then stop jumping.
-            beq player_jump_check_endloop
+    inc $80
 
-        dec $81
-        clc
+    jsr check_tile
+    bcs player_jump_stop_jumping
 
-        lda player_x
-        sta $80
-        jsr check_tile
-        bcs player_jump_stop_jumping
+    lda bank_number             ; When half way across a cell, check another
+    cmp #2                      ; cell above the player since they could be
+        bne player_jump_move_up ; under one or more of three tiles.
 
-        inc $80
+    inc $80
 
-        jsr check_tile
-        bcs player_jump_stop_jumping
+    jsr check_tile
+    bcs player_jump_stop_jumping
 
-        lda bank_number     ; When half way across a cell, check another cell
-        cmp #2                      ; above the player since they could be
-            bne player_jump_move_up ; under one or more of three tiles.
-        clc
+    player_jump_move_up:
 
-            inc $80
+        lda $81
+        sta player_y
 
-            jsr check_tile
-            bcs player_jump_stop_jumping
-
-        player_jump_move_up:
-
-            lda $81
-            sta player_y
-
-            dec $7c
-            jmp player_jump_check_loop
-
-    player_jump_check_endloop:
+    player_jump_check_after:
     clc
 
     ldx player_jumping      ; Load the number of rows to move.
@@ -2254,7 +2242,7 @@ player_jump:
     sta player_ys
 
     inx
-    cpx #6                          ; After the end of the list of offsets,
+    cpx #8                          ; After the end of the list of offsets,
     bcs player_jump_stop_jumping    ; stop jumping.
 
     stx player_jumping
@@ -2272,8 +2260,8 @@ player_jump:
     clc
     rts
 
-fall_steps_y:    .byte 0,0,1
-fall_offsets_ys: .byte 0,1,0
+fall_steps_y:    .byte 0,0,1,1
+fall_offsets_ys: .byte 0,1,0,0
 
 player_fall:        ; sets C if the player is moving horizontally
 
@@ -2320,7 +2308,7 @@ player_drop:
     lda fall_offsets_ys,x
     sta player_ys
 
-    cpx #2                  ; Do not increment the falling counter beyond the
+    cpx #3                  ; Do not increment the falling counter beyond the
     beq player_drop_exit    ; last falling offset.
 
     inx

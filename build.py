@@ -118,8 +118,8 @@ def address_length_end(address, data):
 
 tiles = map(lambda tile: makelevels.tile_ref[tile], makelevels.tile_order)
 
-char_sprites = ["images/left1.png", "images/left2.png",
-                "images/right1.png", "images/right2.png"]
+char_sprites = ["images/g-left1.png", "images/g-left2.png",
+                "images/g-right1.png", "images/g-right2.png"]
 
 enemy_sprites = ["images/bat1.png", "images/bat2.png",
                  "images/spider1.png", "images/spider2.png"]
