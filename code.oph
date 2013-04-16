@@ -182,19 +182,19 @@ main:
         inc enemy_movement_counter
         clc
 
-        ; --- Full redraw test code (begin) ---
+        ; --- Switch character test code (begin) ---
         ldx #157            ; (SPACE)
         jsr check_key
         cpy #255
         bne not_space
 
         clc
-        jsr initial_plot_bank1
-        jsr initial_plot_bank2
+        jsr plot_char
+        jsr switch_characters
         jsr plot_char
 
         not_space:
-        ; --- Full redraw test code (end) ---
+        ; --- Switch character test code (end) ---
 
         ldx #143            ; (Escape)
         jsr check_key
@@ -1763,8 +1763,8 @@ plot8x24_y1:            ; $70,$71=source address
     clc
     rts
 
-player_sprites_low:  .byte <char_area, <[char_area + 48], <[char_area + 96], <[char_area + 144]
-player_sprites_high: .byte >char_area, >[char_area + 48], >[char_area + 96], >[char_area + 144]
+player_sprites_low:  .byte <player_left1, <player_left2, <player_right1, <player_right2
+player_sprites_high: .byte >player_left1, >player_left2, >player_right1, >player_right2
 player_y_offset:     .byte 0, 4
 
 plot_char:
@@ -2813,3 +2813,92 @@ scroll_enemies_right:
 
     scroll_enemies_right_exit:
     jmp move_enemies
+
+switch_codes: .byte 0,8,4,12,2,10,6,14,1,9,5,13,3,11,7,15
+
+switch_characters:
+
+    ; Switch the left sprites then generate right sprites from them.
+    ldx #95
+    switch_characters_left_loop:
+
+        ldy player_left1,x
+        lda player_left_alt1,x
+        sta player_left1,x
+        tya
+        sta player_left_alt1,x
+        dex
+        bpl switch_characters_left_loop
+
+    ldx #95
+    lda #<switch_codes
+    sta $70
+    lda #>switch_codes
+    sta $71
+
+    switch_characters_right_loop1:
+
+        lda player_left1,x
+        sta $80             ; Keep the initial value.
+        and #$0f            ; Read the lower four bits.
+        tay
+        lda ($70),y         ; Load the converted value.
+        sta $81             ; Store it for later.
+        lda $80
+        lsr
+        lsr
+        lsr
+        lsr
+        tay
+        lda ($70),y         ; Load the converted value.
+        asl
+        asl
+        asl
+        asl
+        ora $81             ; Combine the converted values.
+        sta player_right1,x
+        dex
+        bpl switch_characters_right_loop1
+
+    ldx #87
+    ldy #95
+    lda #<player_right1
+    sta $70
+    lda #>player_right1
+    sta $71
+
+    switch_characters_right_loop2:
+
+        lda #7
+        sta $81
+
+        switch_characters_right_loop2_inner:
+
+            lda player_right1,x
+            sta $80
+            lda ($70),y
+            sta player_right1,x
+            lda $80
+            sta ($70),y
+
+            dey
+            dex
+            dec $81
+            bpl switch_characters_right_loop2_inner
+
+        cpx #255
+        beq switch_characters_exit
+
+        sec
+        txa
+        sbc #8
+        tax
+        tya
+        sbc #8
+        tay
+
+        jmp switch_characters_right_loop2
+
+    switch_characters_exit:
+    clc
+    rts
