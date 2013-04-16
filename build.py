@@ -120,7 +120,8 @@ tiles = map(lambda tile: makelevels.tile_ref[tile], makelevels.tile_order)
 
 char_sprites = ["images/g-left1.png", "images/g-left2.png",
                 "images/g-right1.png", "images/g-right2.png",
-                "images/b-left1.png", "images/b-left2.png"]
+                "images/b-left1.png", "images/b-left2.png",
+                "images/b-right1.png", "images/b-right2.png"]
 
 enemy_sprites = ["images/bat1.png", "images/bat2.png",
                  "images/spider1.png", "images/spider2.png"]
@@ -227,7 +228,7 @@ if __name__ == "__main__":
     right_sprites_low = right_sprites & 0xff
     right_sprites_high = right_sprites >> 8
     
-    char_area_address = 0x2e00
+    char_area_address = 0x2d20
     char_data, player_sprite_offsets = \
         makesprites.read_sprites(char_sprites, char_area_address)
     
@@ -379,12 +380,14 @@ if __name__ == "__main__":
              top_panel_objects_bank2_high))
     
     constants_oph += (
-        ".alias player_left1     $%04x\n"
-        ".alias player_left2     $%04x\n"
-        ".alias player_right1    $%04x\n"
-        ".alias player_right2    $%04x\n"
-        ".alias player_left_alt1 $%04x\n"
-        ".alias player_left_alt2 $%04x\n\n"
+        ".alias player_left1         $%04x\n"
+        ".alias player_left2         $%04x\n"
+        ".alias player_right1        $%04x\n"
+        ".alias player_right2        $%04x\n"
+        ".alias player_left_alt1     $%04x\n"
+        ".alias player_left_alt2     $%04x\n"
+        ".alias player_right_alt1    $%04x\n"
+        ".alias player_right_alt2    $%04x\n\n"
         ) % tuple(player_sprite_offsets)
     
     s = 0
