@@ -1940,6 +1940,15 @@ check_tile:         ; $80=x position (0-39)
     clc             ; In theory, we should never reach here.
     rts
 
+; Special tiles have numbers greater or equal to 16 (0x10). The top four bits
+; are used to represent properties of each tile: vcdt nnnn.
+; v = visible (initial visibility of the tile)
+; c = collectable item
+; d = door that can be opened with a corresponding key - two consecutive tile
+;     numbers are used for the door and key tiles
+; t = treasure - a pair of adjacent tiles is used to represent this in the
+;     level, though the tile numbers used are not consecutive
+
 check_tile_visible:             ; A=tile number
                                 ; returns C set if tile is visible or C
                                 ; clear if not
@@ -1961,50 +1970,52 @@ check_tile_visible:             ; A=tile number
     check_tile_visible_next:    ; the tile is visible
 
     and #$7f                    ; mask off the visible bit
-    cmp #$40                    ; check for collectable objects
+    cmp #$40                    ; check for collectable objects (vCdtnnnn)
     bcs check_tile_collect_visible_object
 
     ; Non-collectable (scenery) objects
 
-    and #$3f
+    and #$3f                    ; mask off visible and collectable bits
     cmp #$20                    ; check for doors that can be opened with a key
+                                ; (vcDtnnnn)
     bcc check_tile_visible_exit ; any other visible scenery objects cannot be
-                                ; walked through
+                                ; walked through (000tnnnn)
 
     ; For doors, check the visibility of the corresponding key special tile.
     clc
     sty $8c                     ; temporarily store the special tile number
-    tya                         ; a special scenery tile
+    tya                         ; a special scenery tile (00Dtnnnn)
     eor #$01                    ; check the corresponding collectable tile
-    tay
+    tay                         ; (00DtnnnN)
     lda ($82),y
     cmp #0
     bne check_tile_visible_exit ; if visible (i.e. not collected) then exit
 
-    ldy $8c                     ; restore the special tile number
-    jmp make_tile_invisible     ; make the tile invisible and exit
+    ldy $8c                     ; restore the special tile number (00Dtnnnn)
+    jmp make_tile_invisible     ; make all tiles of that type invisible and exit
 
-    check_tile_collect_visible_object:
+check_tile_collect_visible_object:
 
-    and #$1f                        ; mask off the visible bit
-    cmp #$10                        ; check for collectable objects
+    and #$1f                ; mask off the visible, collectable and door bits
+    cmp #$10                        ; check for treasure (vcdTnnnn)
     bcs check_tile_collect_treasure ; remove both parts of the object 
 
-    jsr plot_collected_object
-    jmp make_tile_invisible         ; make the tile invisible and exit
+    jsr plot_collected_object       ; not treasure, just a regular object
+    jmp make_tile_invisible ; make all tiles of this type invisible and exit
 
-    check_tile_collect_treasure:
+check_tile_collect_treasure:
+
     clc
 
-    jsr plot_collected_object
-    jsr make_tile_invisible         ; make the tile invisible
+    jsr plot_collected_object       ; show the item of treasure in the header
+    jsr make_tile_invisible         ; make all tiles of this type invisible
 
     tya
-    eor #1
+    eor #1                          ; do the same for the corresponding tile
     tay
 
-    jsr plot_collected_object
-    jmp make_tile_invisible         ; make the tile invisible and exit
+    jsr plot_collected_object       ; show the item of treasure in the header
+    jsr make_tile_invisible         ; make all tiles of this type invisible
 
     check_tile_visible_exit:
     sec
@@ -2469,6 +2480,7 @@ read_visible_sprite:
     cmp #$80
     bcs read_visible_sprite_visible
 
+    read_visible_sprite_exit:
     lda #0
     rts
 
