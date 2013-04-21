@@ -36,7 +36,7 @@ class LevelWidget(QWidget):
         
         self.tile_images = tile_images
         self.currentTile = "."
-        self.maximum_width = 1024
+        self.maximum_width = 8192
         
         self.initRows()
         
