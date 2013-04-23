@@ -66,17 +66,21 @@ tile_order = (".", "@", "+", "=", "#", "X", "-", "|",
 
 flags_values = {"visible": 0x80, "collectable": 0x40, "door": 0x20, "treasure": 0x10}
 
+monster_tiles = {" ": 0, "v": 1, "x": 2}
+
 def load_level(path):
 
     lines = map(lambda x: x.rstrip(), open(path).readlines())
     level = lines[:16]
+    
+    monsters = lines[16]
     
     # The special dictionary maps symbols used in the level map to tuples
     # containing corresponding tiles and indices. Each index is an offset into
     # the visibility table, the initial values for which are below.
     special = {}
     index = 16
-    for line in lines[16:]:
+    for line in lines[17:]:
     
         if line:
             ch, tile, flags_word = line.split()
@@ -86,9 +90,9 @@ def load_level(path):
             special[ch] = (tile, index, flags)
             index += 1
     
-    return level, special
+    return level, monsters, special
 
-def create_level_data(level, tiles):
+def create_level_data(level, monsters, tiles):
 
     data = []
     l = 0
@@ -128,13 +132,33 @@ def create_level_data(level, tiles):
         data.append(line_data)
         l += 1
     
-    return data
+    monster_data = []
+    current = " "
+    offset = 0
+    i = 0
+    
+    for ch in monsters:
+    
+        if ch != current:
+            # Write the span from the previous monster to the current one.
+            # This includes the first span, if no monster is defined on the
+            # first column of the level.
+            if i > 0:
+                monster_data.append((monster_tiles[current], i - offset))
+            current = ch
+            offset = i
+        
+        i += 1
+    
+    monster_data.append((monster_tiles[current], len(level[0]) - offset))
+    
+    return data, monster_data
 
 def create_level(tile_paths, levels_address, level_path, number_of_special_tiles):
 
     global level, special
     
-    level, special = load_level(level_path)
+    level, monsters, special = load_level(level_path)
     
     tiles = {}
     for key, value in tile_ref.items():
@@ -145,7 +169,7 @@ def create_level(tile_paths, levels_address, level_path, number_of_special_tiles
     
     data = ""
     
-    level_data = create_level_data(level, tiles)
+    level_data, monster_data = create_level_data(level, monsters, tiles)
     row_addresses = []
     
     r = 0
@@ -170,6 +194,8 @@ def create_level(tile_paths, levels_address, level_path, number_of_special_tiles
         
         if len(row_data) >= 512:
             raise LevelError, "Level %i: Row %i too long or too detailed.\n" % (l, r)
+        
+        #print len(row_data)
         
         data += row_data
         r += 1
