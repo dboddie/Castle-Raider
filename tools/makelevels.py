@@ -58,29 +58,28 @@ tile_ref = {".": "images/blank.png",
             "E": "images/chest-left.png",
             "F": "images/chest-right.png"}
 
-tile_order = (".", "@", "+", "=", "#", "X", "-", "|",
-              "/", "\\", "[", "]", "{", "?", "I", "%",
-              # Collectable items after the first 16 tiles are ignored by
-              # the editor.
-              "K", "L", "M", "N", "A", "C", "D", "E", "F")
+# Collectable items after the first 16 tiles are ignored by the editor.
+
+tile_order = (".", "@", "+", "=", "#", "X", "-", "|",   # regular tiles
+              "/", "\\", "[", "]", "{", "?", "I", "%",  #
+              "K", "L", "M", "N", "A", "C", "D", "E",   # collectable tiles
+              "F")
 
 flags_values = {"visible": 0x80, "collectable": 0x40, "door": 0x20, "treasure": 0x10}
 
-monster_tiles = {" ": 0, "v": 1, "x": 2}
+monster_tiles = {"V": 32, "M": 33}
 
 def load_level(path):
 
     lines = map(lambda x: x.rstrip(), open(path).readlines())
     level = lines[:16]
     
-    monsters = lines[16]
-    
     # The special dictionary maps symbols used in the level map to tuples
     # containing corresponding tiles and indices. Each index is an offset into
     # the visibility table, the initial values for which are below.
     special = {}
     index = 16
-    for line in lines[17:]:
+    for line in lines[16:]:
     
         if line:
             ch, tile, flags_word = line.split()
@@ -90,9 +89,9 @@ def load_level(path):
             special[ch] = (tile, index, flags)
             index += 1
     
-    return level, monsters, special
+    return level, special
 
-def create_level_data(level, monsters, tiles):
+def create_level_data(level, tiles):
 
     data = []
     l = 0
@@ -111,6 +110,8 @@ def create_level_data(level, monsters, tiles):
                 n, index, flags = special[ch]
                 # Special tiles have values greater than or equal to 16.
                 c = index
+            elif ch in monster_tiles:
+                c = monster_tiles[ch]
             else:
                 c = tiles[ch]
             
@@ -132,44 +133,27 @@ def create_level_data(level, monsters, tiles):
         data.append(line_data)
         l += 1
     
-    monster_data = []
-    current = " "
-    offset = 0
-    i = 0
-    
-    for ch in monsters:
-    
-        if ch != current:
-            # Write the span from the previous monster to the current one.
-            # This includes the first span, if no monster is defined on the
-            # first column of the level.
-            if i > 0:
-                monster_data.append((monster_tiles[current], i - offset))
-            current = ch
-            offset = i
-        
-        i += 1
-    
-    monster_data.append((monster_tiles[current], len(level[0]) - offset))
-    
-    return data, monster_data
+    return data
 
-def create_level(tile_paths, levels_address, level_path, number_of_special_tiles):
+def create_level(levels_address, level_path, number_of_special_tiles):
 
     global level, special
     
-    level, monsters, special = load_level(level_path)
+    level, special = load_level(level_path)
     
     tiles = {}
-    for key, value in tile_ref.items():
-        tiles[key] = tile_paths.index(value)
+    for i in range(len(tile_order)):
+        key = tile_order[i]
+        if key:
+            tiles[key] = i
+        i += 1
     
     special_tile_numbers_table_size = visibility_table_size = number_of_special_tiles
     row_table_size = (16 * 2)
     
     data = ""
     
-    level_data, monster_data = create_level_data(level, monsters, tiles)
+    level_data = create_level_data(level, tiles)
     row_addresses = []
     
     r = 0

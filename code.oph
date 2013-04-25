@@ -920,70 +920,72 @@ plot_merged_tile_bank:  ; $70,$71 source address 1
     clc
     rts
 
-scroll_right:
-
+scroll_right:   ; Scroll the screen right by decreasing the initial row offsets
+                ; until a new span needs to be shown. When this occurs, increase
+                ; the row index, set the initial row tile to the type in the
+                ; span that now starts off-screen, and set the initial row
+                ; offset to the length of that span. The max
     ldx #15
     scroll_right_loop:
 
         lda initial_row_offsets,x
-        cmp #0
-        beq scroll_right_loop_next_offset
+        cmp #0                              ; Is the current offset zero?
+        beq scroll_right_loop_next_offset   ; If so, update the current span.
 
-        dec initial_row_offsets,x
-
+        dec initial_row_offsets,x   ; Otherwise, decrease the offset.
         dex
-        bpl scroll_right_loop
+        bpl scroll_right_loop       ; Examine the next row.
 
         clc
         rts
 
-        scroll_right_loop_next_offset:
+        scroll_right_loop_next_offset:  ; Update the current span.
         clc
 
-        jsr read_row_address    ; read the row address before we update the index
+        jsr read_row_address    ; Read the row address before updating the index.
 
-        inc row_indices,x   ; increment the index to refer to the next span
+        inc row_indices,x   ; Increment the index to refer to the next span.
 
         ldy #0
-        lda ($76),y             ; load the tile type for the current span
-        sta initial_row_tiles,x ; store the tile type
+        lda ($76),y             ; Load the tile type for the current span.
+        sta initial_row_tiles,x ; Store the tile type.
 
-        ldy #1              ; load the number of tiles left in the current span
-        lda ($76),y         ; minus 1 (n - 1)
+        ldy #1                  ; Record the number of tiles left in the current
+        lda ($76),y             ; span minus 1 (n - 1).
         sta initial_row_offsets,x
-        sta max_row_offsets,x
-
+        sta max_row_offsets,x   ; This is also the span's maximum offset for
+                                ; use when scrolling left.
         dex
         bpl scroll_right_loop
 
     clc
     rts
 
-scroll_left:
-
+scroll_left:    ; Scroll the screen left by increasing the initial row offsets
+                ; until a new span needs to be shown. When this occurs, decrease
+                ; the row index, set the initial 
     ldx #15
     scroll_left_loop:
 
         lda initial_row_offsets,x
-        cmp max_row_offsets,x
-        beq scroll_left_loop_previous_offset
+        cmp max_row_offsets,x                   ; Has the current offset reached
+        beq scroll_left_loop_previous_offset    ; the maximum value?
 
-        inc initial_row_offsets,x
-
+        inc initial_row_offsets,x   ; If not, keep increasing the offset.
         dex
-        bpl scroll_left_loop
+        bpl scroll_left_loop        ; Examine the next row.
 
         clc
         rts
 
-        scroll_left_loop_previous_offset:
+        scroll_left_loop_previous_offset:   ; Update the current span.
         clc
 
-        dec row_indices,x   ; decrement the index to refer to the previous span
+        dec row_indices,x   ; Decrement the index to refer to the previous span.
 
-        jsr read_row_address    ; read the row address for the previous span
+        jsr read_row_address    ; Read the row address for the previous span.
 
-        lda $76             ; refer to the span before the previous span, p'
+        lda $76             ; Refer to the span before the previous span, p'.
         sec
         sbc #2
         sta $76
@@ -993,17 +995,15 @@ scroll_left:
         clc
 
         ldy #0
-        lda ($76),y             ; load the tile type for span p'
-        sta initial_row_tiles,x ; store the tile type
+        lda ($76),y             ; Load the tile type for span p' and store it as
+        sta initial_row_tiles,x ; the initial tile type.
 
-        ldy #1                  ; load the number of tiles in span p'
-        lda ($76),y             ; minus 1 (n - 1)
-        sta max_row_offsets,x   ; store this value as the maximum row offset
-                                ; for the previous span
+        ldy #1                  ; Load the number of tiles in span p' minus 1
+        lda ($76),y             ; (n - 1) and store this value as the maximum
+        sta max_row_offsets,x   ; row offset for the previous span
 
-        lda #0
-        sta initial_row_offsets,x   ; set the initial row offset of the previous
-                                    ; span
+        lda #0                      ; Set the initial row offset of the previous
+        sta initial_row_offsets,x   ; span.
 
         dex
         bpl scroll_left_loop
@@ -2382,7 +2382,7 @@ read_sprite_address:        ; $76,$77=span address
     jsr read_visible_sprite     ; check whether the sprite is visible
                                 ; (it represents a special tile)
 
-    read_sprite_address_next:
+    read_sprite_address_next:   ; a regular tile
     clc
 
     and #$1f                    ; mask off the top 3 bits,
@@ -2407,7 +2407,7 @@ read_left_sprite_address:       ; A=tile number in high 4 bits
     jsr read_visible_sprite     ; check whether the sprite is visible
                                 ; (it represents a special tile)
 
-    read_left_sprite_address_next:
+    read_left_sprite_address_next:  ; a regular tile
     clc
 
     and #$1f                    ; mask off the top 3 bits,
@@ -2432,7 +2432,7 @@ read_rotated_sprite_address:    ; A=tile number
     jsr read_visible_sprite     ; check whether the sprite is visible
                                 ; (it represents a special tile)
 
-    read_rotated_sprite_address_next:
+    read_rotated_sprite_address_next:   ; a regular tile
     clc
 
     and #$1f                    ; mask off the top 3 bits,
@@ -2457,7 +2457,7 @@ read_right_sprite_address:      ; A=tile number in high 4 bits
     jsr read_visible_sprite     ; check whether the sprite is visible
                                 ; (it represents a special tile)
 
-    read_right_sprite_address_next:
+    read_right_sprite_address_next: ; a regular tile
     clc
 
     and #$1f                    ; mask off the top 3 bits,
@@ -2473,8 +2473,10 @@ read_right_sprite_address:      ; A=tile number in high 4 bits
 
     rts
 
-read_visible_sprite:
+read_visible_sprite:    ; read the regular tile number for a special tile
 
+    and #$1f            ; only keep the lower five bits - tiles with higher
+                        ; numbers represent monsters in the level data
     tay
     lda ($82),y                 ; load the visibility of the tile
     cmp #$80

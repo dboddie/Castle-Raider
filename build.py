@@ -175,8 +175,6 @@ if __name__ == "__main__":
     tracking_low                  = player_information + 10
     tracking_high                 = player_information + 11
     tracking_y                    = player_information + 12
-    monster_span_index            = player_information + 13
-    monster_span_offset           = player_information + 14
     enemy_movement_counter        = player_information + 15
     
     # The tile type occurring at the left edge of the screen.
@@ -245,7 +243,7 @@ if __name__ == "__main__":
     char_data += enemy_sprites_data
     
     levels_address = level_data_start
-    level_data = makelevels.create_level(tiles, levels_address, level_file, number_of_special_tiles)
+    level_data = makelevels.create_level(levels_address, level_file, number_of_special_tiles)
     
     level_extent = len(makelevels.level[0]) - 40
     
@@ -285,12 +283,8 @@ if __name__ == "__main__":
              tracking_low, tracking_high, tracking_y)
     
     constants_oph += (
-        ".alias monster_span_index              $%x\n"
-        ".alias monster_span_offset             $%x\n"
         ".alias enemy_movement_counter          $%x\n"
-        ) % (monster_span_index,
-             monster_span_offset,
-             enemy_movement_counter)
+        ) % (enemy_movement_counter)
 
     constants_oph += (
         ".alias initial_row_tiles               $%x\n"
