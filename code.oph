@@ -17,9 +17,17 @@
 
 .include "constants.oph"
 
-.alias scrolled             $7f
-.alias scroll_offset_low    $8e
-.alias scroll_offset_high   $8f
+.alias scrolled                         $7f
+.alias scroll_offset_low                $8e
+.alias scroll_offset_high               $8f
+
+; Declare these here to make it easy to see that they are being used.
+.alias tile_visibility_table_low        $82
+.alias tile_visibility_table_high       $83
+.alias special_tile_numbers_table_low   $84
+.alias special_tile_numbers_table_high  $85
+.alias monster_positions_table_low      $86
+.alias monster_positions_table_high     $87
 
 init:
     ; Set character's initial position and status.
@@ -56,6 +64,7 @@ init:
     lda #1              ; Use 1 and 2 for banks 1 and 2.
     sta bank_number
 
+    ; Store table addresses in zero page locations for convenient access.
     lda #tile_visibility_low
     sta $82
     lda #tile_visibility_high
@@ -66,32 +75,34 @@ init:
     lda #special_tile_numbers_high
     sta $85
 
-    lda #enemy_positions_low
+    lda #monster_positions_low
     sta $86
-    lda #enemy_positions_high
+    lda #monster_positions_high
     sta $87
 
-    lda #0
-    sta enemy_movement_counter
+    ; Determine the left and right monster indices and offsets.
 
-    ; Initialise the enemy positions.
+    lda #0
+    sta monster_movement_counter
+
+    ; Initialise the monster positions.
 
     ldx #15
     lda #0
 
-    init_enemy_positions_loop:
-        sta enemy_positions_address,x
+    init_monster_positions_loop:
+        sta monster_positions_address,x
         dex
-        bpl init_enemy_positions_loop
+        bpl init_monster_positions_loop
     
     ;lda #1
-    ;sta enemy_positions_address
+    ;sta monster_positions_address
     ;lda #32
-    ;sta [enemy_positions_address+1]
+    ;sta [monster_positions_address+1]
     ;lda #10
-    ;sta [enemy_positions_address+2]
+    ;sta [monster_positions_address+2]
     ;lda #0
-    ;sta [enemy_positions_address+3]
+    ;sta [monster_positions_address+3]
 
 main:
 
@@ -103,7 +114,7 @@ main:
     jsr show_bank2          ; Hide the bank being plotted.
     jsr initial_plot_bank1
     jsr plot_char_bank1
-    jsr plot_enemies_bank1  ; Show any initial enemies.
+    jsr plot_monsters_bank1  ; Show any initial monsters.
     jsr show_bank1          ; Show the completed bank.
     jsr initial_plot_bank2
 
@@ -168,18 +179,18 @@ main:
 
         lda scrolled
         cmp #0
-        bne main_loop_after_enemies
+        bne main_loop_after_monsters
 
         lda #19
         jsr $fff4
-        jsr plot_enemies        ; unplot enemies
-        jsr move_enemies
-        jsr plot_enemies        ; plot enemies
+        jsr plot_monsters        ; unplot monsters
+        jsr move_monsters
+        jsr plot_monsters        ; plot monsters
 
-        main_loop_after_enemies:
+        main_loop_after_monsters:
         clc
 
-        inc enemy_movement_counter
+        inc monster_movement_counter
         clc
 
         ; --- Switch character test code (begin) ---
@@ -355,8 +366,8 @@ scroll_right_update:
     sta player_animation
 
     jsr plot_char_bank2     ; plot the player on bank 2
-    jsr scroll_enemies_right
-    jsr plot_enemies_bank2  ; plot the enemies, too
+    jsr scroll_monsters_right
+    jsr plot_monsters_bank2  ; plot the monsters, too
 
     clc
     rts
@@ -389,8 +400,8 @@ scroll_right_update:
     sta player_animation
 
     jsr plot_char_bank1     ; plot the player on bank 1
-    jsr scroll_enemies_right
-    jsr plot_enemies_bank1  ; plot the enemies, too
+    jsr scroll_monsters_right
+    jsr plot_monsters_bank1  ; plot the monsters, too
 
     clc
     rts
@@ -431,8 +442,8 @@ scroll_left_update:
     sta player_animation
 
     jsr plot_char_bank2     ; plot the player on bank 2
-    jsr scroll_enemies_left
-    jsr plot_enemies_bank2  ; plot the enemies, too
+    jsr scroll_monsters_left
+    jsr plot_monsters_bank2  ; plot the monsters, too
 
     lda scroll_offset_low   ; Decrease the scroll offset after showing bank 2.
     sec
@@ -464,8 +475,8 @@ scroll_left_update:
     sta player_animation
 
     jsr plot_char_bank1     ; plot the player on bank 1
-    jsr scroll_enemies_left
-    jsr plot_enemies_bank1  ; plot the enemies, too
+    jsr scroll_monsters_left
+    jsr plot_monsters_bank1  ; plot the monsters, too
 
     clc
     rts
@@ -473,7 +484,7 @@ scroll_left_update:
 scroll_update_bank2_bank1:
 
     jsr plot_char_bank2     ; unplot the player on bank 2
-    jsr plot_enemies_bank2  ; unplot the enemies, too
+    jsr plot_monsters_bank2  ; unplot the monsters, too
 
     lda player_falling
     cmp #0
@@ -504,7 +515,7 @@ scroll_update_bank2_bank1:
 scroll_update_bank1_bank2:
 
     jsr plot_char_bank1     ; unplot the player on bank 1
-    jsr plot_enemies_bank1  ; unplot the enemies, too
+    jsr plot_monsters_bank1  ; unplot the monsters, too
 
     lda player_falling
     cmp #0
@@ -2475,8 +2486,6 @@ read_right_sprite_address:      ; A=tile number in high 4 bits
 
 read_visible_sprite:    ; read the regular tile number for a special tile
 
-    and #$1f            ; only keep the lower five bits - tiles with higher
-                        ; numbers represent monsters in the level data
     tay
     lda ($82),y                 ; load the visibility of the tile
     cmp #$80
@@ -2527,18 +2536,18 @@ track_position: ; Scroll back to the last stored position.
     clc
     rts
 
-; Enemy plotting routines
+; Monster plotting routines
 
-enemy_sprite_low:  .byte enemy_spr_low0, enemy_spr_low1
-                   .byte enemy_spr_sh_low0, enemy_spr_sh_low1
-                   .byte enemy_spr_low2, enemy_spr_low3
-                   .byte enemy_spr_sh_low2, enemy_spr_sh_low3
-enemy_sprite_high: .byte enemy_spr_high0, enemy_spr_high1
-                   .byte enemy_spr_sh_high0, enemy_spr_sh_high1
-                   .byte enemy_spr_high2, enemy_spr_high3
-                   .byte enemy_spr_sh_high2, enemy_spr_sh_high3
+monster_sprite_low:  .byte monster_spr_low0, monster_spr_low1
+                   .byte monster_spr_sh_low0, monster_spr_sh_low1
+                   .byte monster_spr_low2, monster_spr_low3
+                   .byte monster_spr_sh_low2, monster_spr_sh_low3
+monster_sprite_high: .byte monster_spr_high0, monster_spr_high1
+                   .byte monster_spr_sh_high0, monster_spr_sh_high1
+                   .byte monster_spr_high2, monster_spr_high3
+                   .byte monster_spr_sh_high2, monster_spr_sh_high3
 
-plot_enemy_bank1:       ; X=enemy y offset,Y=offset of enemy y offset
+plot_monster_bank1:       ; X=monster y offset,Y=offset of monster y offset
 
     lda bank1_char_rows_low,x   ; y position (low)
     adc $72
@@ -2554,7 +2563,7 @@ plot_enemy_bank1:       ; X=enemy y offset,Y=offset of enemy y offset
     bne plot8x8_x0_y1
     jmp plot8x8_x0_y0
 
-plot_enemy_bank2:       ; X=enemy y offset,Y=offset of enemy y offset
+plot_monster_bank2:       ; X=monster y offset,Y=offset of monster y offset
 
     lda bank2_char_rows_low,x   ; y position (low)
     adc $72
@@ -2584,7 +2593,7 @@ plot8x8_x0_y0:          ; $70,$71=source address
         dey
         bpl plot8x8_x0_y0_loop
     clc
-    jmp plot_enemies_loop_next
+    jmp plot_monsters_loop_next
 
 plot8x8_x0_y1:          ; $70,$71=source address
                         ; $72,$73=destination address
@@ -2601,53 +2610,53 @@ plot8x8_x0_y1:          ; $70,$71=source address
         dey
         bpl plot8x8_x0_y1_loop
     clc
-    jmp plot_enemies_loop_next
+    jmp plot_monsters_loop_next
 
 plot8x8_lengths: .byte 15, 23
 
-plot_enemies:
+plot_monsters:
 
     lda bank_number
     cmp #1
-    bne plot_enemies_bank2
+    bne plot_monsters_bank2
 
-plot_enemies_bank1:
+plot_monsters_bank1:
 
-    lda #<plot_enemy_bank1
+    lda #<plot_monster_bank1
     sta $7a
-    lda #>plot_enemy_bank1
+    lda #>plot_monster_bank1
     sta $7b
 
-    jmp plot_enemies_pre_loop
+    jmp plot_monsters_pre_loop
 
-plot_enemies_bank2:
+plot_monsters_bank2:
 
-    lda #<plot_enemy_bank2
+    lda #<plot_monster_bank2
     sta $7a
-    lda #>plot_enemy_bank2
+    lda #>plot_monster_bank2
     sta $7b
 
-plot_enemies_pre_loop:
+plot_monsters_pre_loop:
 
     lda #0
 
-    plot_enemies_loop:
+    plot_monsters_loop:
 
         sta $88                     ; store the offset temporarily
 
         tay
         lda ($86),y                 ; type, animation and dx
         cmp #0
-        beq plot_enemies_loop_next
+        beq plot_monsters_loop_next
 
         ; Determine the sprite to use from the type and dx value.
         lsr                         ; convert the value to an offset into the
         clc
         tax                         ; sprite address arrays and temporarily
         stx $8c                     ; store the value
-        lda enemy_sprite_low,x      ; load the sprite address
+        lda monster_sprite_low,x      ; load the sprite address
         sta $70
-        lda enemy_sprite_high,x
+        lda monster_sprite_high,x
         sta $71
 
         iny
@@ -2667,105 +2676,105 @@ plot_enemies_pre_loop:
 
         jmp ($7a)
 
-        plot_enemies_loop_next:
+        plot_monsters_loop_next:
         clc
 
         lda $88
         adc #4
         cmp #$10
-        bne plot_enemies_loop
+        bne plot_monsters_loop
 
-    plot_enemies_exit:
+    plot_monsters_exit:
     clc
     rts
 
-move_enemies:
+move_monsters:
 
-    ; Check the enemy movement counter and perform updates now if necessary.
-    lda enemy_movement_counter
+    ; Check the monster movement counter and perform updates now if necessary.
+    lda monster_movement_counter
     and #$07
-    beq move_enemies_pre_loop
+    beq move_monsters_pre_loop
 
     clc
     rts
 
-move_enemies_pre_loop:
+move_monsters_pre_loop:
 
     lda #0
 
-    move_enemies_loop:
+    move_monsters_loop:
 
         sta $88                     ; store the offset temporarily
 
         tay
         lda ($86),y                 ; type, animation flag and dx
         cmp #0
-        beq move_enemies_loop_next
+        beq move_monsters_loop_next
 
         eor #$02                    ; flip the least significant bit
         sta $7c                     ; temporarily store the type/dx byte
 
         and #$0c
         cmp #$04
-        bne move_enemies_loop_not_bat
+        bne move_monsters_loop_not_bat
 
         ldy #2
         lda ($86),y
         cmp player_y
-        beq move_enemies_loop_update_type
-        bcs move_enemies_loop_bat_up
+        beq move_monsters_loop_update_type
+        bcs move_monsters_loop_bat_up
 
         adc #1                      ; move the bat down
         sta ($86),y
-        jmp move_enemies_loop_update_type
+        jmp move_monsters_loop_update_type
 
-        move_enemies_loop_bat_up:
+        move_monsters_loop_bat_up:
         sbc #1                      ; C is already set
         sta ($86),y
-        jmp move_enemies_loop_update_type
+        jmp move_monsters_loop_update_type
 
-        move_enemies_loop_not_bat:
+        move_monsters_loop_not_bat:
 
-        move_enemies_loop_update_type:
+        move_monsters_loop_update_type:
 
         lda $7c                     ; retrieve the type/dx byte
         ldy #0
         sta ($86),y                 ; store the changed type
 
-        move_enemies_loop_next:
+        move_monsters_loop_next:
         clc
 
         lda $88
         adc #4
         cmp #$10
-        beq move_enemies_exit
+        beq move_monsters_exit
 
-        jmp move_enemies_loop
+        jmp move_monsters_loop
 
-    move_enemies_exit:
+    move_monsters_exit:
     clc
     rts
 
-scroll_enemies_left:
+scroll_monsters_left:
 
     lda #0
 
-    scroll_enemies_left_loop:
+    scroll_monsters_left_loop:
 
         sta $88                     ; store the offset temporarily
 
         tay
         lda ($86),y                 ; type, animation flag and dx
         cmp #0
-        beq scroll_enemies_left_loop_next
+        beq scroll_monsters_left_loop_next
 
-        ; Move the enemy right on screen.
+        ; Move the monster right on screen.
 
         eor #$04                    ; toggle dx
         sta ($86),y
 
         and #$04
-        bne scroll_enemies_left_loop_dx_only
+        bne scroll_monsters_left_loop_dx_only
 
         clc
         iny
@@ -2773,40 +2782,40 @@ scroll_enemies_left:
         adc #1
         sta ($86),y                 ; x offset
 
-        scroll_enemies_left_loop_dx_only:
+        scroll_monsters_left_loop_dx_only:
         clc
 
-        scroll_enemies_left_loop_next:
+        scroll_monsters_left_loop_next:
         clc
 
         lda $88
         adc #4
         cmp #$10
-        bne scroll_enemies_left_loop
+        bne scroll_monsters_left_loop
 
-    scroll_enemies_left_exit:
-    jmp move_enemies
+    scroll_monsters_left_exit:
+    jmp move_monsters
 
-scroll_enemies_right:
+scroll_monsters_right:
 
     lda #0
 
-    scroll_enemies_right_loop:
+    scroll_monsters_right_loop:
 
         sta $88                     ; store the offset temporarily
 
         tay
         lda ($86),y                 ; type, animation flag and dx
         cmp #0
-        beq scroll_enemies_right_loop_next
+        beq scroll_monsters_right_loop_next
 
-        ; Move the enemy left on screen.
+        ; Move the monster left on screen.
 
         eor #$04                    ; toggle dx
         sta ($86),y
 
         and #$04
-        beq scroll_enemies_right_loop_dx_only
+        beq scroll_monsters_right_loop_dx_only
 
         iny
         lda ($86),y                 ; x offset
@@ -2814,19 +2823,19 @@ scroll_enemies_right:
         sbc #1
         sta ($86),y                 ; x offset
 
-        scroll_enemies_right_loop_dx_only:
+        scroll_monsters_right_loop_dx_only:
         clc
 
-        scroll_enemies_right_loop_next:
+        scroll_monsters_right_loop_next:
         clc
 
         lda $88
         adc #4
         cmp #$10
-        bne scroll_enemies_right_loop
+        bne scroll_monsters_right_loop
 
-    scroll_enemies_right_exit:
-    jmp move_enemies
+    scroll_monsters_right_exit:
+    jmp move_monsters
 
 switch_characters:
 

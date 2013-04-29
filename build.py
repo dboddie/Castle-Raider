@@ -123,7 +123,7 @@ char_sprites = ["images/g-left1.png", "images/g-left2.png",
                 "images/b-left1.png", "images/b-left2.png",
                 "images/b-right1.png", "images/b-right2.png"]
 
-enemy_sprites = ["images/bat1.png", "images/bat2.png",
+monster_sprites = ["images/bat1.png", "images/bat2.png",
                  "images/spider1.png", "images/spider2.png"]
 
 
@@ -148,11 +148,11 @@ if __name__ == "__main__":
     
     data_start = 0x1f20
     
-    # Enemy positions
-    enemy_positions_address       = data_start
+    # Monster positions
+    monster_positions_address       = data_start
     
     # Working information about tile visibility.
-    tile_visibility_address       = enemy_positions_address + 0x10
+    tile_visibility_address       = monster_positions_address + 0x10
     # Low and high bytes are adjusted by 16 bytes so that entries can be
     # addressed directly, starting with an index of 16.
     tile_visibility_low = (tile_visibility_address - 0x10) & 0xff
@@ -175,10 +175,16 @@ if __name__ == "__main__":
     tracking_low                  = player_information + 10
     tracking_high                 = player_information + 11
     tracking_y                    = player_information + 12
-    enemy_movement_counter        = player_information + 15
+    
+    monster_information           = player_information + 0x10
+    monster_movement_counter      = monster_information
+    monster_left_index            = monster_information + 1
+    monster_left_offset           = monster_information + 2
+    monster_right_index           = monster_information + 3
+    monster_right_offset          = monster_information + 4
     
     # The tile type occurring at the left edge of the screen.
-    initial_row_tiles             = player_information + 0x10
+    initial_row_tiles             = monster_information + 0x10
     # Indices into each row of the level data.
     row_indices                   = initial_row_tiles + 0x10
     # Initial displacements for the rows.
@@ -232,18 +238,19 @@ if __name__ == "__main__":
     char_data, player_sprite_offsets = \
         makesprites.read_sprites(char_sprites, char_area_address)
     
-    enemy_sprites_address = char_area_address + len(char_data)
-    enemy_sprites_data, enemy_sprites_addresses = \
-        makesprites.read_sprites(enemy_sprites, enemy_sprites_address)
-    char_data += enemy_sprites_data
+    monster_sprites_address = char_area_address + len(char_data)
+    monster_sprites_data, monster_sprites_addresses = \
+        makesprites.read_sprites(monster_sprites, monster_sprites_address)
+    char_data += monster_sprites_data
     
-    enemy_sprites_shifted_address = char_area_address + len(char_data)
-    enemy_sprites_data, enemy_sprites_shifted_addresses = \
-        makesprites.read_shifted_sprites(enemy_sprites, enemy_sprites_shifted_address)
-    char_data += enemy_sprites_data
+    monster_sprites_shifted_address = char_area_address + len(char_data)
+    monster_sprites_data, monster_sprites_shifted_addresses = \
+        makesprites.read_shifted_sprites(monster_sprites, monster_sprites_shifted_address)
+    char_data += monster_sprites_data
     
     levels_address = level_data_start
-    level_data = makelevels.create_level(levels_address, level_file, number_of_special_tiles)
+    level_data, monster_row_address = makelevels.create_level(
+        levels_address, level_file, number_of_special_tiles)
     
     level_extent = len(makelevels.level[0]) - 40
     
@@ -262,20 +269,20 @@ if __name__ == "__main__":
     # Create the contents of a file containing constant values.
     
     constants_oph = (
-        ".alias max_row_offsets      $%x\n"
-        ".alias player_x             $%x\n"
-        ".alias player_y             $%x\n"
-        ".alias bank_number          $%x\n"
-        ".alias player_animation     $%x\n"
-        ".alias player_jumping       $%x\n"
-        ".alias player_moving        $%x\n"
-        ".alias player_falling       $%x\n"
-        ".alias player_ys            $%x\n"
-        ".alias player_lives         $%x\n"
-        ".alias player_lost          $%x\n"
-        ".alias tracking_low         $%x\n"
-        ".alias tracking_high        $%x\n"
-        ".alias tracking_y           $%x\n"
+        ".alias max_row_offsets                 $%x\n"
+        ".alias player_x                        $%x\n"
+        ".alias player_y                        $%x\n"
+        ".alias bank_number                     $%x\n"
+        ".alias player_animation                $%x\n"
+        ".alias player_jumping                  $%x\n"
+        ".alias player_moving                   $%x\n"
+        ".alias player_falling                  $%x\n"
+        ".alias player_ys                       $%x\n"
+        ".alias player_lives                    $%x\n"
+        ".alias player_lost                     $%x\n"
+        ".alias tracking_low                    $%x\n"
+        ".alias tracking_high                   $%x\n"
+        ".alias tracking_y                      $%x\n"
         "\n"
         ) % (max_row_offsets, player_x, player_y, bank_number,
              player_animation, player_jumping, player_moving,
@@ -283,8 +290,10 @@ if __name__ == "__main__":
              tracking_low, tracking_high, tracking_y)
     
     constants_oph += (
-        ".alias enemy_movement_counter          $%x\n"
-        ) % (enemy_movement_counter)
+        ".alias monster_row_address             $%x\n"
+        ".alias monster_movement_counter        $%x\n\n"
+        ) % (monster_row_address,
+             monster_movement_counter)
 
     constants_oph += (
         ".alias initial_row_tiles               $%x\n"
@@ -302,71 +311,71 @@ if __name__ == "__main__":
              row_table_low, row_table_high, level_data_low, level_data_high)
     
     constants_oph += (
-        ".alias sprite_area_low              $%02x\n"
-        ".alias sprite_area_high             $%02x\n"
-        ".alias sprite_area_length_low       $%02x\n"
-        ".alias sprite_area_length_high      $%02x\n"
-        ".alias sprite_area_end_low          $%02x\n"
-        ".alias sprite_area_end_high         $%02x\n"
+        ".alias sprite_area_low                 $%02x\n"
+        ".alias sprite_area_high                $%02x\n"
+        ".alias sprite_area_length_low          $%02x\n"
+        ".alias sprite_area_length_high         $%02x\n"
+        ".alias sprite_area_end_low             $%02x\n"
+        ".alias sprite_area_end_high            $%02x\n"
         "\n"
         ) % address_length_end(sprite_area_address, sprite_data)
     
     constants_oph += (
-        ".alias left_sprites_low             $%02x\n"
-        ".alias left_sprites_high            $%02x\n"
-        ".alias rotated_sprites_low          $%02x\n"
-        ".alias rotated_sprites_high         $%02x\n"
-        ".alias right_sprites_low            $%02x\n"
-        ".alias right_sprites_high           $%02x\n"
+        ".alias left_sprites_low                $%02x\n"
+        ".alias left_sprites_high               $%02x\n"
+        ".alias rotated_sprites_low             $%02x\n"
+        ".alias rotated_sprites_high            $%02x\n"
+        ".alias right_sprites_low               $%02x\n"
+        ".alias right_sprites_high              $%02x\n"
         "\n"
         ) % (left_sprites_low, left_sprites_high,
          rotated_sprites_low, rotated_sprites_high,
          right_sprites_low, right_sprites_high)
     
     constants_oph += (
-        ".alias levels_address_low           $%02x\n"
-        ".alias levels_address_high          $%02x\n"
-        ".alias levels_length_low            $%02x\n"
-        ".alias levels_length_high           $%02x\n"
-        ".alias levels_end_low               $%02x\n"
-        ".alias levels_end_high              $%02x\n"
-        ".alias level_extent                 %i\n"
-        ".alias level_extent_low             $%02x\n"
-        ".alias level_extent_high            $%02x\n"
+        ".alias levels_address_low              $%02x\n"
+        ".alias levels_address_high             $%02x\n"
+        ".alias levels_length_low               $%02x\n"
+        ".alias levels_length_high              $%02x\n"
+        ".alias levels_end_low                  $%02x\n"
+        ".alias levels_end_high                 $%02x\n"
+        ".alias level_extent                    %i\n"
+        ".alias level_extent_low                $%02x\n"
+        ".alias level_extent_high               $%02x\n"
         "\n"
         ) % (address_length_end(levels_address, level_data) + (
             level_extent, level_extent & 0xff, level_extent >> 8))
     
     constants_oph += (
-        ".alias special_tile_numbers_low     $%02x\n"
-        ".alias special_tile_numbers_high    $%02x\n"
-        ".alias tile_visibility_address      $%x\n"
-        ".alias tile_visibility_low          $%02x\n"
-        ".alias tile_visibility_high         $%02x\n"
+        ".alias special_tile_numbers_low        $%02x\n"
+        ".alias special_tile_numbers_high       $%02x\n"
+        ".alias tile_visibility_address         $%x\n"
+        ".alias tile_visibility_low             $%02x\n"
+        ".alias tile_visibility_high            $%02x\n"
         "\n"
         ) % (special_tile_numbers_low, special_tile_numbers_high,
              tile_visibility_address, tile_visibility_low,
              tile_visibility_high)
     
     constants_oph += (
-        ".alias char_area                    $%x\n"
-        ".alias char_area_low                $%02x\n"
-        ".alias char_area_high               $%02x\n"
-        ".alias char_area_length_low         $%02x\n"
-        ".alias char_area_length_high        $%02x\n"
-        ".alias char_area_end_low            $%02x\n"
-        ".alias char_area_end_high           $%02x\n"
+        ".alias char_area                       $%x\n"
+        ".alias char_area_low                   $%02x\n"
+        ".alias char_area_high                  $%02x\n"
+        ".alias char_area_length_low            $%02x\n"
+        ".alias char_area_length_high           $%02x\n"
+        ".alias char_area_end_low               $%02x\n"
+        ".alias char_area_end_high              $%02x\n"
         "\n"
         ) % ((char_area_address,) + \
         address_length_end(char_area_address, char_data))
     
     constants_oph += (
-        ".alias top_panel_address_low       $%02x\n"
-        ".alias top_panel_address_high      $%02x\n"
-        ".alias top_panel_length_low        $%02x\n"
-        ".alias top_panel_length_high       $%02x\n"
-        ".alias top_panel_end_low           $%02x\n"
-        ".alias top_panel_end_high          $%02x\n"
+        ".alias top_panel_address_low           $%02x\n"
+        ".alias top_panel_address_high          $%02x\n"
+        ".alias top_panel_length_low            $%02x\n"
+        ".alias top_panel_length_high           $%02x\n"
+        ".alias top_panel_end_low               $%02x\n"
+        ".alias top_panel_end_high              $%02x\n"
         "\n"
         ".alias top_panel_objects_bank1_low     $%02x\n"
         ".alias top_panel_objects_bank1_high    $%02x\n"
@@ -380,38 +389,38 @@ if __name__ == "__main__":
              top_panel_objects_bank2_high))
     
     constants_oph += (
-        ".alias player_left1         $%04x\n"
-        ".alias player_left2         $%04x\n"
-        ".alias player_right1        $%04x\n"
-        ".alias player_right2        $%04x\n"
-        ".alias player_left_alt1     $%04x\n"
-        ".alias player_left_alt2     $%04x\n"
-        ".alias player_right_alt1    $%04x\n"
-        ".alias player_right_alt2    $%04x\n\n"
+        ".alias player_left1                    $%04x\n"
+        ".alias player_left2                    $%04x\n"
+        ".alias player_right1                   $%04x\n"
+        ".alias player_right2                   $%04x\n"
+        ".alias player_left_alt1                $%04x\n"
+        ".alias player_left_alt2                $%04x\n"
+        ".alias player_right_alt1               $%04x\n"
+        ".alias player_right_alt2               $%04x\n\n"
         ) % tuple(player_sprite_offsets)
     
     s = 0
-    for address, shifted_address in zip(enemy_sprites_addresses, enemy_sprites_shifted_addresses):
+    for address, shifted_address in zip(monster_sprites_addresses, monster_sprites_shifted_addresses):
     
         constants_oph += (
-            ".alias enemy_spr_low%i       $%02x\n"
-            ".alias enemy_spr_high%i      $%02x\n"
+            ".alias monster_spr_low%i                $%02x\n"
+            ".alias monster_spr_high%i               $%02x\n"
             ) % (s, address & 0xff, s, address >> 8)
         
         constants_oph += (
-            ".alias enemy_spr_sh_low%i       $%02x\n"
-            ".alias enemy_spr_sh_high%i      $%02x\n"
+            ".alias monster_spr_sh_low%i             $%02x\n"
+            ".alias monster_spr_sh_high%i            $%02x\n"
             ) % (s, shifted_address & 0xff, s, shifted_address >> 8)
         
         s += 1
     
     constants_oph += (
         "\n"
-        ".alias enemy_positions_address     $%x\n"
-        ".alias enemy_positions_low         $%02x\n"
-        ".alias enemy_positions_high        $%02x\n"
-        ) % (enemy_positions_address, enemy_positions_address & 0xff,
-             enemy_positions_address >> 8)
+        ".alias monster_positions_address       $%x\n"
+        ".alias monster_positions_low           $%02x\n"
+        ".alias monster_positions_high          $%02x\n\n"
+        ) % (monster_positions_address, monster_positions_address & 0xff,
+             monster_positions_address >> 8)
     
     # Assemble the main game code and loader code.
     
@@ -444,15 +453,15 @@ if __name__ == "__main__":
     markers = chr(n) + markers
     
     extras_oph = constants_oph + (
-        ".alias code_start_address           $%02x\n"
-        ".alias code_start_low               $%02x\n"
-        ".alias code_start_high              $%02x\n"
-        ".alias code_length_low              $%02x\n"
-        ".alias code_length_high             $%02x\n"
-        ".alias code_end_low                 $%02x\n"
-        ".alias code_end_high                $%02x\n"
+        ".alias code_start_address              $%02x\n"
+        ".alias code_start_low                  $%02x\n"
+        ".alias code_start_high                 $%02x\n"
+        ".alias code_length_low                 $%02x\n"
+        ".alias code_length_high                $%02x\n"
+        ".alias code_end_low                    $%02x\n"
+        ".alias code_end_high                   $%02x\n"
         "\n"
-        ".alias markers_length               $%02x\n"
+        ".alias markers_length                  $%02x\n"
         "\n"
         ) % ((code_start,) + address_length_end(code_start, code) + \
              (len(markers),))

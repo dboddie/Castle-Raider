@@ -67,7 +67,7 @@ tile_order = (".", "@", "+", "=", "#", "X", "-", "|",   # regular tiles
 
 flags_values = {"visible": 0x80, "collectable": 0x40, "door": 0x20, "treasure": 0x10}
 
-monster_tiles = {"V": 32, "M": 33}
+monster_tiles = {"V": 1, "M": 2}
 
 def load_level(path):
 
@@ -94,6 +94,7 @@ def load_level(path):
 def create_level_data(level, tiles):
 
     data = []
+    monsters = {}
     l = 0
     
     for line in level:
@@ -111,7 +112,10 @@ def create_level_data(level, tiles):
                 # Special tiles have values greater than or equal to 16.
                 c = index
             elif ch in monster_tiles:
-                c = monster_tiles[ch]
+                # Record the monster's position and type.
+                monsters[i] = (monster_tiles[ch], l)
+                # Use the blank tile in the level itself.
+                c = tiles["."]
             else:
                 c = tiles[ch]
             
@@ -133,7 +137,29 @@ def create_level_data(level, tiles):
         data.append(line_data)
         l += 1
     
-    return data
+    monster_data = []
+    previous_monster = 0
+    previous_y = 0
+    monster_offset = 0
+    
+    monsters = monsters.items()
+    monsters.sort()
+    
+    for i, (monster, y) in monsters:
+    
+        if i > monster_offset:
+        
+            # Add the previous monster to the list of monster spans.
+            monster_data.append((previous_monster, previous_y, i - monster_offset))
+        
+        monster_offset = i
+        previous_monster = monster
+        previous_y = y
+    
+    if monster_offset < len(level[0]):
+        monster_data.append((previous_monster, previous_y, len(level[0]) - monster_offset))
+    
+    return data, monster_data
 
 def create_level(levels_address, level_path, number_of_special_tiles):
 
@@ -153,7 +179,7 @@ def create_level(levels_address, level_path, number_of_special_tiles):
     
     data = ""
     
-    level_data = create_level_data(level, tiles)
+    level_data, monster_data = create_level_data(level, tiles)
     row_addresses = []
     
     r = 0
@@ -173,7 +199,7 @@ def create_level(levels_address, level_path, number_of_special_tiles):
                 row_data += chr(tile) + chr(255)
                 number -= 256
             
-            if number >= 0:
+            if number > 0:
                 row_data += chr(tile) + chr(number - 1)
         
         if len(row_data) >= 512:
@@ -185,6 +211,26 @@ def create_level(levels_address, level_path, number_of_special_tiles):
         r += 1
     
     print "%i bytes (%04x) of level data" % (len(data), len(data))
+    
+    monster_row_address = levels_address + special_tile_numbers_table_size + visibility_table_size + row_table_size + len(data)
+    monster_row_data = ""
+    
+    for monster, y, number in monster_data:
+    
+        # Write spans to fill the space but only include a monster in the first
+        # one.
+        while number > 256:
+            monster_row_data += chr((y << 4) | monster) + chr(255)
+            monster = 0
+            number -= 256
+        
+        if number > 0:
+            monster_row_data += chr(monster) + chr(number - 1)
+        
+        if len(monster_row_data) >= 512:
+            raise LevelError, "Monster data too long.\n"
+    
+    data += monster_row_data
     
     # Create a table of special tile numbers and initial visibility values.
     
@@ -209,4 +255,4 @@ def create_level(levels_address, level_path, number_of_special_tiles):
     # Append the data to the table of row offsets.
     data = special_tiles_table + visibility_table + table + data
     
-    return data
+    return data, monster_row_address
