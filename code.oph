@@ -677,7 +677,7 @@ bank2_rows_high: .byte  $68,$69,$6a,$6c,$6d,$6e,$6f,$71,$72,$73,$74,$76,$77,$78,
 init_scrolling:
 
     ldx #15
-    init_banks_loop:
+    init_scrolling_loop:
 
         lda #0
         sta row_indices,x
@@ -685,9 +685,64 @@ init_scrolling:
         sta initial_row_offsets,x
         sta max_row_offsets,x
         dex
-        bpl init_banks_loop
+        bpl init_scrolling_loop
 
+    ; Initialise the monster indices and offsets.
+
+    ; The left index and offset are straightforward to set because they are at
+    ; the start of the level, so we store zero in both of them.
+    sta monster_left_index
+    sta monster_left_offset
+
+    ; The right index and offset need to be calculated from the start of the
+    ; level.
+    sta monster_right_index         ; Record the initial offset (zero).
+    sta $8d                         ; Keep track of the current column number.
+
+    jsr read_monster_row_address    ; Examine the monster data at index zero.
+
+    ldy #1                          ; Examine the span information.
+    lda ($76),y                     ; Load the span length (n - 1).
+    sta monster_left_max_offset     ; This is the maximum value the offset can
+                                    ; have for this span.
+    init_scrolling_monster_loop:
+
+        lda ($76),y                     ; Load the span length (n - 1).
+        cmp #39                         ; If this alone exceeds the screen
+        bcs init_scrolling_monster_next ; width then calculate the offset.
+
+        adc $8d                         ; Calculate the next monster position.
+        adc #1
+
+        cmp #40                         ; Continue until we reach the right
+        bcs init_scrolling_monster_next ; edge of the screen.
+
+        sta $8d                     ; Store the new monster position.
+
+        inc monster_right_index     ; Update the index until we reach the edge.
+        lda $76
+        adc #2
+        sta $76
+        lda $77
+        adc #0
+        sta $77
+        clc
+        jmp init_scrolling_monster_loop
+
+    init_scrolling_monster_next:
     clc
+
+    ; The right index is already set. Calculate the offset from the current
+    ; column value.
+    lda ($76),y
+    sta monster_right_max_offset    ; Store the maximum offset.
+
+    sec                         ; Calculate the remaining offset until the
+    sbc #39                     ; start of the next span.
+    clc
+    adc $8d                     ; Since the position is less than 39, the
+    sta monster_right_offset    ; carry flag should not be set here.
+
     rts
 
 plot_bank1r:
@@ -948,14 +1003,14 @@ scroll_right:   ; Scroll the screen right by decreasing the initial row offsets
         bpl scroll_right_loop       ; Examine the next row.
 
         clc
-        rts
+        jmp scroll_right_update_monsters
 
         scroll_right_loop_next_offset:  ; Update the current span.
         clc
 
         jsr read_row_address    ; Read the row address before updating the index.
 
-        inc row_indices,x   ; Increment the index to refer to the next span.
+        inc row_indices,x       ; Increment the index to refer to the next span.
 
         ldy #0
         lda ($76),y             ; Load the tile type for the current span.
@@ -969,6 +1024,53 @@ scroll_right:   ; Scroll the screen right by decreasing the initial row offsets
         dex
         bpl scroll_right_loop
 
+    scroll_right_update_monsters:
+
+    ; Update the indices and offsets into the monster data.
+
+    dec monster_right_offset
+    beq scroll_right_next_right_offset  ; Offset is zero, so update the span.
+    lda monster_right_offset
+    cmp #255
+    bne scroll_right_handle_left_edge   ; Offset is > 0, so check the left offset.
+
+        ; The offset was zero, so it needs to be reset.
+
+        lda monster_right_index         ; Read the address of the current right
+        jsr read_monster_row_address    ; span.
+
+        ldy #1
+        lda ($76),y                 ; The current span's length is used to count
+        sta monster_right_offset    ; down to the next monster.
+        sta monster_right_max_offset
+        jmp scroll_right_handle_left_edge
+
+    scroll_right_next_right_offset:
+
+        inc monster_right_index     ; Increment the right index to refer to the
+                                    ; next span.
+    scroll_right_handle_left_edge:
+
+    dec monster_left_offset
+    beq scroll_right_next_left_offset   ; Offset is zero, so update the span.
+    lda monster_left_offset
+    cmp #255
+    bne scroll_right_exit               ; Offset is > 0, so exit.
+
+        lda monster_left_index          ; Read the address of the current left
+        jsr read_monster_row_address    ; span.
+
+        ldy #1
+        lda ($76),y                 ; The current span's length is used to count
+        sta monster_left_offset     ; down to the next monster.
+        sta monster_left_max_offset
+        rts
+
+    scroll_right_next_left_offset:
+
+        inc monster_left_index      ; Increment the left index to refer to the
+                                    ; next span.
+    scroll_right_exit:
     clc
     rts
 
@@ -987,7 +1089,7 @@ scroll_left:    ; Scroll the screen left by increasing the initial row offsets
         bpl scroll_left_loop        ; Examine the next row.
 
         clc
-        rts
+        jmp scroll_left_update_monsters
 
         scroll_left_loop_previous_offset:   ; Update the current span.
         clc
@@ -1019,6 +1121,66 @@ scroll_left:    ; Scroll the screen left by increasing the initial row offsets
         dex
         bpl scroll_left_loop
 
+    scroll_left_update_monsters:
+
+    ; Update the indices and offsets into the monster data.
+
+    lda monster_right_offset
+    cmp monster_right_max_offset        ; If the offset is at its maximum value
+    beq scroll_left_reset_right_offset  ; then reset it.
+
+        inc monster_right_offset        ; Otherwise, increase the offset.
+        cmp #0                          ; If it was 0, we enter the previous
+        bne scroll_left_handle_left_edge ; span; if not, examine the other edge.
+
+    scroll_left_previous_right_offset:
+
+        dec monster_right_index     ; Decrement the right index to refer to the
+                                    ; previous span.
+
+        lda monster_right_index     ; Read the address of the new right span.
+        jsr read_monster_row_address
+
+        ldy #1
+        lda ($76),y                     ; The new span's length is used to count
+        sta monster_right_max_offset    ; up to the previous monster.
+        jmp scroll_left_handle_left_edge
+
+    scroll_left_reset_right_offset:
+
+        lda #0                      ; The maximum offset was reached, so it
+        sta monster_right_offset    ; needs to be reset. We retain the current
+                                    ; index.
+    scroll_left_handle_left_edge:
+
+    lda monster_left_offset
+    cmp monster_left_max_offset         ; If the offset is at its maximum value
+    beq scroll_left_reset_left_offset   ; then reset it.
+
+        inc monster_left_offset             ; Otherwise, increase the offset.
+        cmp #0                              ; If it was 0, we enter the previous
+        beq scroll_left_previous_left_offset; span; if not, we exit.
+        rts
+
+    scroll_left_reset_left_offset:
+
+        lda #0                  ; The maximum offset was reached, so it needs
+        sta monster_left_offset ; to be reset. We retain the current index.
+        rts
+
+    scroll_left_previous_left_offset:
+
+        dec monster_left_index      ; Decrement the right index to refer to the
+                                    ; previous span.
+
+        lda monster_left_index      ; Read the address of the new left span.
+        jsr read_monster_row_address
+
+        ldy #1
+        lda ($76),y                 ; The new span's length is used to count
+        sta monster_left_max_offset ; up to the previous monster.
+
+    scroll_left_exit:
     clc
     rts
 
@@ -1417,6 +1579,19 @@ read_row_address:           ; X=row number
     adc $76             ; Add i*2 to A to get the address, I, of the
     sta $76             ; starting offset and type.
     lda $77
+    adc #0
+    sta $77
+    clc
+
+    rts
+
+read_monster_row_address:   ; A=index
+                            ; Returns $76,77 (monster row span address)
+    clc
+    asl                         ; index*2
+    adc #<monster_row_address
+    sta $76
+    lda #>monster_row_address
     adc #0
     sta $77
     clc

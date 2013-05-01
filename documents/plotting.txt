@@ -286,3 +286,51 @@ where
     a is the animation bit
     x corresponds to dx (0 or 1)
     nn is the sprite number
+
+Enemies are stored in relation to the level data in a similar way to the level
+data itself: as a sequence of type information and span lengths.
+
+  (type and y position, number) ...
+
+As with level data, the number is actually the length of the span minus one;
+in the case of monsters, the number of tiles following the leftmost monster
+tile.
+
+As monster tiles appear in the leftmost screen column (when scrolling left) or
+the rightmost screen column (when scrolling right), monsters are created and
+added to the table described above. To manage this, we use two indices into the
+monster row data in a similar way to the row indices used for the level data,
+and two offsets that record how many tiles remain until the next index needs to
+be read.
+
+The initial values of the indices are calculated when scrolling is set up. The
+left index and offset are both 0. To calculate the right index and offset, we
+need to find the span that covers column 39 of the level.
+
+  A....B..........C........D...........E..|.....F
+  ^                                      ^
+Left edge (0, 0)                    Right edge (4, 6)
+
+In the above example, the left index is 0 and the offset is also 0 because
+there are no more tiles left between the edge and the item in the monster data.
+The right index is 4 because E is the start of the fourth span, and the offset
+is 6 because there are 6 tiles left to scroll right until the fifth span
+becomes visible.
+
+  A....B..........C........D...........E..|.....F
+  A....B..........C........D...........E..|... maximum span length ...F
+  A....B..........C........D.............E|.....F
+
+Iterate until the final span crosses the screen boundary then find the
+remaining number of tiles from the current span to the boundary and subtract
+this from the length of the next span.
+
+  offset = length - (39 - position)
+         = length - 39 + position
+
+Instead of incrementing the span index when scrolling past a new monster,
+increment it when reaching the monster.
+
+  A|....B..........C........D...........E...|....F
+    ^                                      ^
+Left edge (0, 4)                    Right edge (4, 5)

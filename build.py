@@ -180,8 +180,10 @@ if __name__ == "__main__":
     monster_movement_counter      = monster_information
     monster_left_index            = monster_information + 1
     monster_left_offset           = monster_information + 2
-    monster_right_index           = monster_information + 3
-    monster_right_offset          = monster_information + 4
+    monster_left_max_offset       = monster_information + 3
+    monster_right_index           = monster_information + 4
+    monster_right_offset          = monster_information + 5
+    monster_right_max_offset      = monster_information + 6
     
     # The tile type occurring at the left edge of the screen.
     initial_row_tiles             = monster_information + 0x10
@@ -291,9 +293,21 @@ if __name__ == "__main__":
     
     constants_oph += (
         ".alias monster_row_address             $%x\n"
-        ".alias monster_movement_counter        $%x\n\n"
+        ".alias monster_movement_counter        $%x\n"
+        ".alias monster_left_index              $%x\n"
+        ".alias monster_left_offset             $%x\n"
+        ".alias monster_left_max_offset         $%x\n"
+        ".alias monster_right_index             $%x\n"
+        ".alias monster_right_offset            $%x\n"
+        ".alias monster_right_max_offset        $%x\n\n"
         ) % (monster_row_address,
-             monster_movement_counter)
+             monster_movement_counter,
+             monster_left_index,
+             monster_left_offset,
+             monster_left_max_offset,
+             monster_right_index,
+             monster_right_offset,
+             monster_right_max_offset)
 
     constants_oph += (
         ".alias initial_row_tiles               $%x\n"
