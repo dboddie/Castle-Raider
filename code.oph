@@ -94,15 +94,6 @@ init:
         sta monster_positions_address,x
         dex
         bpl init_monster_positions_loop
-    
-    ;lda #1
-    ;sta monster_positions_address
-    ;lda #32
-    ;sta [monster_positions_address+1]
-    ;lda #10
-    ;sta [monster_positions_address+2]
-    ;lda #0
-    ;sta [monster_positions_address+3]
 
 main:
 
@@ -114,7 +105,7 @@ main:
     jsr show_bank2          ; Hide the bank being plotted.
     jsr initial_plot_bank1
     jsr plot_char_bank1
-    jsr plot_monsters_bank1  ; Show any initial monsters.
+    jsr plot_monsters_bank1 ; Show any initial monsters.
     jsr show_bank1          ; Show the completed bank.
     jsr initial_plot_bank2
 
@@ -1049,6 +1040,9 @@ scroll_right:   ; Scroll the screen right by decreasing the initial row offsets
 
         inc monster_right_index     ; Increment the right index to refer to the
                                     ; next span.
+        lda monster_right_index
+        jsr create_monster_right
+
     scroll_right_handle_left_edge:
 
     dec monster_left_offset
@@ -1166,6 +1160,9 @@ scroll_left:    ; Scroll the screen left by increasing the initial row offsets
 
         lda #0                  ; The maximum offset was reached, so it needs
         sta monster_left_offset ; to be reset. We retain the current index.
+
+        lda monster_left_index
+        jsr create_monster_left
         rts
 
     scroll_left_previous_left_offset:
@@ -2861,6 +2858,45 @@ plot_monsters_pre_loop:
 
     plot_monsters_exit:
     clc
+    rts
+
+; Monster creation/destruction and movement.
+
+create_monster_left:            ; A=index
+
+    jsr create_monster
+
+    lda #0
+    sta [monster_positions_address+1]   ; Store the x coordinate.
+    rts
+
+create_monster_right:           ; A=index
+
+    jsr create_monster
+
+    lda #39
+    sta [monster_positions_address+1]   ; Store the x coordinate.
+    rts
+
+create_monster:                 ; A=index
+
+    jsr read_monster_row_address
+    ldy #0
+    lda ($76),y                     ; Read the monster type.
+
+    tax                             ; Temporarily store the type.
+    and #$0f                        ; Extract the monster type number.
+    sta monster_positions_address
+    txa
+    and #$f0
+    lsr
+    lsr
+    lsr
+    lsr
+    sta [monster_positions_address+2]   ; Store the y coordinate.
+    lda #0
+    sta [monster_positions_address+3]   ; Store the dy coordinate.
+
     rts
 
 move_monsters:
