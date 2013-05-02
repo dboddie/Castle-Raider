@@ -352,13 +352,15 @@ scroll_right_update:
 
     jsr scroll_update_bank1_bank2
 
+    jsr scroll_right_update_monsters
+
     lda player_animation
     ora #$02
     sta player_animation
 
-    jsr plot_char_bank2     ; plot the player on bank 2
+    jsr plot_char_bank2         ; plot the player on bank 2
     jsr scroll_monsters_right
-    jsr plot_monsters_bank2  ; plot the monsters, too
+    jsr plot_monsters_bank2     ; plot the monsters, too
 
     clc
     rts
@@ -386,13 +388,15 @@ scroll_right_update:
 
     jsr scroll_update_bank2_bank1
 
+    jsr scroll_right_update_monsters
+
     lda player_animation
     ora #$02
     sta player_animation
 
-    jsr plot_char_bank1     ; plot the player on bank 1
+    jsr plot_char_bank1         ; plot the player on bank 1
     jsr scroll_monsters_right
-    jsr plot_monsters_bank1  ; plot the monsters, too
+    jsr plot_monsters_bank1     ; plot the monsters, too
 
     clc
     rts
@@ -428,13 +432,15 @@ scroll_left_update:
 
     jsr scroll_update_bank1_bank2
 
+    jsr scroll_left_update_monsters
+
     lda player_animation
     and #$01
     sta player_animation
 
-    jsr plot_char_bank2     ; plot the player on bank 2
+    jsr plot_char_bank2         ; plot the player on bank 2
     jsr scroll_monsters_left
-    jsr plot_monsters_bank2  ; plot the monsters, too
+    jsr plot_monsters_bank2     ; plot the monsters, too
 
     lda scroll_offset_low   ; Decrease the scroll offset after showing bank 2.
     sec
@@ -461,21 +467,23 @@ scroll_left_update:
 
     jsr scroll_update_bank2_bank1
 
+    jsr scroll_left_update_monsters
+
     lda player_animation
     and #$01
     sta player_animation
 
-    jsr plot_char_bank1     ; plot the player on bank 1
+    jsr plot_char_bank1         ; plot the player on bank 1
     jsr scroll_monsters_left
-    jsr plot_monsters_bank1  ; plot the monsters, too
+    jsr plot_monsters_bank1     ; plot the monsters, too
 
     clc
     rts
 
 scroll_update_bank2_bank1:
 
-    jsr plot_char_bank2     ; unplot the player on bank 2
-    jsr plot_monsters_bank2  ; unplot the monsters, too
+    jsr plot_char_bank2         ; unplot the player on bank 2
+    jsr plot_monsters_bank2     ; unplot the monsters, too
 
     lda player_falling
     cmp #0
@@ -505,8 +513,8 @@ scroll_update_bank2_bank1:
 
 scroll_update_bank1_bank2:
 
-    jsr plot_char_bank1     ; unplot the player on bank 1
-    jsr plot_monsters_bank1  ; unplot the monsters, too
+    jsr plot_char_bank1         ; unplot the player on bank 1
+    jsr plot_monsters_bank1     ; unplot the monsters, too
 
     lda player_falling
     cmp #0
@@ -526,8 +534,7 @@ scroll_update_bank1_bank2:
 check_key:      ; x=key code
     lda #129    ; returns y=255 or 0
     ldy #255
-    jsr $fff4
-    rts
+    jmp $fff4   ; Return directly from the OS routine.
 
 check_beneath:
 
@@ -699,13 +706,13 @@ init_scrolling:
     init_scrolling_monster_loop:
 
         lda ($76),y                     ; Load the span length (n - 1).
-        cmp #39                         ; If this alone exceeds the screen
+        cmp #40                         ; If this alone exceeds the screen
         bcs init_scrolling_monster_next ; width then calculate the offset.
 
         adc $8d                         ; Calculate the next monster position.
         adc #1
 
-        cmp #40                         ; Continue until we reach the right
+        cmp #41                         ; Continue until we reach the right
         bcs init_scrolling_monster_next ; edge of the screen.
 
         sta $8d                     ; Store the new monster position.
@@ -994,7 +1001,7 @@ scroll_right:   ; Scroll the screen right by decreasing the initial row offsets
         bpl scroll_right_loop       ; Examine the next row.
 
         clc
-        jmp scroll_right_update_monsters
+        rts
 
         scroll_right_loop_next_offset:  ; Update the current span.
         clc
@@ -1015,7 +1022,7 @@ scroll_right:   ; Scroll the screen right by decreasing the initial row offsets
         dex
         bpl scroll_right_loop
 
-    scroll_right_update_monsters:
+scroll_right_update_monsters:
 
     ; Update the indices and offsets into the monster data.
 
@@ -1083,7 +1090,7 @@ scroll_left:    ; Scroll the screen left by increasing the initial row offsets
         bpl scroll_left_loop        ; Examine the next row.
 
         clc
-        jmp scroll_left_update_monsters
+        rts
 
         scroll_left_loop_previous_offset:   ; Update the current span.
         clc
@@ -1115,7 +1122,7 @@ scroll_left:    ; Scroll the screen left by increasing the initial row offsets
         dex
         bpl scroll_left_loop
 
-    scroll_left_update_monsters:
+scroll_left_update_monsters:
 
     ; Update the indices and offsets into the monster data.
 
@@ -2765,7 +2772,7 @@ plot8x8_x0_y0:          ; $70,$71=source address
         dey
         bpl plot8x8_x0_y0_loop
     clc
-    jmp plot_monsters_loop_next
+    rts
 
 plot8x8_x0_y1:          ; $70,$71=source address
                         ; $72,$73=destination address
@@ -2782,7 +2789,7 @@ plot8x8_x0_y1:          ; $70,$71=source address
         dey
         bpl plot8x8_x0_y1_loop
     clc
-    jmp plot_monsters_loop_next
+    rts
 
 plot8x8_lengths: .byte 15, 23
 
@@ -2791,22 +2798,33 @@ plot_monsters:
     lda bank_number
     cmp #1
     bne plot_monsters_bank2
+    jmp plot_monsters_bank1
 
 plot_monsters_bank1:
+
+    jsr set_monsters_bank1
+    jmp plot_monsters_pre_loop
+
+plot_monsters_bank2:
+
+    jsr set_monsters_bank2
+    jmp plot_monsters_pre_loop
+
+set_monsters_bank1:
 
     lda #<plot_monster_bank1
     sta $7a
     lda #>plot_monster_bank1
     sta $7b
+    rts
 
-    jmp plot_monsters_pre_loop
-
-plot_monsters_bank2:
+set_monsters_bank2:
 
     lda #<plot_monster_bank2
     sta $7a
     lda #>plot_monster_bank2
     sta $7b
+    rts
 
 plot_monsters_pre_loop:
 
@@ -2821,32 +2839,7 @@ plot_monsters_pre_loop:
         cmp #0
         beq plot_monsters_loop_next
 
-        ; Determine the sprite to use from the type and dx value.
-        lsr                         ; convert the value to an offset into the
-        clc
-        tax                         ; sprite address arrays and temporarily
-        stx $8c                     ; store the value
-        lda monster_sprite_low,x      ; load the sprite address
-        sta $70
-        lda monster_sprite_high,x
-        sta $71
-
-        iny
-        lda ($86),y                 ; x offset
-        asl
-        asl
-        asl                         ; x position
-        sta $72
-        lda #0
-        adc #0
-        sta $73
-        clc
-
-        iny
-        lda ($86),y                 ; y offset
-        tax
-
-        jmp ($7a)
+        jsr plot_monster
 
         plot_monsters_loop_next:
         clc
@@ -2859,6 +2852,39 @@ plot_monsters_pre_loop:
     plot_monsters_exit:
     clc
     rts
+
+plot_monster:   ; $7a,$7b=sprite plotting routing for a given bank
+                ; (set up in set_monsters_bank1 or set_monsters_bank2)
+                ; A=monster type
+                ; Y=offset into monster table (0, 4, 8, 12)
+
+    ; Determine the sprite to use from the type and dx value.
+    lsr                         ; convert the value to an offset into the
+    clc
+    tax                         ; sprite address arrays and temporarily
+    stx $8c                     ; store the value
+    lda monster_sprite_low,x      ; load the sprite address
+    sta $70
+    lda monster_sprite_high,x
+    sta $71
+
+    iny
+    lda ($86),y                 ; x offset
+    asl
+    asl
+    asl                         ; x position
+    sta $72
+    lda #0
+    adc #0
+    sta $73
+    clc
+
+    iny
+    lda ($86),y                 ; y offset
+    tax
+
+    jmp ($7a)
+    ; The plotting routine returns to the caller of this routine.
 
 ; Monster creation/destruction and movement.
 
@@ -2901,6 +2927,7 @@ create_monster:                 ; A=index
 
 move_monsters:
 
+    rts
     ; Check the monster movement counter and perform updates now if necessary.
     lda monster_movement_counter
     and #$07
