@@ -692,6 +692,9 @@ init_scrolling:
     sta monster_left_index
     sta monster_left_offset
 
+    ; Initialise the on-screen monster index.
+    sta monster_index
+
     ; The right index and offset need to be calculated from the start of the
     ; level.
     sta monster_right_index         ; Record the initial offset (zero).
@@ -1022,6 +1025,9 @@ scroll_right:   ; Scroll the screen right by decreasing the initial row offsets
         dex
         bpl scroll_right_loop
 
+    clc
+    rts
+
 scroll_right_update_monsters:
 
     ; Update the indices and offsets into the monster data.
@@ -1056,7 +1062,7 @@ scroll_right_update_monsters:
     beq scroll_right_next_left_offset   ; Offset is zero, so update the span.
     lda monster_left_offset
     cmp #255
-    bne scroll_right_exit               ; Offset is > 0, so exit.
+    bne scroll_right_update_monsters_exit   ; Offset is > 0, so exit.
 
         lda monster_left_index          ; Read the address of the current left
         jsr read_monster_row_address    ; span.
@@ -1071,7 +1077,7 @@ scroll_right_update_monsters:
 
         inc monster_left_index      ; Increment the left index to refer to the
                                     ; next span.
-    scroll_right_exit:
+    scroll_right_update_monsters_exit:
     clc
     rts
 
@@ -1122,6 +1128,9 @@ scroll_left:    ; Scroll the screen left by increasing the initial row offsets
         dex
         bpl scroll_left_loop
 
+    clc
+    rts
+
 scroll_left_update_monsters:
 
     ; Update the indices and offsets into the monster data.
@@ -1136,9 +1145,6 @@ scroll_left_update_monsters:
 
     scroll_left_previous_right_offset:
 
-        dec monster_right_index     ; Decrement the right index to refer to the
-                                    ; previous span.
-
         lda monster_right_index     ; Read the address of the new right span.
         jsr read_monster_row_address
 
@@ -1148,6 +1154,9 @@ scroll_left_update_monsters:
         jmp scroll_left_handle_left_edge
 
     scroll_left_reset_right_offset:
+
+        dec monster_right_index     ; Decrement the right index to refer to the
+                                    ; previous span.
 
         lda #0                      ; The maximum offset was reached, so it
         sta monster_right_offset    ; needs to be reset. We retain the current
@@ -1168,14 +1177,14 @@ scroll_left_update_monsters:
         lda #0                  ; The maximum offset was reached, so it needs
         sta monster_left_offset ; to be reset. We retain the current index.
 
+        dec monster_left_index      ; Decrement the right index to refer to the
+                                    ; previous span.
+
         lda monster_left_index
         jsr create_monster_left
         rts
 
     scroll_left_previous_left_offset:
-
-        dec monster_left_index      ; Decrement the right index to refer to the
-                                    ; previous span.
 
         lda monster_left_index      ; Read the address of the new left span.
         jsr read_monster_row_address
@@ -1184,7 +1193,6 @@ scroll_left_update_monsters:
         lda ($76),y                 ; The new span's length is used to count
         sta monster_left_max_offset ; up to the previous monster.
 
-    scroll_left_exit:
     clc
     rts
 
@@ -2891,17 +2899,29 @@ plot_monster:   ; $7a,$7b=sprite plotting routing for a given bank
 create_monster_left:            ; A=index
 
     jsr create_monster
+    bcs create_monster_left_exit
 
     lda #0
-    sta [monster_positions_address+1]   ; Store the x coordinate.
+    dex
+    dex
+    sta monster_positions_address,x ; Store the x coordinate.
+
+    create_monster_left_exit:
+    clc
     rts
 
 create_monster_right:           ; A=index
 
     jsr create_monster
+    bcs create_monster_right_exit
 
     lda #39
-    sta [monster_positions_address+1]   ; Store the x coordinate.
+    dex
+    dex
+    sta monster_positions_address,x ; Store the x coordinate.
+
+    create_monster_right_exit:
+    clc
     rts
 
 create_monster:                 ; A=index
@@ -2909,20 +2929,38 @@ create_monster:                 ; A=index
     jsr read_monster_row_address
     ldy #0
     lda ($76),y                     ; Read the monster type.
+    cmp #0                          ; If no monster is defined then exit;
+    bne create_monster_create       ; otherwise create the monster.
+    sec
+    rts
 
-    tax                             ; Temporarily store the type.
+    create_monster_create:
+
+    ldx monster_index               ; Load the current monster index.
+    tay                             ; Temporarily store the type.
     and #$0f                        ; Extract the monster type number.
-    sta monster_positions_address
-    txa
+    sta monster_positions_address,x
+
+    tya                             ; Recover the type.
     and #$f0
     lsr
     lsr
     lsr
     lsr
-    sta [monster_positions_address+2]   ; Store the y coordinate.
-    lda #0
-    sta [monster_positions_address+3]   ; Store the dy coordinate.
 
+    inx
+    inx
+    sta monster_positions_address,x ; Store the y coordinate.
+    inx
+    lda #0
+    sta monster_positions_address,x ; Store the dy coordinate.
+
+    clc
+
+    lda monster_index
+    adc #4
+    and #$0c
+    sta monster_index
     rts
 
 move_monsters:

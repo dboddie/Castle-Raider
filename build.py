@@ -184,6 +184,7 @@ if __name__ == "__main__":
     monster_right_index           = monster_information + 4
     monster_right_offset          = monster_information + 5
     monster_right_max_offset      = monster_information + 6
+    monster_index                 = monster_information + 7
     
     # The tile type occurring at the left edge of the screen.
     initial_row_tiles             = monster_information + 0x10
@@ -291,24 +292,6 @@ if __name__ == "__main__":
              player_falling, player_ys, player_lives, player_lost,
              tracking_low, tracking_high, tracking_y)
     
-    constants_oph += (
-        ".alias monster_row_address             $%x\n"
-        ".alias monster_movement_counter        $%x\n"
-        ".alias monster_left_index              $%x\n"
-        ".alias monster_left_offset             $%x\n"
-        ".alias monster_left_max_offset         $%x\n"
-        ".alias monster_right_index             $%x\n"
-        ".alias monster_right_offset            $%x\n"
-        ".alias monster_right_max_offset        $%x\n\n"
-        ) % (monster_row_address,
-             monster_movement_counter,
-             monster_left_index,
-             monster_left_offset,
-             monster_left_max_offset,
-             monster_right_index,
-             monster_right_offset,
-             monster_right_max_offset)
-
     constants_oph += (
         ".alias initial_row_tiles               $%x\n"
         ".alias row_indices                     $%x\n"
@@ -435,6 +418,26 @@ if __name__ == "__main__":
         ".alias monster_positions_high          $%02x\n\n"
         ) % (monster_positions_address, monster_positions_address & 0xff,
              monster_positions_address >> 8)
+    
+    constants_oph += (
+        ".alias monster_row_address             $%x\n"
+        ".alias monster_movement_counter        $%x\n"
+        ".alias monster_left_index              $%x\n"
+        ".alias monster_left_offset             $%x\n"
+        ".alias monster_left_max_offset         $%x\n"
+        ".alias monster_right_index             $%x\n"
+        ".alias monster_right_offset            $%x\n"
+        ".alias monster_right_max_offset        $%x\n"
+        ".alias monster_index                   $%x\n\n"
+        ) % (monster_row_address,
+             monster_movement_counter,
+             monster_left_index,
+             monster_left_offset,
+             monster_left_max_offset,
+             monster_right_index,
+             monster_right_offset,
+             monster_right_max_offset,
+             monster_index)
     
     # Assemble the main game code and loader code.
     

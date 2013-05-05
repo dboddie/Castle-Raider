@@ -219,13 +219,15 @@ def create_level(levels_address, level_path, number_of_special_tiles):
     
         # Write spans to fill the space but only include a monster in the first
         # one.
+        type_number = (y << 4) | monster
+        
         while number > 256:
-            monster_row_data += chr((y << 4) | monster) + chr(255)
-            monster = 0
+            monster_row_data += chr(type_number) + chr(255)
+            type_number = 0
             number -= 256
         
         if number > 0:
-            monster_row_data += chr(monster) + chr(number - 1)
+            monster_row_data += chr(type_number) + chr(number - 1)
         
         if len(monster_row_data) >= 512:
             raise LevelError, "Monster data too long.\n"
