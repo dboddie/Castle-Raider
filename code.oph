@@ -2906,6 +2906,12 @@ create_monster_left:            ; A=index
     dex
     sta monster_positions_address,x ; Store the x coordinate.
 
+    lda monster_index
+    sec
+    sbc #4
+    and #$0c
+    sta monster_index
+
     create_monster_left_exit:
     clc
     rts
@@ -2920,6 +2926,11 @@ create_monster_right:           ; A=index
     dex
     sta monster_positions_address,x ; Store the x coordinate.
 
+    lda monster_index
+    adc #4
+    and #$0c
+    sta monster_index
+
     create_monster_right_exit:
     clc
     rts
@@ -2930,15 +2941,24 @@ create_monster:                 ; A=index
     ldy #0
     lda ($76),y                     ; Read the monster type.
     cmp #0                          ; If no monster is defined then exit;
-    bne create_monster_create       ; otherwise create the monster.
+    bne create_monster_check_slot   ; otherwise create the monster.
     sec
+    rts
+
+    create_monster_check_slot:
+
+    ldx monster_index               ; Load the current monster index.
+    tay                             ; Temporarily store the type.
+
+    lda monster_positions_address,x
+    cmp #0
+    beq create_monster_create
     rts
 
     create_monster_create:
 
-    ldx monster_index               ; Load the current monster index.
-    tay                             ; Temporarily store the type.
-    and #$0f                        ; Extract the monster type number.
+    tya                             ; Recover the type.
+    and #$0f                        ; Extract the monster type number (0000n001).
     sta monster_positions_address,x
 
     tya                             ; Recover the type.
@@ -2956,11 +2976,6 @@ create_monster:                 ; A=index
     sta monster_positions_address,x ; Store the dy coordinate.
 
     clc
-
-    lda monster_index
-    adc #4
-    and #$0c
-    sta monster_index
     rts
 
 move_monsters:
@@ -3055,11 +3070,20 @@ scroll_monsters_left:
         clc
         iny
         lda ($86),y                 ; x offset
+        cmp #39
+        bne scroll_monsters_left_loop_move_monster
+
+        lda #0                      ; Clear the type in the monster table.
+        ldy $88
+        sta ($86),y
+
+        jmp scroll_monsters_left_loop_next
+
+        scroll_monsters_left_loop_move_monster:
         adc #1
         sta ($86),y                 ; x offset
 
         scroll_monsters_left_loop_dx_only:
-        clc
 
         scroll_monsters_left_loop_next:
         clc
@@ -3095,12 +3119,21 @@ scroll_monsters_right:
 
         iny
         lda ($86),y                 ; x offset
+        cmp #255
+        bne scroll_monsters_right_loop_move_monster
+
+        lda #0                      ; A=0
+        ldy $88                     ; Clear the type in the monster table.
+        sta ($86),y
+
+        jmp scroll_monsters_right_loop_next
+
+        scroll_monsters_right_loop_move_monster:
         sec
         sbc #1
         sta ($86),y                 ; x offset
 
         scroll_monsters_right_loop_dx_only:
-        clc
 
         scroll_monsters_right_loop_next:
         clc

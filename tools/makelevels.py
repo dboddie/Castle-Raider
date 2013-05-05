@@ -67,7 +67,7 @@ tile_order = (".", "@", "+", "=", "#", "X", "-", "|",   # regular tiles
 
 flags_values = {"visible": 0x80, "collectable": 0x40, "door": 0x20, "treasure": 0x10}
 
-monster_tiles = {"V": 1, "M": 2}
+monster_tiles = {"V": 1, "^": 2}
 
 def load_level(path):
 
@@ -219,7 +219,9 @@ def create_level(levels_address, level_path, number_of_special_tiles):
     
         # Write spans to fill the space but only include a monster in the first
         # one.
-        type_number = (y << 4) | monster
+        type_number = (y << 4) | ((monster - 1) << 3) | 1
+        if type_number < 0:
+            type_number += 256
         
         while number > 256:
             monster_row_data += chr(type_number) + chr(255)
@@ -256,5 +258,6 @@ def create_level(levels_address, level_path, number_of_special_tiles):
     
     # Append the data to the table of row offsets.
     data = special_tiles_table + visibility_table + table + data
+    print map(ord, monster_row_data)
     
     return data, monster_row_address
