@@ -221,9 +221,10 @@ def create_level(levels_address, level_path, number_of_special_tiles):
     
         # Write spans to fill the space but only include a monster in the first
         # one.
-        type_number = (y << 4) | ((monster - 1) << 3) | 1
-        if type_number < 0:
-            type_number += 256
+        if monster > 0:
+            type_number = (y << 4) | ((monster - 1) << 3) | 1
+        else:
+            type_number = 0
         
         while number > 256:
             monster_row_data += chr(type_number) + chr(255)
