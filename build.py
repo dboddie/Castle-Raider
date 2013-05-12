@@ -237,7 +237,7 @@ if __name__ == "__main__":
     right_sprites_low = right_sprites & 0xff
     right_sprites_high = right_sprites >> 8
     
-    char_area_address = 0x2d20
+    char_area_address = 0x2d40
     char_data, player_sprite_offsets = \
         makesprites.read_sprites(char_sprites, char_area_address)
     

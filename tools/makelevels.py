@@ -52,7 +52,8 @@ tile_ref = {".": "images/blank.png",
             "L": "images/key1.png",
             "M": "images/key2.png",
             "N": "images/key3.png",
-            "A": "images/axe.png",
+            "A": "images/pickaxe.png",
+            "B": "images/shovel.png",
             "C": "images/crown-left.png",
             "D": "images/crown-right.png",
             "E": "images/chest-left.png",
@@ -62,8 +63,8 @@ tile_ref = {".": "images/blank.png",
 
 tile_order = (".", "@", "+", "=", "#", "X", "-", "|",   # regular tiles
               "/", "\\", "[", "]", "{", "?", "I", "%",  #
-              "K", "L", "M", "N", "A", "C", "D", "E",   # collectable tiles
-              "F")
+              "K", "L", "M", "N", "A", "B", "C", "D",   # collectable tiles
+              "E", "F")
 
 flags_values = {"visible": 0x80, "collectable": 0x40, "door": 0x20, "treasure": 0x10}
 
@@ -205,7 +206,8 @@ def create_level(levels_address, level_path, number_of_special_tiles):
         if len(row_data) >= 512:
             raise LevelError, "Level %i: Row %i too long or too detailed.\n" % (l, r)
         
-        #print len(row_data)
+        used = len(row_data)
+        print "%2i: %3i |%s%s|" % (r, used, "#" * (used/8), " " * (64 - (used/8)))
         
         data += row_data
         r += 1

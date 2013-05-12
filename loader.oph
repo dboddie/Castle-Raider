@@ -235,7 +235,7 @@ init_load_window_vdu_bytes: .byte 28,0,28,19,26
 
 title_text: .byte "   Castle Raider", 13, 10
             .byte "Pre-release  version"
-            .byte " Copyright (C) 2012", 13, 10
+            .byte " Copyright (C) 2013", 13, 10
             .byte "    David Boddie", 13, 10
             .byte "GNU GPL v3 or later"
 title_text_end:
