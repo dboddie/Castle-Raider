@@ -352,8 +352,6 @@ scroll_right_update:
 
     jsr scroll_update_bank1_bank2
 
-    jsr scroll_right_update_monsters
-
     lda player_animation
     ora #$02
     sta player_animation
@@ -466,8 +464,6 @@ scroll_left_update:
     jsr show_bank1
 
     jsr scroll_update_bank2_bank1
-
-    jsr scroll_left_update_monsters
 
     lda player_animation
     and #$01
@@ -1077,6 +1073,10 @@ scroll_right_update_monsters:
 
         inc monster_left_index      ; Increment the left index to refer to the
                                     ; next span.
+
+        jsr create_monster_right_update_index   ; Move the on-screen index back
+                                                ; to its previous value.
+
     scroll_right_update_monsters_exit:
     clc
     rts
@@ -1161,6 +1161,10 @@ scroll_left_update_monsters:
         lda #0                      ; The maximum offset was reached, so it
         sta monster_right_offset    ; needs to be reset. We retain the current
                                     ; index.
+
+        jsr create_monster_left_update_index    ; Move the on-screen index back
+                                                ; to its previous value.
+
     scroll_left_handle_left_edge:
 
     lda monster_left_offset
@@ -2906,6 +2910,8 @@ create_monster_left:            ; A=index
     dex
     sta monster_positions_address,x ; Store the x coordinate.
 
+    create_monster_left_update_index:
+
     lda monster_index
     sec
     sbc #4
@@ -2925,6 +2931,8 @@ create_monster_right:           ; A=index
     dex
     dex
     sta monster_positions_address,x ; Store the x coordinate.
+
+    create_monster_right_update_index:
 
     lda monster_index
     adc #4
