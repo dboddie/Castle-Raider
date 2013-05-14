@@ -688,8 +688,9 @@ init_scrolling:
     sta monster_left_index
     sta monster_left_offset
 
-    ; Initialise the on-screen monster index.
-    sta monster_index
+    ; Initialise the on-screen monster indices.
+    sta visible_monster_left_index
+    sta visible_monster_right_index
 
     ; The right index and offset need to be calculated from the start of the
     ; level.
@@ -1049,7 +1050,6 @@ scroll_right_update_monsters:
 
         inc monster_right_index     ; Increment the right index to refer to the
                                     ; next span.
-        lda monster_right_index
         jsr create_monster_right
 
     scroll_right_handle_left_edge:
@@ -1074,8 +1074,11 @@ scroll_right_update_monsters:
         inc monster_left_index      ; Increment the left index to refer to the
                                     ; next span.
 
-        jsr create_monster_right_update_index   ; Move the on-screen index back
-                                                ; to its previous value.
+        clc
+        lda visible_monster_left_index  ; Move the on-screen index back
+        adc #4                          ; to its previous value.
+        and #$0c
+        sta visible_monster_left_index
 
     scroll_right_update_monsters_exit:
     clc
@@ -1162,8 +1165,12 @@ scroll_left_update_monsters:
         sta monster_right_offset    ; needs to be reset. We retain the current
                                     ; index.
 
-        jsr create_monster_left_update_index    ; Move the on-screen index back
-                                                ; to its previous value.
+        sec
+        lda visible_monster_right_index ; Move the on-screen index back
+        sbc #4                          ; to its previous value.
+        and #$0c
+        sta visible_monster_right_index
+        clc
 
     scroll_left_handle_left_edge:
 
@@ -1184,7 +1191,6 @@ scroll_left_update_monsters:
         dec monster_left_index      ; Decrement the right index to refer to the
                                     ; previous span.
 
-        lda monster_left_index
         jsr create_monster_left
         rts
 
@@ -2900,8 +2906,10 @@ plot_monster:   ; $7a,$7b=sprite plotting routing for a given bank
 
 ; Monster creation/destruction and movement.
 
-create_monster_left:            ; A=index
+create_monster_left:
 
+    lda monster_left_index
+    ldx visible_monster_left_index  ; X=visible index
     jsr create_monster
     bcs create_monster_left_exit
 
@@ -2912,18 +2920,20 @@ create_monster_left:            ; A=index
 
     create_monster_left_update_index:
 
-    lda monster_index
+    lda visible_monster_left_index
     sec
     sbc #4
     and #$0c
-    sta monster_index
+    sta visible_monster_left_index
 
     create_monster_left_exit:
     clc
     rts
 
-create_monster_right:           ; A=index
+create_monster_right:
 
+    lda monster_right_index
+    ldx visible_monster_right_index ; X=visible index
     jsr create_monster
     bcs create_monster_right_exit
 
@@ -2934,17 +2944,17 @@ create_monster_right:           ; A=index
 
     create_monster_right_update_index:
 
-    lda monster_index
+    lda visible_monster_right_index
     adc #4
     and #$0c
-    sta monster_index
+    sta visible_monster_right_index
 
     create_monster_right_exit:
     clc
     rts
 
-create_monster:                 ; A=index
-
+create_monster:                     ; A=index
+                                    ; X=visible index
     jsr read_monster_row_address
     ldy #0
     lda ($76),y                     ; Read the monster type.
@@ -2955,7 +2965,6 @@ create_monster:                 ; A=index
 
     create_monster_check_slot:
 
-    ldx monster_index               ; Load the current monster index.
     tay                             ; Temporarily store the type.
 
     lda monster_positions_address,x
