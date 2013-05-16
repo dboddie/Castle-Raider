@@ -222,9 +222,7 @@ def create_level(levels_address, level_path, number_of_special_tiles):
         # Write spans to fill the space but only include a monster in the first
         # one.
         if monster > 0:
-            type_number = (y << 3) | ((monster - 1) << 1)
-            if type_number == 0:
-                raise "Monster data yields an invalid type number."
+            type_number = (y << 3) | ((monster - 1) << 1) | 1
         else:
             type_number = 0
         
