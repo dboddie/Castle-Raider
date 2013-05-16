@@ -114,7 +114,7 @@ def create_level_data(level, tiles):
                 c = index
             elif ch in monster_tiles:
                 # Record the monster's position and type.
-                monsters[i] = (monster_tiles[ch], l)
+                monsters[i] = (monster_tiles[ch], l + 8)
                 # Use the blank tile in the level itself.
                 c = tiles["."]
             else:
@@ -204,7 +204,7 @@ def create_level(levels_address, level_path, number_of_special_tiles):
                 row_data += chr(tile) + chr(number - 1)
         
         if len(row_data) >= 512:
-            raise LevelError, "Level %i: Row %i too long or too detailed.\n" % (l, r)
+            raise LevelError, "Level %i: Row %i too long or too detailed." % (l, r)
         
         used = len(row_data)
         print "%2i: %3i |%s%s|" % (r, used, "#" * (used/8), " " * (64 - (used/8)))
@@ -222,7 +222,9 @@ def create_level(levels_address, level_path, number_of_special_tiles):
         # Write spans to fill the space but only include a monster in the first
         # one.
         if monster > 0:
-            type_number = (y << 4) | ((monster - 1) << 3) | 1
+            type_number = (y << 3) | ((monster - 1) << 1)
+            if type_number == 0:
+                raise "Monster data yields an invalid type number."
         else:
             type_number = 0
         
@@ -235,7 +237,7 @@ def create_level(levels_address, level_path, number_of_special_tiles):
             monster_row_data += chr(type_number) + chr(number - 1)
         
         if len(monster_row_data) >= 512:
-            raise LevelError, "Monster data too long.\n"
+            raise LevelError, "Monster data too long."
     
     data += monster_row_data
     

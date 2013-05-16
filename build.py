@@ -184,7 +184,8 @@ if __name__ == "__main__":
     monster_right_index           = monster_information + 4
     monster_right_offset          = monster_information + 5
     monster_right_max_offset      = monster_information + 6
-    monster_index                 = monster_information + 7
+    visible_monster_left_index    = monster_information + 7
+    visible_monster_right_index   = monster_information + 8
     
     # The tile type occurring at the left edge of the screen.
     initial_row_tiles             = monster_information + 0x10
@@ -428,7 +429,8 @@ if __name__ == "__main__":
         ".alias monster_right_index             $%x\n"
         ".alias monster_right_offset            $%x\n"
         ".alias monster_right_max_offset        $%x\n"
-        ".alias monster_index                   $%x\n\n"
+        ".alias visible_monster_left_index      $%x\n"
+        ".alias visible_monster_right_index     $%x\n\n"
         ) % (monster_row_address,
              monster_movement_counter,
              monster_left_index,
@@ -437,7 +439,8 @@ if __name__ == "__main__":
              monster_right_index,
              monster_right_offset,
              monster_right_max_offset,
-             monster_index)
+             visible_monster_left_index,
+             visible_monster_right_index)
     
     # Assemble the main game code and loader code.
     
