@@ -683,27 +683,38 @@ init_scrolling:
 
     ; Initialise the monster indices and offsets.
 
-    ; The left index and offset are straightforward to set because they are at
-    ; the start of the level, so we store zero in both of them.
-    sta monster_left_index
-    sta monster_left_offset
-
     ; Initialise the on-screen monster indices.
+    ; Usually, the left index trails the right index by the number of monsters
+    ; that appear on screen. If an empty span appears, it is usually 256 cells
+    ; long so the contents of the table are not critical. However, the first
+    ; span is empty and short, so this ensures that the indices are
+    ; synchronised after it appears.
     sta visible_monster_left_index
+    lda #4
     sta visible_monster_right_index
 
+    ; The left index and offset are straightforward to set because they are at
+    ; the start of the level, so we store zero in both of them. A padding span
+    ; ensures that monsters will be created before they appear on the left hand
+    ; side of the screen.
+    lda #0
+    sta monster_left_index
+    sta monster_left_offset
+    lda #1
+    sta monster_left_max_offset
+
     ; The right index and offset need to be calculated from the start of the
-    ; level.
-    sta monster_right_index         ; Record the initial right edge index and
-    inc monster_right_index         ; update it to 1.
+    ; level, starting from the span after the empty padding span.
+    lda #2
+    sta monster_right_index         ; Record the initial right edge index.
+    lda #0
     sta $8d                         ; Keep track of the current column number.
 
-    jsr read_monster_row_address    ; Examine the monster data at index zero.
+    lda #1
+    jsr read_monster_row_address    ; Examine the monster data at index 1.
 
     ldy #1                          ; Examine the span information.
-    lda ($76),y                     ; Load the span length (n - 1).
-    sta monster_left_max_offset     ; This is the maximum value the offset can
-                                    ; have for this span.
+
     init_scrolling_monster_loop:
 
         lda ($76),y                     ; Load the span length (n - 1).
@@ -736,11 +747,11 @@ init_scrolling:
     lda ($76),y
     sta monster_right_max_offset    ; Store the maximum offset.
 
-    sec                         ; Calculate the remaining offset until the
-    sbc #39                     ; start of the next span.
+    sec                             ; Calculate the remaining offset until the
+    sbc #39                         ; start of the next span.
     clc
-    adc $8d                     ; Since the position is less than 39, the
-    sta monster_right_offset    ; carry flag should not be set here.
+    adc $8d                         ; Since the position is less than 39, the
+    sta monster_right_offset        ; carry flag should not be set here.
 
     rts
 
@@ -1059,10 +1070,10 @@ scroll_right_update_monsters:
 
         jsr create_monster_right
 
-        lda visible_monster_right_index
-        adc #4
-        and #$0c
-        sta visible_monster_right_index
+        lda visible_monster_right_index     ; Update the visible index to refer
+        adc #4                              ; to the next slot in the monster
+        and #$0c                            ; table after the monster has been
+        sta visible_monster_right_index     ; created.
         clc
 
     scroll_right_handle_left_edge:
@@ -1083,11 +1094,13 @@ scroll_right_update_monsters:
 
         inc monster_left_index      ; Increment the left index to refer to the
                                     ; next span.
+        clc
         rts
 
     scroll_right_update_left_index:
 
         clc
+
         lda visible_monster_left_index  ; Move the on-screen index back
         adc #4                          ; to its previous value.
         and #$0c
@@ -1223,10 +1236,10 @@ scroll_left_update_monsters:
 
     scroll_left_create_left_monster:
 
-        lda visible_monster_left_index
-        sec
-        sbc #4
-        and #$0c
+        lda visible_monster_left_index      ; Update the visible index to refer
+        sec                                 ; to the previous slot in the
+        sbc #4                              ; monster table before creating the
+        and #$0c                            ; monster.
         sta visible_monster_left_index
         clc
 
@@ -2950,7 +2963,7 @@ create_monster_left:
     jsr create_monster
     bcs create_monster_left_exit
 
-    lda #0
+    lda #254
     dex
     dex
     sta monster_positions_address,x ; Store the x coordinate.
@@ -3118,8 +3131,10 @@ scroll_monsters_left:
         clc
         iny
         lda ($86),y                 ; x offset
-        cmp #39
-        bne scroll_monsters_left_loop_move_monster
+        cmp #40
+        bcc scroll_monsters_left_loop_move_monster
+        cmp #254
+        bcs scroll_monsters_left_loop_move_monster
 
         lda #0                      ; Clear the type in the monster table.
         ldy $88
@@ -3128,6 +3143,7 @@ scroll_monsters_left:
         jmp scroll_monsters_left_loop_next
 
         scroll_monsters_left_loop_move_monster:
+        clc
         adc #1
         sta ($86),y                 ; x offset
 
@@ -3167,10 +3183,10 @@ scroll_monsters_right:
 
         iny
         lda ($86),y                 ; x offset
-        cmp #255
+        cmp #254
         bne scroll_monsters_right_loop_move_monster
 
-        lda #0                      ; A=0
+        lda #0
         ldy $88                     ; Clear the type in the monster table.
         sta ($86),y
 

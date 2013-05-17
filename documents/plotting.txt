@@ -334,3 +334,10 @@ increment it when reaching the monster.
   A|....B..........C........D...........E...|....F
     ^                                      ^
 Left edge (0, 4)                    Right edge (4, 5)
+
+Screen edge                             Screen edge
+    v                                        v
+   A|....B..........C........D...........E...|....F
+ |..                                          ..|
+ ^                                              ^
+Monster left edge                       Monster right edge

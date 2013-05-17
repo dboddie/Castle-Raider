@@ -215,7 +215,7 @@ def create_level(levels_address, level_path, number_of_special_tiles):
     print "%i bytes (%04x) of level data" % (len(data), len(data))
     
     monster_row_address = levels_address + special_tile_numbers_table_size + visibility_table_size + row_table_size + len(data)
-    monster_row_data = ""
+    monster_row_data = chr(0) + chr(1)
     
     for monster, y, number in monster_data:
     
