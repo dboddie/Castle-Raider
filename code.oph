@@ -737,7 +737,7 @@ init_scrolling:
     sta monster_right_max_offset    ; Store the maximum offset.
 
     sec                         ; Calculate the remaining offset until the
-    sbc #38                     ; start of the next span.
+    sbc #39                     ; start of the next span.
     clc
     adc $8d                     ; Since the position is less than 39, the
     sta monster_right_offset    ; carry flag should not be set here.
@@ -1223,13 +1223,14 @@ scroll_left_update_monsters:
 
     scroll_left_create_left_monster:
 
-        jsr create_monster_left
-
         lda visible_monster_left_index
         sec
         sbc #4
         and #$0c
         sta visible_monster_left_index
+        clc
+
+        jsr create_monster_left
 
     clc
     rts
@@ -2806,7 +2807,7 @@ plot_monster_bank2:       ; X=monster y offset,Y=offset of monster y offset
 plot8x8_x0_y0:          ; $70,$71=source address
                         ; $72,$73=destination address
     lda $8c
-    and #$02            ; dx
+    and #$02            ; dx (previously shifted right)
     lsr
     tax
     ldy plot8x8_lengths,x
@@ -2823,7 +2824,7 @@ plot8x8_x0_y0:          ; $70,$71=source address
 plot8x8_x0_y1:          ; $70,$71=source address
                         ; $72,$73=destination address
     lda $8c
-    and #$02            ; dx
+    and #$02            ; dx (previously shifted right)
     lsr
     tax
     ldy plot8x8_lengths,x
@@ -2846,27 +2847,27 @@ plot_monsters:
     bne plot_monsters_bank2
     jmp plot_monsters_bank1
 
-plot_monsters_bank1:
+plot_monsters_bank1:            ; Entry point for plotting monsters on bank 1.
 
     jsr set_monsters_bank1
     jmp plot_monsters_pre_loop
 
-plot_monsters_bank2:
+plot_monsters_bank2:            ; Entry point for plotting monsters on bank 2.
 
     jsr set_monsters_bank2
     jmp plot_monsters_pre_loop
 
-set_monsters_bank1:
-
-    lda #<plot_monster_bank1
+set_monsters_bank1:             ; General routine for setting the monster
+                                ; plotting routine. Could be moved into
+    lda #<plot_monster_bank1    ; plot_monsters_bank1 later.
     sta $7a
     lda #>plot_monster_bank1
     sta $7b
     rts
 
-set_monsters_bank2:
-
-    lda #<plot_monster_bank2
+set_monsters_bank2:             ; General routine for setting the monster
+                                ; plotting routine. Could be moved into
+    lda #<plot_monster_bank2    ; plot_monsters_bank2 later.
     sta $7a
     lda #>plot_monster_bank2
     sta $7b
@@ -2916,6 +2917,14 @@ plot_monster:   ; $7a,$7b=sprite plotting routing for a given bank
 
     iny
     lda ($86),y                 ; x offset
+    cmp #40
+    bcc plot_monster_plot
+
+        clc
+        rts
+
+    plot_monster_plot:
+
     asl
     asl
     asl                         ; x position
@@ -2957,7 +2966,7 @@ create_monster_right:
     jsr create_monster
     bcs create_monster_right_exit
 
-    lda #39
+    lda #40
     dex
     dex
     sta monster_positions_address,x ; Store the x coordinate.
