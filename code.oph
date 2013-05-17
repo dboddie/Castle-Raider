@@ -61,7 +61,7 @@ init:
         bpl init_tile_visibility_loop
     clc
 
-    lda #1              ; Use 1 and 2 for banks 1 and 2.
+    lda #0              ; Use 0 and 1 for banks 1 and 2.
     sta bank_number
 
     ; Store table addresses in zero page locations for convenient access.
@@ -326,7 +326,7 @@ player_move:
 scroll_right_update:
 
     lda bank_number
-    cmp #2              ; showing bank 2?
+    cmp #1              ; showing the second bank?
     beq scroll_right_update_show_bank1
 
     lda scroll_offset_low
@@ -402,7 +402,7 @@ scroll_right_update:
 scroll_left_update:
 
     lda bank_number
-    cmp #2              ; showing bank 2?
+    cmp #1              ; showing the second bank?
     beq scroll_left_update_show_bank1
 
     lda scroll_offset_low
@@ -501,7 +501,7 @@ scroll_update_bank2_bank1:
     scroll_update_animation_next:
     clc
 
-    lda #1
+    lda #0
     sta bank_number
 
     clc
@@ -521,7 +521,7 @@ scroll_update_bank1_bank2:
     scroll_update_plot_bank2:
     clc
 
-    lda #2
+    lda #1
     sta bank_number
 
     clc
@@ -551,7 +551,7 @@ check_beneath:
     bcs check_beneath_exit
 
     lda bank_number         ; When half way across a cell, check another cell
-    cmp #2                  ; beneath the player since they could be standing
+    cmp #1                  ; beneath the player since they could be standing
     bne check_beneath_fall  ; on one or more of three tiles.
 
     clc
@@ -737,7 +737,7 @@ init_scrolling:
     sta monster_right_max_offset    ; Store the maximum offset.
 
     sec                         ; Calculate the remaining offset until the
-    sbc #39                     ; start of the next span.
+    sbc #38                     ; start of the next span.
     clc
     adc $8d                     ; Since the position is less than 39, the
     sta monster_right_offset    ; carry flag should not be set here.
@@ -2006,7 +2006,7 @@ player_y_offset:     .byte 0, 4
 plot_char:
 
     lda bank_number
-    cmp #1
+    cmp #0
     beq plot_char_bank1
     bne plot_char_bank2
 
@@ -2089,7 +2089,7 @@ plot_char_bank2:            ; plots the player character on bank 2
 plot_player:
 
     lda bank_number
-    cmp #1
+    cmp #0
     bne plot_player_plot_bank2
 
         clc
@@ -2304,7 +2304,7 @@ make_tile_invisible:    ; Y=special tile number
 check_move_right:
 
     lda bank_number
-    cmp #2
+    cmp #1
     bne check_move_right_continue
 
     clc             ; If bank 2 is showing, we can move right without checking.
@@ -2340,7 +2340,7 @@ player_move_right:
 check_move_left:
 
     lda bank_number
-    cmp #2
+    cmp #1
     bne check_move_left_continue
 
     clc             ; If bank 2 is showing, we can move left without checking.
@@ -2468,7 +2468,7 @@ player_jump:
     bcs player_jump_stop_jumping
 
     lda bank_number             ; When half way across a cell, check another
-    cmp #2                      ; cell above the player since they could be
+    cmp #1                      ; cell above the player since they could be
         bne player_jump_move_up ; under one or more of three tiles.
 
     inc $80
@@ -2484,7 +2484,7 @@ player_jump:
     player_jump_check_after:
     clc
 
-    ldx player_jumping      ; Load the number of rows to move.
+    ldx player_jumping              ; Load the number of rows to move.
     lda jump_offsets_ys,x
     sta player_ys
 
@@ -2743,7 +2743,7 @@ track_position: ; Scroll back to the last stored position.
 
     track_position_check_bank:
     lda bank_number
-    cmp #1
+    cmp #0
     beq track_position_exit
     bcs track_position_scroll_left
 
@@ -2842,7 +2842,7 @@ plot8x8_lengths: .byte 15, 23
 plot_monsters:
 
     lda bank_number
-    cmp #1
+    cmp #0
     bne plot_monsters_bank2
     jmp plot_monsters_bank1
 
@@ -2987,11 +2987,18 @@ create_monster:                     ; A=index
 
     create_monster_create:
 
+    lda bank_number
+    eor #$01
+    asl
+    asl                 ; x00
+    ora #$01            ; xae (dx = !bank; a = 0; e = 1)
+    sta $8c
+
     tya                             ; Recover the type.
     and #$06                        ; Extract the monster type number (00000nn0).
     asl
     asl                             ; 000nn000
-    ora #$01                        ; 000nnxae (dx = 0; a = 0; e = 1)
+    ora $8c                         ; 000nnxae (from above)
     sta monster_positions_address,x
 
     tya                             ; Recover the original type value.
