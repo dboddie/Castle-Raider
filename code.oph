@@ -2800,6 +2800,15 @@ plot_monster_bank1:       ; X=monster y offset,Y=offset of monster y offset
     sta $73
     clc
 
+    lda $72                 ; Subtract the starting offset into the data
+    sec                     ; from the screen position to cope with the case
+    sbc $8c                 ; where the monster is partially off the left hand
+    sta $72                 ; side of the screen.
+    lda $73
+    sbc #0
+    sta $73
+    clc
+
     iny
     lda ($86),y                 ; dy offset
     cmp #0
@@ -2816,6 +2825,15 @@ plot_monster_bank2:       ; X=monster y offset,Y=offset of monster y offset
     sta $73
     clc
 
+    lda $72                 ; Subtract the starting offset into the data
+    sec                     ; from the screen position to cope with the case
+    sbc $8c                 ; where the monster is partially off the left hand
+    sta $72                 ; side of the screen.
+    lda $73
+    sbc #0
+    sta $73
+    clc
+
     iny
     lda ($86),y                 ; dy offset
     cmp #0
@@ -2823,35 +2841,39 @@ plot_monster_bank2:       ; X=monster y offset,Y=offset of monster y offset
 
 plot8x8_x0_y0:          ; $70,$71=source address
                         ; $72,$73=destination address
-    lda $8c
-    and #$02            ; dx (previously shifted right)
-    lsr
-    tax
-    ldy plot8x8_lengths,x
+                        ; $8c=first offset in sprite data
+                        ; $8d=last offset in sprite data
+    ldy $8d
 
     plot8x8_x0_y0_loop:
         lda ($70),y
         eor ($72),y
         sta ($72),y
+        cpy $8c
+        beq plot8x8_x0_y0_exit
         dey
-        bpl plot8x8_x0_y0_loop
+        jmp plot8x8_x0_y0_loop
+
+    plot8x8_x0_y0_exit:
     clc
     rts
 
 plot8x8_x0_y1:          ; $70,$71=source address
                         ; $72,$73=destination address
-    lda $8c
-    and #$02            ; dx (previously shifted right)
-    lsr
-    tax
-    ldy plot8x8_lengths,x
+                        ; $8c=first offset in sprite data
+                        ; $8d=last offset in sprite data
+    ldy $8d
 
     plot8x8_x0_y1_loop:
         lda ($70),y
         eor ($72),y
         sta ($72),y
+        cpy $8c
+        beq plot8x8_x0_y1_exit
         dey
-        bpl plot8x8_x0_y1_loop
+        jmp plot8x8_x0_y1_loop
+
+    plot8x8_x0_y1_exit:
     clc
     rts
 
@@ -2926,22 +2948,77 @@ plot_monster:   ; $7a,$7b=sprite plotting routing for a given bank
     ; value to an offset into the sprite address arrays.
     and #$7f                    ; Mask off the top existence bit.
     tax
-    stx $8c                     ; Temporarily store the value.
+    and #monster_dx_bit
+    lsr
+    sta $8c                     ; dx=0 or 1
+
     lda monster_sprite_low,x    ; load the sprite address
     sta $70
     lda monster_sprite_high,x
     sta $71
 
+    ldx $8c                 ; Use the dx value to look up the length of data
+    lda plot8x8_lengths,x   ; to plot for the sprite.
+    sta $8d
+    lda #0                  ; Plot from the beginning of the sprite data.
+    sta $8c
+
     iny
     lda ($86),y                 ; x offset
-    cmp #40
-    bcc plot_monster_plot
+    sta $8b                     ; Store the x offset.
 
-        clc
+    cmp #254                    ; Check for x >= 254 (-2 >= x > 0).
+    bcc plot_monster_not_left
+
+    cmp #255
+    beq plot_monster_x_minus_one
+
+        lda #0                  ; Only plot from the left hand edge.
+        sta $8b
+
+        lda #16
+        sta $8c
+        cmp $8d                 ; If the start offset is greater than the
+        bcc plot_monster_plot   ; finish offset then exit.
+
+            clc
+            rts
+
+    plot_monster_x_minus_one:
+
+        lda #0                  ; Only plot from the left hand edge.
+        sta $8b
+
+        lda #8
+        sta $8c
+        jmp plot_monster_plot
+
+    plot_monster_not_left:
+
+    cmp #38
+    bcc plot_monster_plot       ; If x < 38 then just plot everything.
+    beq plot_monster_x_plus_one
+
+    cmp #40
+    bcc plot_monster_x_plus_two
+
+        clc                     ; x >= 40
         rts
+
+    plot_monster_x_plus_one:    ; x = 38
+
+        lda #15
+        sta $8d
+        jmp plot_monster_plot
+
+    plot_monster_x_plus_two:    ; x = 39
+
+        lda #7
+        sta $8d
 
     plot_monster_plot:
 
+    lda $8b                     ; Retrieve the x offset.
     asl
     asl
     asl                         ; x position
