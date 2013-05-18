@@ -2924,9 +2924,7 @@ plot_monster:   ; $7a,$7b=sprite plotting routing for a given bank
 
     ; Determine the sprite to use from the type and dx value, converting the
     ; value to an offset into the sprite address arrays.
-    sec                         ; nn00 is a value in the set 4,8,12 but this is
-    sbc #4                      ; too high by 4 (nn is 1-3 to ensure that nnxa
-    clc                         ; is non-zero).
+    and #$7f                    ; Mask off the top existence bit.
     tax
     stx $8c                     ; Temporarily store the value.
     lda monster_sprite_low,x    ; load the sprite address
@@ -3024,8 +3022,8 @@ create_monster:                     ; A=index
     and #$06                        ; Extract the monster type number (00000nn0).
     asl                             ; 0000nn00
     ora $8c                         ; 0000nnxa (from above)
-    sta monster_positions_address,x ; nnxa will always be non-zero because
-                                    ; nn is a value from 1-3.
+    ora #$80                        ; Set the existence bit.
+    sta monster_positions_address,x
 
     tya                             ; Recover the original type value.
     and #$f8
