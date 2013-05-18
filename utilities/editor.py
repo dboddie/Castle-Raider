@@ -26,7 +26,7 @@ from tools import makelevels
 
 class LevelWidget(QWidget):
 
-    def __init__(self, tile_images, parent = None):
+    def __init__(self, tile_images, monster_images, parent = None):
     
         QWidget.__init__(self, parent)
         self.xs = 4
@@ -37,6 +37,7 @@ class LevelWidget(QWidget):
         self.tile_images = tile_images
         self.currentTile = "."
         self.maximum_width = 8192
+        self.monster_images = monster_images
         
         self.initRows()
         
@@ -173,6 +174,9 @@ class LevelWidget(QWidget):
         c1 = self._column_from_x(x1)
         c2 = self._column_from_x(x2)
         
+        # Record the visible monsters and plot them after the background.
+        monsters = {}
+        
         for r in range(r1, r2 + 1):
             for c in range(c1, c2 + 1):
             
@@ -186,8 +190,14 @@ class LevelWidget(QWidget):
                     #    tile_image = self.tile_images[n]
                     #else:
                     #    tile_image = self.tile_images["."]
+                
+                elif tile in self.monster_images:
+                    monsters[(c, r)] = tile
                 else:
                     tile_image = self.tile_images[tile]
+                    
+                    if c > 0 and self.rows[r][c-1] in self.monster_images:
+                        monsters[(c-1, r)] = self.rows[r][c-1]
                 
                 painter.drawImage(c * 4 * self.xs, (6 + r) * 8 * self.ys,
                                   tile_image)
@@ -196,6 +206,13 @@ class LevelWidget(QWidget):
                     tx = ((c + 0.5) * 4 * self.xs) - self.font().pixelSize()*0.5
                     ty = ((6.5 + r) * 8 * self.ys) + self.font().pixelSize()*0.5
                     painter.drawText(tx, ty, tile)
+        
+        # Plot the monsters.
+        for (c, r), tile in monsters.items():
+        
+            tile_image = self.monster_images[tile]
+            painter.drawImage(c * 4 * self.xs, (6 + r) * 8 * self.ys,
+                              tile_image)
         
         painter.end()
     
@@ -312,7 +329,7 @@ class EditorWindow(QMainWindow):
         self.path = ""
         self.loadImages()
         
-        self.levelWidget = LevelWidget(self.tile_images)
+        self.levelWidget = LevelWidget(self.tile_images, self.monster_images)
         
         self.createMenus()
         self.createToolBars()
@@ -336,6 +353,14 @@ class EditorWindow(QMainWindow):
             path = d.filePath(image_path)
             image = QImage(path).scaled(self.xs * 4, self.ys * 8)
             self.tile_images[key] = image
+        
+        self.monster_images = {}
+        
+        for key, image_path in makelevels.monster_ref.items():
+        
+            path = d.filePath(image_path)
+            image = QImage(path).scaled(self.xs * 8, self.ys * 8)
+            self.monster_images[key] = image
     
     def createMenus(self):
     

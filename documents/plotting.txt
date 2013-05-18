@@ -278,7 +278,7 @@ Enemy table is 16 bytes.
 
 Type numbers take the form
 
-    000nnxae
+    0000nnxa
 
 where
 
@@ -341,3 +341,7 @@ Screen edge                             Screen edge
  |..                                          ..|
  ^                                              ^
 Monster left edge                       Monster right edge
+
+Monsters are stored in the level data as bytes with format, yyyyynnd, where
+yyyyy is the vertical position, nn is the monster number (1 - 3) and d is the
+axis of motion (horizontal/vertical).

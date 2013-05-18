@@ -29,6 +29,10 @@
 .alias monster_positions_table_low      $86
 .alias monster_positions_table_high     $87
 
+; Each monster visible type is defined as (nnxa).
+.alias monster_animation_bit $01
+.alias monster_dx_bit        $02
+
 init:
     ; Set character's initial position and status.
 
@@ -2775,16 +2779,16 @@ track_position: ; Scroll back to the last stored position.
     clc
     rts
 
-; Monster plotting routines
+; Monster plotting routines (nnxa)
 
-monster_sprite_low:  .byte monster_spr_low0, monster_spr_low1
-                   .byte monster_spr_sh_low0, monster_spr_sh_low1
-                   .byte monster_spr_low2, monster_spr_low3
-                   .byte monster_spr_sh_low2, monster_spr_sh_low3
-monster_sprite_high: .byte monster_spr_high0, monster_spr_high1
-                   .byte monster_spr_sh_high0, monster_spr_sh_high1
-                   .byte monster_spr_high2, monster_spr_high3
-                   .byte monster_spr_sh_high2, monster_spr_sh_high3
+monster_sprite_low: .byte monster_spr_low0,     monster_spr_low1
+                    .byte monster_spr_sh_low0,  monster_spr_sh_low1
+                    .byte monster_spr_low2,     monster_spr_low3
+                    .byte monster_spr_sh_low2,  monster_spr_sh_low3
+monster_sprite_high:.byte monster_spr_high0,    monster_spr_high1
+                    .byte monster_spr_sh_high0, monster_spr_sh_high1
+                    .byte monster_spr_high2,    monster_spr_high3
+                    .byte monster_spr_sh_high2, monster_spr_sh_high3
 
 plot_monster_bank1:       ; X=monster y offset,Y=offset of monster y offset
 
@@ -2918,11 +2922,13 @@ plot_monster:   ; $7a,$7b=sprite plotting routing for a given bank
                 ; A=monster type
                 ; Y=offset into monster table (0, 4, 8, 12)
 
-    ; Determine the sprite to use from the type and dx value.
-    lsr                         ; convert the value to an offset into the
-    clc
-    tax                         ; sprite address arrays and temporarily
-    stx $8c                     ; store the value
+    ; Determine the sprite to use from the type and dx value, converting the
+    ; value to an offset into the sprite address arrays.
+    sec                         ; nn00 is a value in the set 4,8,12 but this is
+    sbc #4                      ; too high by 4 (nn is 1-3 to ensure that nnxa
+    clc                         ; is non-zero).
+    tax
+    stx $8c                     ; Temporarily store the value.
     lda monster_sprite_low,x    ; load the sprite address
     sta $70
     lda monster_sprite_high,x
@@ -3011,17 +3017,15 @@ create_monster:                     ; A=index
 
     lda bank_number
     eor #$01
-    asl
-    asl                 ; x00
-    ora #$01            ; xae (dx = !bank; a = 0; e = 1)
+    asl                 ; 00xa (dx = !bank; a = 0)
     sta $8c
 
     tya                             ; Recover the type.
     and #$06                        ; Extract the monster type number (00000nn0).
-    asl
-    asl                             ; 000nn000
-    ora $8c                         ; 000nnxae (from above)
-    sta monster_positions_address,x
+    asl                             ; 0000nn00
+    ora $8c                         ; 0000nnxa (from above)
+    sta monster_positions_address,x ; nnxa will always be non-zero because
+                                    ; nn is a value from 1-3.
 
     tya                             ; Recover the original type value.
     and #$f8
@@ -3122,10 +3126,10 @@ scroll_monsters_left:
 
         ; Move the monster right on screen.
 
-        eor #$04                    ; toggle dx
+        eor #monster_dx_bit         ; toggle dx
         sta ($86),y
 
-        and #$04
+        and #monster_dx_bit
         bne scroll_monsters_left_loop_dx_only
 
         clc
@@ -3175,10 +3179,10 @@ scroll_monsters_right:
 
         ; Move the monster left on screen.
 
-        eor #$04                    ; toggle dx
+        eor #monster_dx_bit         ; toggle dx
         sta ($86),y
 
-        and #$04
+        and #monster_dx_bit
         beq scroll_monsters_right_loop_dx_only
 
         iny

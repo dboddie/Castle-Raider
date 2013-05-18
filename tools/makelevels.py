@@ -68,6 +68,8 @@ tile_order = (".", "@", "+", "=", "#", "X", "-", "|",   # regular tiles
 
 flags_values = {"visible": 0x80, "collectable": 0x40, "door": 0x20, "treasure": 0x10}
 
+monster_ref = {"V": "images/bat1.png", "^": "images/spider1.png"}
+
 monster_tiles = {"V": 1, "^": 2}
 
 def load_level(path):
@@ -222,7 +224,7 @@ def create_level(levels_address, level_path, number_of_special_tiles):
         # Write spans to fill the space but only include a monster in the first
         # one.
         if monster > 0:
-            type_number = (y << 3) | ((monster - 1) << 1) | 1
+            type_number = (y << 3) | (monster << 1)
         else:
             type_number = 0
         
