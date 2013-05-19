@@ -198,9 +198,9 @@ class LevelWidget(QWidget):
                     
                     if c > 0 and self.rows[r][c-1] in self.monster_images:
                         monsters[(c-1, r)] = self.rows[r][c-1]
-                
-                painter.drawImage(c * 4 * self.xs, (6 + r) * 8 * self.ys,
-                                  tile_image)
+                    
+                    painter.drawImage(c * 4 * self.xs, (6 + r) * 8 * self.ys,
+                                      tile_image)
                 
                 if tile in self.special:
                     tx = ((c + 0.5) * 4 * self.xs) - self.font().pixelSize()*0.5
@@ -245,8 +245,13 @@ class LevelWidget(QWidget):
         if 0 <= r < 16 and 0 <= c < self.maximum_width:
         
             self.rows[r][c] = tile
+            if tile in self.monster_images:
+                tw = 8 * self.xs
+            else:
+                tw = 4 * self.xs
+            
             self.update(QRect(self._x_from_column(c), self._y_from_row(r),
-                              4 * self.xs, 8 * self.ys))
+                              tw, 8 * self.ys))
     def newSpecial(self):
     
         if len(self.special) < 15:
@@ -399,7 +404,18 @@ class EditorWindow(QMainWindow):
             self.tileGroup.addAction(action)
             action.triggered.connect(self.setCurrentTile)
         
+        # Select the first tile in the tiles toolbar.
         self.tileGroup.actions()[0].trigger()
+        
+        self.monsterToolBar = self.addToolBar(self.tr("Monsters"))
+        
+        for symbol in makelevels.monster_order:
+        
+            icon = QIcon(QPixmap.fromImage(self.monster_images[symbol]))
+            action = self.monsterToolBar.addAction(icon, symbol)
+            action.setCheckable(True)
+            self.tileGroup.addAction(action)
+            action.triggered.connect(self.setCurrentTile)
         
         self.specialToolBar = self.addToolBar(self.tr("Special"))
         action = self.specialToolBar.addAction("New")
