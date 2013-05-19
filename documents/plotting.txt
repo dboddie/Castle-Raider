@@ -278,11 +278,13 @@ Enemy table is 16 bytes.
 
 Type numbers take the form
 
-    e000nnxa
+    eAd0nnxa
 
 where
 
     e is the existence bit
+    A is the axis bit (0=horizontal; 1=vertical)
+    d is the direction bit (0=left/up; 1=right/down)
     a is the animation bit
     x corresponds to dx (0 or 1)
     nn is the sprite number

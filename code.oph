@@ -29,9 +29,21 @@
 .alias monster_positions_table_low      $86
 .alias monster_positions_table_high     $87
 
-; Each monster visible type is defined as (nnxa).
-.alias monster_animation_bit $01
-.alias monster_dx_bit        $02
+; Each monster type is defined as yyyyynnd.
+.alias monster_data_axis_bit            $01
+.alias monster_data_type_bits           $06
+
+; Each monster visible type is defined as nnxa.
+.alias monster_animation_bit            $01
+.alias monster_dx_bit                   $02
+.alias monster_type_bits                $0c
+.alias monster_plot_bits                $0f
+.alias monster_direction_bit            $20
+.alias monster_axis_bit                 $40
+.alias monster_existence_bit            $80
+
+.alias monster_horizontal_motion        $00
+.alias monster_vertical_motion          $40
 
 init:
     ; Set character's initial position and status.
@@ -2945,7 +2957,7 @@ plot_monster:   ; $7a,$7b=sprite plotting routing for a given bank
 
     ; Determine the sprite to use from the type and dx value, converting the
     ; value to an offset into the sprite address arrays.
-    and #$7f                    ; Mask off the top existence bit.
+    and #monster_plot_bits      ; Mask off the non-sprite-related bits.
     tax
     and #monster_dx_bit
     lsr
@@ -3095,10 +3107,18 @@ create_monster:                     ; A=index
     sta $8c
 
     tya                             ; Recover the type.
-    and #$06                        ; Extract the monster type number (00000nn0).
+    and #monster_data_type_bits     ; Extract the monster type number (00000nn0).
     asl                             ; 0000nn00
     ora $8c                         ; 0000nnxa (from above)
-    ora #$80                        ; Set the existence bit.
+    ora #monster_existence_bit      ; Set the existence bit.
+    sta $8c
+
+    tya
+    and #monster_data_axis_bit
+    ror
+    ror
+    ror
+    ora $8c
     sta monster_positions_address,x
 
     tya                             ; Recover the original type value.
@@ -3140,34 +3160,19 @@ move_monsters_pre_loop:
         beq move_monsters_loop_next
 
         eor #monster_animation_bit  ; Flip the animation bit.
-        sta $7c                     ; temporarily store the type/dx byte
+        tax                         ; Temporarily store the type/dx byte.
 
-;        and #$0c
-;        cmp #$04
-;        bne move_monsters_loop_not_bat
-;
-;        ldy #2
-;        lda ($86),y
-;        cmp player_y
-;        beq move_monsters_loop_update_type
-;        bcs move_monsters_loop_bat_up
-;
-;        adc #1                      ; move the bat down
-;        sta ($86),y
-;        jmp move_monsters_loop_update_type
-;
-;        move_monsters_loop_bat_up:
-;        sbc #1                      ; C is already set
-;        sta ($86),y
-;        jmp move_monsters_loop_update_type
-;
-;        move_monsters_loop_not_bat:
+        and #monster_axis_bit
+        cmp #monster_vertical_motion
+        bne move_monsters_loop_update_type
+
+            jsr move_monster_vertically
 
         move_monsters_loop_update_type:
 
-        lda $7c                     ; retrieve the type/dx byte
         ldy $88
-        sta ($86),y                 ; store the changed type
+        txa
+        sta ($86),y                 ; Store the changed type.
 
         move_monsters_loop_next:
         clc
@@ -3181,6 +3186,67 @@ move_monsters_pre_loop:
         jmp move_monsters_loop
 
     move_monsters_exit:
+    clc
+    rts
+
+move_monster_vertically:    ; $86,$87=monster table
+                            ; $88=offset into monster table
+                            ; X=monster type
+                            ; Y=offset into monster table (initially 0)
+        iny
+        iny                         ; Select the y offset.
+
+        txa                         ; Recover the type.
+        and #monster_direction_bit
+        cmp #$00
+        bne move_monsters_down
+
+        ; Upward motion
+
+        iny                         ; Select the dy value.
+        lda ($86),y
+
+        eor #$01                    ; dy = !dy
+        sta ($86),y
+
+        dey                         ; Select the y offset.
+        lda ($86),y
+        cmp #0
+        beq move_monsters_change_direction
+
+            lda ($86),y
+            sec
+            sbc #1                  ; y -= 1
+            clc
+            sta ($86),y
+            rts
+
+        move_monsters_change_direction:
+
+        txa                         ; Recover the type.
+        eor #monster_direction_bit
+        tax
+        rts
+
+        move_monsters_down:
+
+        ; Downward motion
+
+        lda ($86),y
+        cmp #23
+        beq move_monsters_change_direction
+
+            iny                         ; Select the dy value.
+            lda ($86),y
+
+            eor #$01                    ; dy = !dy
+            sta ($86),y
+
+            dey                         ; Select the y offset.
+            lda ($86),y
+            adc #1
+            sta ($86),y
+
     clc
     rts
 
