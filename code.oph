@@ -704,7 +704,6 @@ init_scrolling:
     lda #0
     sta monster_left_index
     sta monster_left_offset
-    lda #1
     sta monster_left_max_offset
 
     ; The right index and offset need to be calculated from the start of the
@@ -3120,7 +3119,6 @@ create_monster:                     ; A=index
 
 move_monsters:
 
-    rts
     ; Check the monster movement counter and perform updates now if necessary.
     lda monster_movement_counter
     and #$07
@@ -3132,44 +3130,43 @@ move_monsters:
 move_monsters_pre_loop:
 
     lda #0
+    sta $88
 
     move_monsters_loop:
 
-        sta $88                     ; store the offset temporarily
-
-        tay
-        lda ($86),y                 ; type, animation flag and dx
+        ldy $88
+        lda ($86),y                 ; Load the type, animation flag and dx.
         cmp #0
         beq move_monsters_loop_next
 
-        eor #$02                    ; flip the least significant bit
+        eor #monster_animation_bit  ; Flip the animation bit.
         sta $7c                     ; temporarily store the type/dx byte
 
-        and #$0c
-        cmp #$04
-        bne move_monsters_loop_not_bat
-
-        ldy #2
-        lda ($86),y
-        cmp player_y
-        beq move_monsters_loop_update_type
-        bcs move_monsters_loop_bat_up
-
-        adc #1                      ; move the bat down
-        sta ($86),y
-        jmp move_monsters_loop_update_type
-
-        move_monsters_loop_bat_up:
-        sbc #1                      ; C is already set
-        sta ($86),y
-        jmp move_monsters_loop_update_type
-
-        move_monsters_loop_not_bat:
+;        and #$0c
+;        cmp #$04
+;        bne move_monsters_loop_not_bat
+;
+;        ldy #2
+;        lda ($86),y
+;        cmp player_y
+;        beq move_monsters_loop_update_type
+;        bcs move_monsters_loop_bat_up
+;
+;        adc #1                      ; move the bat down
+;        sta ($86),y
+;        jmp move_monsters_loop_update_type
+;
+;        move_monsters_loop_bat_up:
+;        sbc #1                      ; C is already set
+;        sta ($86),y
+;        jmp move_monsters_loop_update_type
+;
+;        move_monsters_loop_not_bat:
 
         move_monsters_loop_update_type:
 
         lda $7c                     ; retrieve the type/dx byte
-        ldy #0
+        ldy $88
         sta ($86),y                 ; store the changed type
 
         move_monsters_loop_next:
@@ -3180,6 +3177,7 @@ move_monsters_pre_loop:
         cmp #$10
         beq move_monsters_exit
 
+        sta $88                     ; Store the offset temporarily.
         jmp move_monsters_loop
 
     move_monsters_exit:
