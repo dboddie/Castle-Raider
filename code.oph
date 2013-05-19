@@ -590,11 +590,7 @@ check_beneath:
 
     check_beneath_demise_exit:
 
-    jsr plot_char       ; Unplot the character.
-
-    lda #1
-    sta player_lost
-    dec player_lives
+    jsr player_demise
 
     check_beneath_exit:
     clc
@@ -2594,6 +2590,16 @@ player_drop:
     clc
     rts
 
+player_demise:
+
+    jsr plot_char       ; Unplot the character.
+
+    lda #1
+    sta player_lost
+    dec player_lives
+
+    rts
+
 read_screen_address_bank1:  ; X=row, A=column offset
                             ; sets $72,$73
 
@@ -3160,18 +3166,19 @@ move_monsters_pre_loop:
         beq move_monsters_loop_next
 
         eor #monster_animation_bit  ; Flip the animation bit.
-        tax                         ; Temporarily store the type/dx byte.
+        sta $8c                     ; Temporarily store the type/dx byte.
 
         and #monster_axis_bit
         cmp #monster_vertical_motion
         bne move_monsters_loop_update_type
 
             jsr move_monster_vertically
+            jsr check_monster_player
 
         move_monsters_loop_update_type:
 
         ldy $88
-        txa
+        lda $8c
         sta ($86),y                 ; Store the changed type.
 
         move_monsters_loop_next:
@@ -3204,7 +3211,7 @@ move_monster_vertically:    ; $86,$87=monster table
 
         dey                         ; Select the y offset.
 
-        txa                         ; Recover the type.
+        lda $8c                     ; Recover the type.
         and #monster_direction_bit
         cmp #$00
         bne move_monsters_down
@@ -3220,20 +3227,17 @@ move_monster_vertically:    ; $86,$87=monster table
             sbc #1                  ; y -= 1
             clc
 
-            sta $8b
-
             jsr check_monster_can_move
             bcs move_monsters_change_direction
 
-            lda $8b
             sta ($86),y             ; Store the new y offset and exit.
             rts
 
         move_monsters_change_direction:
 
-        txa                         ; Recover the type.
+        lda $8c                     ; Recover the type.
         eor #monster_direction_bit
-        tax
+        sta $8c
         rts
 
         move_monsters_down:
@@ -3248,12 +3252,9 @@ move_monster_vertically:    ; $86,$87=monster table
             adc #1                      ; y += 1
             clc
 
-            sta $8b
-
             jsr check_monster_can_move
             bcs move_monsters_change_direction
 
-            lda $8b
             sta ($86),y                 ; Store the new y offset and exit.
 
     move_monster_vertically_exit:
@@ -3266,7 +3267,7 @@ check_monster_can_move:     ; A=row number
                             ; Y=y offset of monster in table
                             ; Returns C set if cannot move; C clear otherwise.
 
-    stx $8c                 ; Temporarily store the monster type.
+    sta $8b
     sty $8d
 
     sta $81                 ; $81=y position (0-23)
@@ -3279,15 +3280,42 @@ check_monster_can_move:     ; A=row number
 
     lda bank_number
     cmp #1
-    bne check_monster_can_move_exit
+    bne check_monster_can_move_exit ; Only check additional tiles on bank 2.
 
     inc $80
     jsr check_tile          ; C set if tile is present; C clear otherwise.
 
     check_monster_can_move_exit:
 
-    ldx $8c
+    lda $8b
     ldy $8d
+    rts
+
+check_monster_player:
+
+    ldy $88
+    iny
+    lda ($86),y                     ; Load monster x offset.
+
+    cmp #18
+    bcc check_monster_player_exit
+    cmp #21
+    bcs check_monster_player_exit
+
+    iny
+    lda ($86),y
+    cmp player_y
+    bcc check_monster_player_exit
+    sbc #2
+    clc
+    cmp player_y
+    bcs check_monster_player_exit
+
+    jsr player_demise
+
+    check_monster_player_exit:
+
+    clc
     rts
 
 scroll_monsters_left:
