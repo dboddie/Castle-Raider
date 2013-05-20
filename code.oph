@@ -653,23 +653,7 @@ clear_bank2:
     clc
     rts
 
-show_bank1:
-
-    lda #$00
-    sta $fe02
-    lda #$18
-    sta $fe03
-    clc
-    rts
-
-show_bank2:
-
-    lda #$00
-    sta $fe02
-    lda #$2c
-    sta $fe03
-    clc
-    rts
+.include "electron.oph"
 
 bank1_char_rows_low:  .byte $40,$80,$c0,$00,$40,$80,$c0,$00
 bank1_rows_low:  .byte  $40,$80,$c0,$00,$40,$80,$c0,$00,$40,$80,$c0,$00,$40,$80,$c0,$00
