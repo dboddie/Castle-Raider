@@ -2879,16 +2879,60 @@ plot8x8_x0_y1:          ; $70,$71=source address
                         ; $72,$73=destination address
                         ; $8c=first offset in sprite data
                         ; $8d=last offset in sprite data
-    ldy $8d
+    clc
+    lda $72
+    adc #4
+    sta $72
+    lda $73
+    adc #0
+    sta $73
+    clc
 
-    plot8x8_x0_y1_loop:
-        lda ($70),y
-        eor ($72),y
-        sta ($72),y
-        cpy $8c
-        beq plot8x8_x0_y1_exit
-        dey
-        jmp plot8x8_x0_y1_loop
+    ldy $8c                     ; Start reading from the first offset.
+    lda #1
+    sta $89
+
+    plot8x8_x0_y1_outer_loop:
+
+        plot8x8_x0_y1_loop:
+
+            ldx #3                  ; Plot four lines of the sprite.
+
+            plot8x8_x0_y1_inner_loop:
+
+                lda ($70),y
+                eor ($72),y
+                sta ($72),y
+                iny
+                dex
+                bpl plot8x8_x0_y1_inner_loop
+
+            tya
+            adc #4
+            cmp $8d
+            bcs plot8x8_x0_y1_next_row
+            tay
+
+            jmp plot8x8_x0_y1_loop
+
+        plot8x8_x0_y1_next_row:
+
+        dec $89
+        bmi plot8x8_x0_y1_exit
+
+        clc
+        lda $72       ; move the destination pointer to refer to the next line
+        adc #$38
+        sta $72
+        lda $73
+        adc #$01
+        sta $73
+        clc
+
+        lda $8c
+        adc #4
+        tay
+        jmp plot8x8_x0_y1_outer_loop
 
     plot8x8_x0_y1_exit:
     clc
@@ -3207,6 +3251,7 @@ move_monster_vertically:    ; $86,$87=monster table
         lda ($86),y
 
         eor #$01                    ; dy = !dy
+        sta $89                     ; Temporarily store dy.
         sta ($86),y
 
         dey                         ; Select the y offset.
@@ -3214,15 +3259,18 @@ move_monster_vertically:    ; $86,$87=monster table
         lda $8c                     ; Recover the type.
         and #monster_direction_bit
         cmp #$00
-        bne move_monsters_down
+        bne move_monster_down
 
         ; Upward motion
+
+        lda $89                             ; dy
+        cmp #0                              ; If we have just moved up within
+        beq move_monster_vertically_exit    ; the same cell then exit.
 
         lda ($86),y
         cmp #0
         beq move_monsters_change_direction
 
-            lda ($86),y
             sec
             sbc #1                  ; y -= 1
             clc
@@ -3240,22 +3288,26 @@ move_monster_vertically:    ; $86,$87=monster table
         sta $8c
         rts
 
-        move_monsters_down:
+        move_monster_down:
 
         ; Downward motion
+
+        lda $89                         ; dy
+        cmp #0                          ; If we entered a new cell then only
+        bne move_monster_vertically_exit; perform movement checks.
+
+            clc
+            lda ($86),y
+            adc #1                      ; y += 1
+            sta ($86),y                 ; Store the new y offset and exit.
 
         lda ($86),y
         cmp #23
         beq move_monsters_change_direction
 
-            lda ($86),y
-            adc #1                      ; y += 1
-            clc
-
+            adc #1
             jsr check_monster_can_move
             bcs move_monsters_change_direction
-
-            sta ($86),y                 ; Store the new y offset and exit.
 
     move_monster_vertically_exit:
 
