@@ -4,5 +4,3 @@ Add support for plotting the view onto the level from any point in the level.
 Ensure that the player simply falls when jumping against the end of the level.
 Ensure that the player cannot jump when falling off the bottom of the level.
 Add support for items that are not shown in the header when collected.
-Fix the progress bar in the loader to take account of the current code and
-data sizes.
