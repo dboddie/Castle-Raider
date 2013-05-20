@@ -653,7 +653,7 @@ clear_bank2:
     clc
     rts
 
-.include "electron.oph"
+.include "bank_routines.oph"
 
 bank1_char_rows_low:  .byte $40,$80,$c0,$00,$40,$80,$c0,$00
 bank1_rows_low:  .byte  $40,$80,$c0,$00,$40,$80,$c0,$00,$40,$80,$c0,$00,$40,$80,$c0,$00

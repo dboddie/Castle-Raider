@@ -17,7 +17,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-import os, stat, struct, sys
+import os, shutil, stat, struct, sys
 import UEFfile
 
 from tools import makelevels, makesprites
@@ -129,17 +129,22 @@ monster_sprites = ["images/bat1.png", "images/bat2.png",
 
 if __name__ == "__main__":
 
-    if not 2 <= len(sys.argv) <= 3:
+    if not 3 <= len(sys.argv) <= 4:
     
-        sys.stderr.write("Usage: %s <new UEF file> [level file]\n" % sys.argv[0])
+        sys.stderr.write("Usage: %s -e|-b <new UEF file> [level file]\n" % sys.argv[0])
         sys.exit(1)
     
-    out_uef_file = sys.argv[1]
+    machine_type = sys.argv[1]
+    if machine_type not in ("-e", "-b"):
+        sys.stderr.write("Please specify a valid machine type.\n")
+        sys.exit(1)
     
-    if len(sys.argv) == 2:
+    out_uef_file = sys.argv[2]
+    
+    if len(sys.argv) == 3:
         level_file = "levels/default.txt"
     else:
-        level_file = sys.argv[2]
+        level_file = sys.argv[3]
     
     # Memory map
     code_start = 0x0e00
@@ -445,6 +450,11 @@ if __name__ == "__main__":
     # Assemble the main game code and loader code.
     
     open("constants.oph", "w").write(constants_oph)
+    
+    if machine_type == "-e":
+        shutil.copy2("electron.oph", "bank_routines.oph")
+    elif machine_type == "-b":
+        shutil.copy2("bbc.oph", "bank_routines.oph")
     
     system("ophis code.oph -o CODE")
     code = open("CODE").read()
