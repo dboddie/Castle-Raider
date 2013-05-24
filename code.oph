@@ -3149,9 +3149,13 @@ create_monster:                     ; A=index
 
     tya
     and #monster_data_axis_bit
-    ror
-    ror
-    ror
+    cmp #0
+    beq create_monster_store_type
+
+    lda #$40                        ; Set the axis bit (vertical motion).
+
+    create_monster_store_type:
+
     ora $8c
     sta monster_positions_address,x
 
@@ -3198,9 +3202,15 @@ move_monsters_pre_loop:
 
         and #monster_axis_bit
         cmp #monster_vertical_motion
-        bne move_monsters_loop_update_type
+        bne move_monsters_horizontally
 
             jsr move_monster_vertically
+            jsr check_monster_player
+            jmp move_monsters_loop_update_type
+
+        move_monsters_horizontally:
+
+            jsr move_monster_horizontally
             jsr check_monster_player
 
         move_monsters_loop_update_type:
@@ -3226,7 +3236,6 @@ move_monsters_pre_loop:
 
 move_monster_vertically:    ; $86,$87=monster table
                             ; $88=offset into monster table
-                            ; X=monster type
                             ; Y=offset into monster table (initially 0)
         iny
         iny                         ; Select the y offset.
@@ -3259,44 +3268,130 @@ move_monster_vertically:    ; $86,$87=monster table
             sbc #1                  ; y -= 1
             clc
 
-            jsr check_monster_can_move
+            jsr check_monster_can_move_vertically
             bcs move_monsters_change_direction
 
+            lda $81
             sta ($86),y             ; Store the new y offset and exit.
             rts
-
-        move_monsters_change_direction:
-
-        lda $8c                     ; Recover the type.
-        eor #monster_direction_bit
-        sta $8c
-        rts
 
         move_monster_down:
 
         ; Downward motion
 
         lda $89                         ; dy
-        cmp #0                          ; If we entered a new cell then only
-        bne move_monster_vertically_exit; perform movement checks.
+        cmp #0                          ; If we moved within a cell then exit.
+        bne move_monster_vertically_exit
 
             clc
             lda ($86),y
             adc #1                      ; y += 1
-            sta ($86),y                 ; Store the new y offset and exit.
+            sta ($86),y                 ; Store the new y offset.
 
         lda ($86),y
         cmp #23
         beq move_monsters_change_direction
 
             adc #1
-            jsr check_monster_can_move
+            jsr check_monster_can_move_vertically
             bcs move_monsters_change_direction
 
     move_monster_vertically_exit:
 
     clc
     rts
+
+move_monsters_change_direction: ; $8c=monster type
+
+    lda $8c                     ; Recover the type.
+    eor #monster_direction_bit
+    sta $8c
+    rts
+
+move_monster_horizontally:  ; $86,$87=monster table
+                            ; $88=offset into monster table
+                            ; Y=offset into monster table (initially 0)
+
+        lda $8c                     ; Recover the type.
+        eor #$02                    ; dx = !dx
+        sta $8c
+
+        iny                         ; Select the x offset.
+
+        and #monster_direction_bit
+        cmp #$00
+        bne move_monster_right
+
+        ; Leftward motion
+
+        lda $8c
+        and #$02
+        cmp #0                              ; If we have just moved left within
+        beq move_monster_horizontally_exit  ; the same cell then exit.
+
+        lda ($86),y
+        cmp #0                              ; If at the edge of the screen then
+        beq move_monsters_change_direction  ; move right next time.
+
+            sec
+            sbc #1                  ; x -= 1
+            clc
+
+            jsr check_monster_can_move_horizontally
+            bcs move_monsters_change_direction
+
+            lda $80
+            sta ($86),y             ; Store the new y offset and exit.
+            rts
+
+        move_monster_right:
+
+        ; Rightward motion
+
+        lda $8c
+        and #$02
+        cmp #0                          ; If we moved within a cell then exit.
+        bne move_monster_horizontally_exit
+
+        clc
+        lda ($86),y
+        cmp #38                             ; If at the edge of the screen then
+        beq move_monsters_change_direction  ; move left next time.
+
+            adc #1                      ; x += 1
+            sta ($86),y                 ; Store the new x offset.
+
+            adc #1
+
+            jsr check_monster_can_move_horizontally
+            bcs move_monsters_change_direction
+
+    move_monster_horizontally_exit:
+
+    clc
+    rts
+
+check_monster_can_move_vertically:  ; $86,$87=monster entry in table
+                                    ; A=y position on screen
+                                    ; Y=y offset in monster entry
+
+    sta $81                 ; $81=y position (0-23)
+    dey
+    lda ($86),y
+    sta $80                 ; $80=x position (0-39)
+    iny
+    jmp check_monster_can_move
+
+check_monster_can_move_horizontally:    ; $86,$87=monster entry in table
+                                        ; A=x position on screen
+                                        ; Y=x offset in monster entry
+
+    sta $80                 ; $80=x position (0-39)
+    iny
+    lda ($86),y
+    sta $81                 ; $81=y position (0-23)
+    dey
+    jmp check_monster_can_move
 
 check_monster_can_move:     ; A=row number
                             ; X=monster type
@@ -3306,10 +3401,6 @@ check_monster_can_move:     ; A=row number
     sta $8b
     sty $8d
 
-    sta $81                 ; $81=y position (0-23)
-    dey
-    lda ($86),y
-    sta $80                 ; $80=x position (0-39)
     jsr check_tile          ; C set if tile is present; C clear otherwise.
 
     bcs check_monster_can_move_exit ; Leave immediately if a tile is found.
@@ -3320,6 +3411,7 @@ check_monster_can_move:     ; A=row number
 
     inc $80
     jsr check_tile          ; C set if tile is present; C clear otherwise.
+    dec $80
 
     check_monster_can_move_exit:
 
