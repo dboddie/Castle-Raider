@@ -250,6 +250,9 @@ def create_level(levels_address, level_path, number_of_special_tiles):
         if len(monster_row_data) >= 512:
             raise LevelError, "Monster data too long."
     
+    used = len(monster_row_data)
+    print "M:  %3i |%s%s|" % (used, "#" * (used/8), " " * (64 - (used/8)))
+    
     data += monster_row_data
     
     # Create a table of special tile numbers and initial visibility values.
@@ -274,6 +277,5 @@ def create_level(levels_address, level_path, number_of_special_tiles):
     
     # Append the data to the table of row offsets.
     data = special_tiles_table + visibility_table + table + data
-    print map(ord, monster_row_data)
     
     return data, monster_row_address
