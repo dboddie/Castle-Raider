@@ -3312,59 +3312,94 @@ move_monster_horizontally:  ; $86,$87=monster table
                             ; $88=offset into monster table
                             ; Y=offset into monster table (initially 0)
 
-        lda $8c                     ; Recover the type.
-        eor #$02                    ; dx = !dx
-        sta $8c
+    iny                         ; Select the x offset.
 
-        iny                         ; Select the x offset.
+    lda $8c                     ; Recover the type.
+    and #monster_direction_bit
+    cmp #$00
+    bne move_monster_right
 
-        and #monster_direction_bit
-        cmp #$00
-        bne move_monster_right
+    ; Leftward motion
 
-        ; Leftward motion
-
-        lda $8c
-        and #$02
-        cmp #0                              ; If we have just moved left within
-        beq move_monster_horizontally_exit  ; the same cell then exit.
+    lda $8c
+    and #$02
+    lsr                                 ; Convert the dx value to a bank number.
+    cmp bank_number                     ; If we are on the edge of a cell as
+                                        ; currently displayed then check for
+    bne move_monster_horizontally_move_left ; tiles; otherwise just move.
 
         lda ($86),y
+        sta $80                             ; Store the x position.
         cmp #0                              ; If at the edge of the screen then
         beq move_monsters_change_direction  ; move right next time.
 
-            sec
-            sbc #1                  ; x -= 1
-            clc
-
-            jsr check_monster_can_move_horizontally
-            bcs move_monsters_change_direction
-
-            lda $80
-            sta ($86),y             ; Store the new y offset and exit.
-            rts
-
-        move_monster_right:
-
-        ; Rightward motion
-
-        lda $8c
-        and #$02
-        cmp #0                          ; If we moved within a cell then exit.
-        bne move_monster_horizontally_exit
+        lda bank_number
+        cmp #0
+        bne move_monster_horizontally_check_left
 
         clc
+        dec $80
+
+        move_monster_horizontally_check_left:
+
+        jsr check_monster_can_move_horizontally
+        bcs move_monsters_change_direction
+
+    move_monster_horizontally_move_left:
+
+    lda $8c                     ; Recover the type.
+    eor #$02                    ; dx = !dx
+    sta $8c
+
+    and #$02
+    cmp #0
+    beq move_monster_horizontally_exit
+
+    lda ($86),y
+    sec
+    sbc #1
+    sta ($86),y             ; Store the new y offset and exit.
+
+    clc
+    rts
+
+    move_monster_right:
+
+    ; Rightward motion
+
+    lda $8c
+    and #$02
+    lsr                                 ; Convert the dx value to a bank number.
+    cmp bank_number                     ; If we are on the edge of a cell as
+                                        ; currently displayed then check for
+    bne move_monster_horizontally_move_right    ; tiles; otherwise just move.
+
         lda ($86),y
+        sta $80
         cmp #38                             ; If at the edge of the screen then
         beq move_monsters_change_direction  ; move left next time.
 
-            adc #1                      ; x += 1
-            sta ($86),y                 ; Store the new x offset.
+        clc
+        adc #2                      ; The monster is two cells wide.
+        sta $80
 
-            adc #1
+        jsr check_monster_can_move_horizontally
+        bcs move_monsters_change_direction
 
-            jsr check_monster_can_move_horizontally
-            bcs move_monsters_change_direction
+    move_monster_horizontally_move_right:
+
+    lda $8c                     ; Recover the type.
+    eor #$02                    ; dx = !dx
+    sta $8c
+
+    and #$02
+    cmp #0
+    bne move_monster_horizontally_exit
+
+    clc
+    lda ($86),y
+    adc #1                      ; x += 1
+    sta ($86),y                 ; Store the new x offset.
 
     move_monster_horizontally_exit:
 
@@ -3386,7 +3421,6 @@ check_monster_can_move_horizontally:    ; $86,$87=monster entry in table
                                         ; A=x position on screen
                                         ; Y=x offset in monster entry
 
-    sta $80                 ; $80=x position (0-39)
     iny
     lda ($86),y
     sta $81                 ; $81=y position (0-23)

@@ -151,7 +151,7 @@ if __name__ == "__main__":
     
     number_of_special_tiles = 32
     
-    data_start = 0x1fc0
+    data_start = 0x2000
     
     # Monster positions
     monster_positions_address       = data_start
