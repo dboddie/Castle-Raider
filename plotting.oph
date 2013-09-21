@@ -1,0 +1,1460 @@
+; Copyright (C) 2013 David Boddie <david@boddie.org.uk>
+;
+; This program is free software: you can redistribute it and/or modify
+; it under the terms of the GNU General Public License as published by
+; the Free Software Foundation, either version 3 of the License, or
+; (at your option) any later version.
+;
+; This program is distributed in the hope that it will be useful,
+; but WITHOUT ANY WARRANTY; without even the implied warranty of
+; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+; GNU General Public License for more details.
+;
+; You should have received a copy of the GNU General Public License
+; along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+clear_bank1:
+
+    lda #$00
+    sta $70
+    lda #$35
+    sta $71
+    ldy #0
+
+    clear_bank1_loop:
+
+        lda #0
+        sta ($70),y
+
+        lda $70
+        adc #1
+        sta $70
+        lda $71
+        adc #0
+        sta $71
+        clc
+
+        cmp #$58
+        bne clear_bank1_loop
+
+    clc
+    rts
+
+clear_bank2:
+
+    lda #$00
+    sta $70
+    lda #$5d
+    sta $71
+    ldy #0
+
+    clear_bank2_loop:
+
+        lda #0
+        sta ($70),y
+
+        lda $70
+        adc #1
+        sta $70
+        lda $71
+        adc #0
+        sta $71
+        clc
+
+        cmp #$80
+        bne clear_bank2_loop
+
+    clc
+    rts
+
+bank1_char_rows_low:  .byte $40,$80,$c0,$00,$40,$80,$c0,$00
+bank1_rows_low:  .byte  $40,$80,$c0,$00,$40,$80,$c0,$00,$40,$80,$c0,$00,$40,$80,$c0,$00
+bank1_char_rows_high: .byte $36,$37,$38,$3a,$3b,$3c,$3d,$3f
+bank1_rows_high: .byte  $40,$41,$42,$44,$45,$46,$47,$49,$4a,$4b,$4c,$4e,$4f,$50,$51,$53
+bank2_char_rows_low:  .byte $40,$80,$c0,$00,$40,$80,$c0,$00
+bank2_rows_low:  .byte  $40,$80,$c0,$00,$40,$80,$c0,$00,$40,$80,$c0,$00,$40,$80,$c0,$00
+bank2_char_rows_high: .byte $5e,$5f,$60,$62,$63,$64,$65,$67
+bank2_rows_high: .byte  $68,$69,$6a,$6c,$6d,$6e,$6f,$71,$72,$73,$74,$76,$77,$78,$79,$7b
+
+read_screen_address_bank1:  ; X=row, A=column offset
+                            ; sets $72,$73
+
+    asl                     ; Multiply o by 8
+    asl
+    asl
+    sta $72
+    lda #0
+    adc #0
+    sta $73
+    clc
+
+    lda $72
+    adc bank1_rows_low,x    ; Add to the screen start address for the
+    sta $72                 ; row, R, to get x.
+    lda $73
+    adc bank1_rows_high,x
+    sta $73                 ; x ($72,$73)
+    clc
+
+    rts
+
+read_screen_address_bank2:  ; X=row, A=column offset
+                            ; sets $72,$73=screen address
+
+    asl                     ; Multiply o by 8
+    asl
+    asl
+    sta $72
+    lda #0
+    adc #0
+    sta $73
+    clc
+
+    lda $72
+    adc bank2_rows_low,x    ; Add to the screen start address for the
+    sta $72                 ; row, R, to get x.
+    lda $73
+    adc bank2_rows_high,x
+    sta $73                 ; x ($72,$73)
+    clc
+
+    rts
+
+read_sprite_address:        ; $76,$77=span address
+                            ; sets $70,$71=sprite address
+
+    cmp #$10
+    bcc read_sprite_address_next
+
+    jsr read_visible_sprite     ; check whether the sprite is visible
+                                ; (it represents a special tile)
+
+    read_sprite_address_next:   ; a regular tile
+    clc
+
+    and #$1f                    ; mask off the top 3 bits,
+    asl
+    asl
+    asl
+    adc #sprite_area_low        ; add to S to get S1.
+    sta $70
+    lda #sprite_area_high
+    adc #0
+    sta $71                     ; S1 ($70,$71)
+
+    clc
+    rts
+
+read_left_sprite_address:       ; A=tile number in high 4 bits
+                                ; sets $70,$71=sprite address
+
+    cmp #$10
+    bcc read_left_sprite_address_next
+
+    jsr read_visible_sprite     ; check whether the sprite is visible
+                                ; (it represents a special tile)
+
+    read_left_sprite_address_next:  ; a regular tile
+    clc
+
+    and #$1f                    ; mask off the top 3 bits,
+    asl
+    asl
+    asl
+    adc #left_sprites_low       ; add to S to get S2.
+    sta $70
+    lda #left_sprites_high
+    adc #0
+    sta $71                     ; S2 ($70,$71)
+    clc
+
+    rts
+
+read_rotated_sprite_address:    ; A=tile number
+                                ; sets $70,$71=sprite address
+
+    cmp #$10
+    bcc read_rotated_sprite_address_next
+
+    jsr read_visible_sprite     ; check whether the sprite is visible
+                                ; (it represents a special tile)
+
+    read_rotated_sprite_address_next:   ; a regular tile
+    clc
+
+    and #$1f                    ; mask off the top 3 bits,
+    asl
+    asl
+    asl
+    adc #rotated_sprites_low    ; add to S to get S1.
+    sta $70
+    lda #rotated_sprites_high
+    adc #0
+    sta $71                 ; S1 ($70,$71)
+    clc
+
+    rts
+
+read_right_sprite_address:      ; A=tile number in high 4 bits
+                                ; sets $80,$81=sprite address
+
+    cmp #$10
+    bcc read_right_sprite_address_next
+
+    jsr read_visible_sprite     ; check whether the sprite is visible
+                                ; (it represents a special tile)
+
+    read_right_sprite_address_next: ; a regular tile
+    clc
+
+    and #$1f                    ; mask off the top 3 bits,
+    asl
+    asl
+    asl
+    adc #right_sprites_low      ; add to S to get S2.
+    sta $80
+    lda #right_sprites_high
+    adc #0
+    sta $81                     ; S2 ($80,$81)
+    clc
+
+    rts
+
+plot_bank1r:
+
+    ldx #15          ; row number
+
+    plot_bank1r_row_loop:
+
+        clc
+        jsr read_row_address
+
+        lda initial_row_offsets,x   ; Load the initial row offset, o.
+
+        cmp #40
+        bcc plot_bank1r_row_loop_calculate_row_address
+
+        dex
+        bpl plot_bank1r_row_loop     ; Loop again or exit.
+        clc
+        rts
+
+        plot_bank1r_row_loop_calculate_row_address:
+
+        sta $74
+        jsr read_screen_address_bank1
+
+        plot_bank1r_offset_loop:
+
+            ldy #0
+            lda ($76),y             ; Load the type number, t,
+            jsr read_sprite_address
+            jsr plot_tile_bank
+
+            ldy #1
+            lda ($76),y         ; Load the number of tiles minus 1, n - 1.
+            adc #1              ; n
+            bcs plot_bank1r_offset_endloop
+
+            tay                 ; temp (n)
+            adc $74             ; Add n to o.
+            bcs plot_bank1r_offset_endloop
+
+            cmp #40
+            bcs plot_bank1r_offset_endloop
+            sta $74
+
+            tya                 ; temp (n)
+            asl
+            asl
+            asl                 ; n*8
+            sta $8c
+            lda #0
+            adc #0
+            sta $8d
+            clc
+
+            lda $72
+            adc $8c
+            sta $72
+            lda $73
+            adc $8d
+            sta $73             ; x ($72,$73)
+            clc
+
+            lda $76             ; Add 2 to I.
+            adc #2
+            sta $76
+            bcc plot_bank1r_offset_loop
+
+            lda $77
+            adc #0
+            sta $77
+            clc
+
+            jmp plot_bank1r_offset_loop
+
+        plot_bank1r_offset_endloop:
+        clc
+
+        dex
+        bmi plot_bank1r_row_endloop
+        jmp plot_bank1r_row_loop
+
+    plot_bank1r_row_endloop:
+    clc
+    rts
+
+plot_bank1l:
+
+    ldx #15          ; row number
+
+    plot_bank1l_row_loop:
+
+        clc
+        jsr read_row_address
+
+        lda initial_row_offsets,x   ; Load the initial row offset, o.
+
+        cmp #41
+        bcc plot_bank1l_row_loop_calculate_row_address
+
+        dex
+        bpl plot_bank1l_row_loop     ; Loop again or exit.
+        clc
+        rts
+
+        plot_bank1l_row_loop_calculate_row_address:
+        sta $74
+
+        cmp #0
+        beq plot_bank1l_skip_leading_tile
+
+            clc
+            jsr read_screen_address_bank1
+
+            lda $72
+            sec
+            sbc #8
+            sta $72
+            lda $73
+            sbc #0
+            sta $73
+            clc
+
+            lda initial_row_tiles,x     ; Load the initial tile type.
+            jsr read_sprite_address
+
+            jmp plot_bank1l_offset_loop
+
+        plot_bank1l_skip_leading_tile:
+        clc
+
+            lda bank1_rows_low,x    ; Use the screen start address for the
+            sta $72                 ; row, R, to get x.
+            lda bank1_rows_high,x
+            sta $73                 ; x ($72,$73)
+            clc
+
+            lda $72     ; The leading tile would be plotted off the left hand
+            sec         ; side of the screen.
+            sbc #8
+            sta $72
+            lda $73
+            sbc #0
+            sta $73
+            clc
+
+            jmp plot_bank1l_offset_loop_span
+
+        plot_bank1l_offset_loop:
+
+            jsr plot_tile_bank
+
+            plot_bank1l_offset_loop_span:
+
+            ldy #1
+            lda ($76),y         ; Load the number of tiles minus 1, n - 1.
+            adc #1
+            bcs plot_bank1l_offset_endloop
+
+            tay                 ; temp (n)
+            adc $74             ; Add n to o.
+            bcs plot_bank1l_offset_endloop
+
+            cmp #41
+            bcs plot_bank1l_offset_endloop
+            sta $74
+
+            tya                 ; temp (n)
+            asl
+            asl
+            asl                 ; n*8
+            sta $8c
+            lda #0
+            adc #0
+            sta $8d
+            clc
+
+            lda $72
+            adc $8c
+            sta $72
+            lda $73
+            adc $8d
+            sta $73             ; x ($72,$73)
+            clc
+
+            ldy #0
+            lda ($76),y             ; Load the type number, t,
+            jsr read_sprite_address
+
+            lda $76             ; Add 2 to I.
+            adc #2
+            sta $76
+            bcc plot_bank1l_offset_loop
+
+            lda $77
+            adc #0
+            sta $77
+            clc
+
+            jmp plot_bank1l_offset_loop
+
+        plot_bank1l_offset_endloop:
+        clc
+
+        dex
+        bmi plot_bank1l_row_endloop
+        jmp plot_bank1l_row_loop
+
+    plot_bank1l_row_endloop:
+    clc
+    rts
+
+plot_bank2r:
+
+    ldx #15          ; row number
+
+    plot_bank2r_row_loop:
+
+        clc
+        jsr read_row_address
+
+        lda initial_row_offsets,x   ; Load the initial row offset, o.
+        cmp #41
+        bcc plot_bank2r_row_loop_calculate_row_address
+
+            dex
+            bpl plot_bank2r_row_loop
+            clc
+            rts
+
+        plot_bank2r_row_loop_calculate_row_address:
+
+        sta $74
+        jsr read_screen_address_bank2
+
+        lda initial_row_tiles,x         ; Load the initial tile type,
+        sta $78
+
+        lda $74
+        cmp #0
+        beq plot_bank2r_row_loop_skip_leading
+        cmp #41
+        bcc plot_bank2r_row_loop_plot_leading
+
+            dex
+            bpl plot_bank2r_row_loop
+            clc
+            rts
+
+        plot_bank2r_row_loop_plot_leading:
+
+        lda $72                 ; move to the previous cell
+        sec
+        sbc #8
+        sta $72
+        lda $73
+        sbc #0
+        sta $73
+        clc
+
+        lda $78                         ; Read the current type and the
+        jsr read_right_sprite_address   ; corresponding right edge sprite.
+
+        ldy #0
+        lda ($76),y                     ; Load the type number, t,
+        sta $78                         ; record the new current type.
+        jsr read_left_sprite_address
+
+        jsr plot_merged_tile_bank
+
+        lda $74
+        cmp #40
+        bcc plot_bank2r_row_on_screen
+
+        jmp plot_bank2r_offset_endloop   ; break if the screen edge is reached
+
+        plot_bank2r_row_on_screen:
+
+        lda $72                 ; move to the next cell
+        adc #8
+        sta $72
+        lda $73
+        adc #0
+        sta $73
+        clc
+
+        plot_bank2r_row_loop_skip_leading:
+        clc
+
+        plot_bank2r_offset_loop:
+
+            ldy #0
+            lda ($76),y                 ; Load the type number, t,
+            sta $78                     ; store the current type.
+
+            ldy #1
+            lda ($76),y                 ; Load the number of tiles minus 1, n - 1.
+            sta $79                     ; temp (n - 1)
+            cmp #0                      ; If there is only one tile in the
+            beq plot_bank2r_offset_next  ; span, move to the next span,
+                                        ; otherwise plot a continuation tile.
+
+            lda $78
+            jsr read_rotated_sprite_address
+
+            jsr plot_tile_bank
+
+            lda $74
+            adc $79                 ; Add n - 1 to o.
+            bcs plot_bank2r_offset_endloop
+
+            cmp #40                         ; Break if the screen edge is reached.
+            bcs plot_bank2r_offset_endloop
+            sta $74                         ; Store the new offset
+
+            lda $79                 ; n - 1
+            asl
+            asl
+            asl                     ; (n - 1)*8
+            sta $8c
+            lda #0
+            adc #0
+            sta $8d
+            clc
+
+            lda $72
+            adc $8c
+            sta $72
+            lda $73
+            adc $8d
+            sta $73                 ; x ($72,$73)
+            clc
+
+            plot_bank2r_offset_next:
+            clc
+
+            lda $76                 ; Add 2 to I.
+            adc #2
+            sta $76
+            lda $77
+            adc #0
+            sta $77
+            clc
+
+            lda $78                         ; Read the current type and the
+            jsr read_right_sprite_address   ; corresponding right edge sprite.
+
+            ldy #0
+            lda ($76),y                     ; Load the type number, t,
+            sta $78                         ; record the new current type.
+            jsr read_left_sprite_address
+
+            jsr plot_merged_tile_bank
+
+            lda $72                 ; move to the next cell
+            adc #8
+            sta $72
+            lda $73
+            adc #0
+            sta $73
+            clc
+
+            inc $74
+
+            lda $74
+            cmp #40
+            bcs plot_bank2r_offset_endloop   ; break if the screen edge is reached
+
+            jmp plot_bank2r_offset_loop
+
+        plot_bank2r_offset_endloop:
+        clc
+
+        dex
+        bmi plot_bank2r_row_endloop
+        jmp plot_bank2r_row_loop
+
+    plot_bank2r_row_endloop:
+    clc
+    rts
+
+plot_bank2l:
+
+    ldx #15          ; row number
+
+    plot_bank2l_row_loop:
+
+        clc
+        jsr read_row_address
+
+        lda initial_row_offsets,x   ; Load the initial row offset, o.
+        cmp #42
+        bcc plot_bank2l_row_loop_calculate_row_address
+
+            dex
+            bpl plot_bank2l_row_loop
+            clc
+            rts
+
+        plot_bank2l_row_loop_calculate_row_address:
+        sta $74
+
+        lda initial_row_tiles,x         ; Load the initial tile type,
+        sta $78
+
+        lda $74
+        cmp #2                              ; Both the trailing tile and the
+        bcc plot_bank2l_skip_leading_tile   ; merged tile can be plotted.
+
+            jsr read_screen_address_bank2   ; $72,$73
+
+            lda $72
+            sec
+            sbc #16
+            sta $72
+            lda $73
+            sbc #0
+            sta $73
+            clc
+
+            lda $78
+            jsr read_rotated_sprite_address ; $70,$71
+            jsr plot_tile_bank
+
+            inc $74     ; Move to the next cell, referring to any following
+                        ; merged tile.
+            lda $74
+            cmp #42
+            bcc plot_bank2l_leading_next
+
+                clc                     ; at the end of the row, move to the next row
+                dex                     ; if possible
+                bpl plot_bank2l_row_loop
+
+                clc                     ; otherwise exit
+                rts
+
+            plot_bank2l_leading_next:
+
+                lda $72                 ; move to the next cell
+                adc #8
+                sta $72
+                lda $73
+                adc #0
+                sta $73
+                clc
+
+                jmp plot_bank2l_offset_loop ; Jump to the loop so that the span
+                                            ; can be plotted.
+        plot_bank2l_skip_leading_tile:
+
+        cmp #1
+        bne plot_bank2l_skip_leading_merged_tile
+
+            clc                     ; Only the merged tile can be plotted.
+
+            lda bank2_rows_low,x    ; Use the screen start address for the
+            sta $72                 ; row, R, to get x.
+            lda bank2_rows_high,x
+            sta $73                 ; x ($72,$73)
+            clc
+
+            inc $74
+
+            jmp plot_bank2l_offset_loop     ; Jump to the loop so that the span
+                                            ; can be plotted.
+
+        plot_bank2l_skip_leading_merged_tile:
+
+        clc ; The initial offset is 0, meaning that neither the trailing tile
+            ; nor the merged tile can be plotted.
+
+            lda bank2_rows_low,x    ; Use the screen start address for the
+            sta $72                 ; row, R, to get x.
+            lda bank2_rows_high,x
+            sta $73                 ; x ($72,$73)
+            clc
+
+            lda $72     ; The merged tile would be plotted off the left hand
+            sec         ; side of the screen.
+            sbc #8
+            sta $72
+            lda $73
+            sbc #0
+            sta $73
+            clc
+
+            inc $74
+
+            jmp plot_bank2l_offset_loop_span
+
+        plot_bank2l_offset_loop:
+
+            lda $78                         ; Read the current type and the
+            jsr read_right_sprite_address   ; corresponding right edge sprite.
+
+            ldy #0
+            lda ($76),y                     ; Load the type number, t,
+            sta $78                         ; record the new current type.
+            jsr read_left_sprite_address
+
+            jsr plot_merged_tile_bank
+
+            lda $74
+            cmp #41
+            bcs plot_bank2l_offset_endloop   ; break if the screen edge is reached
+
+            jmp plot_bank2l_offset_loop_span_continue
+
+            plot_bank2l_offset_loop_span:
+
+                ldy #0          ; Keep the previous type updated (only need to
+                lda ($76),y     ; do this if the merged tile was not plotted).
+                sta $78         ; Record the new current type.
+
+            plot_bank2l_offset_loop_span_continue:
+
+            ldy #1
+            lda ($76),y                 ; Load the number of tiles minus 1, n - 1.
+            sta $79                     ; temp (n - 1)
+            cmp #0                      ; If there is only one tile in the
+            beq plot_bank2l_offset_next ; span, move to the next span,
+                                        ; otherwise plot a trailing tile.
+            clc
+            lda $74
+            adc $79                 ; Add n - 1 to o.
+            bcs plot_bank2l_offset_endloop
+
+            cmp #42                     ; Break if the screen edge is reached.
+            bcs plot_bank2l_offset_endloop
+            sta $74                     ; Store the new offset.
+
+            lda $79                 ; n - 1
+            asl
+            asl
+            asl                     ; (n - 1)*8
+            sta $8c
+            lda #0
+            adc #0
+            sta $8d
+            clc
+
+            lda $72
+            adc $8c
+            sta $72
+            lda $73
+            adc $8d
+            sta $73                 ; x ($72,$73)
+            clc
+
+            ldy #0
+            lda ($76),y                 ; Load the type number, t,
+            sta $78                     ; store the current type.
+            jsr read_rotated_sprite_address
+
+            jsr plot_tile_bank
+
+            plot_bank2l_offset_next:
+
+            inc $74
+
+            lda $74                 ; Break if the screen edge is reached.
+            cmp #42
+            bcs plot_bank2l_offset_endloop
+
+            lda $72                 ; Move to the next cell.
+            adc #8
+            sta $72
+            lda $73
+            adc #0
+            sta $73
+            clc
+
+            lda $76                 ; Add 2 to I.
+            adc #2
+            sta $76
+            lda $77
+            adc #0
+            sta $77
+            clc
+
+            jmp plot_bank2l_offset_loop
+
+        plot_bank2l_offset_endloop:
+        clc
+
+        dex
+        bmi plot_bank2l_row_endloop
+        jmp plot_bank2l_row_loop
+
+    plot_bank2l_row_endloop:
+    clc
+    rts
+
+plot_tile_bank:     ; $70,$71 source address
+                    ; $72,$73 screen address
+
+    ldy #7
+    plot_tile_bank_loop:
+
+        lda ($70),y
+        sta ($72),y
+        dey
+        bpl plot_tile_bank_loop
+
+    clc
+    rts
+
+plot_merged_tile_bank:  ; $70,$71 source address 1
+                        ; $72,$73 screen address
+                        ; $80,$81 source address 2
+
+    ldy #7
+    plot_merged_tile_bank_loop:
+
+        lda ($70),y
+        ora ($80),y
+        sta ($72),y
+        dey
+        bpl plot_merged_tile_bank_loop
+
+    clc
+    rts
+
+initial_plot_bank1:
+
+    ldx #15
+    initial_plot_bank1_row_loop:
+
+        clc
+        jsr read_row_address    ; sets $76,$77
+
+        lda bank1_rows_low,x
+        sta $72
+        lda bank1_rows_high,x
+        sta $73                 ; x ($72,$73)
+
+        lda #0
+        sta $74
+
+        lda initial_row_offsets,x
+        cmp #0
+        beq initial_plot_bank1_span_loop
+        sta $78
+        dec $78
+
+        lda initial_row_tiles,x
+        jsr read_sprite_address
+
+        jsr initial_plot_bank1_tile_loop
+
+        lda $74
+        cmp #40
+        bcs initial_plot_bank1_span_endloop
+
+        initial_plot_bank1_span_loop:
+
+            ldy #0
+            lda ($76),y             ; Load the type number, t,
+            jsr read_sprite_address
+
+            ldy #1
+            lda ($76),y         ; Load the number of tiles minus 1, n - 1.
+            sta $78
+
+            jsr initial_plot_bank1_tile_loop
+
+            lda $74
+            cmp #40
+            beq initial_plot_bank1_span_endloop
+            clc
+
+            lda $76
+            adc #2
+            sta $76
+            lda $77
+            adc #0
+            sta $77
+            clc
+
+            jmp initial_plot_bank1_span_loop
+
+        initial_plot_bank1_span_endloop:
+
+        dex
+        bpl initial_plot_bank1_row_loop
+
+    clc
+    rts
+
+initial_plot_bank1_tile_loop:   ; $74=column
+                                ; $76,$77=span address
+                                ; $78=number of tiles
+
+    jsr plot_tile_bank
+
+    lda $72
+    adc #8
+    sta $72
+    lda $73
+    adc #0
+    sta $73
+    clc
+
+    inc $74         ; one tile filled on the screen
+
+    lda $74
+    cmp #40
+    beq initial_plot_bank1_span_endloop
+    lda $78
+    cmp #0
+    beq initial_plot_bank1_tile_endloop
+
+    dec $78         ; one tile less to plot
+
+    jmp initial_plot_bank1_tile_loop
+
+    initial_plot_bank1_tile_endloop:
+    clc
+    rts
+
+initial_plot_bank2:
+
+    ldx #15
+    initial_plot_bank2_row_loop:
+
+        clc
+        jsr read_row_address
+
+        lda bank2_rows_low,x
+        sta $72
+        lda bank2_rows_high,x
+        sta $73                 ; x ($72,$73)
+
+        lda #0                  ; horizontal screen offset
+        sta $74
+        sta $79
+
+        lda initial_row_offsets,x
+        cmp #0                              ; If at the start of a span, just
+        beq initial_plot_bank2_span_loop    ; go straight into the loop.
+        sta $78                             ; Otherwise, store a decremented
+        dec $78                             ; span length.
+
+        lda initial_row_tiles,x             ; Use the current tile type for the
+        sta $79                             ; span.
+        jsr read_rotated_sprite_address
+
+        jsr initial_plot_bank2_tile_loop
+
+        lda $74
+        cmp #40
+        bcs initial_plot_bank2_span_endloop
+
+        initial_plot_bank2_span_loop:
+
+            lda $79                         ; Read the current type and the
+            jsr read_right_sprite_address   ; corresponding right edge sprite.
+
+            ldy #0
+            lda ($76),y                     ; Load the type number, t,
+            sta $79                         ; record the new current type.
+            jsr read_left_sprite_address
+
+            jsr plot_merged_tile_bank
+
+            lda $72
+            adc #8
+            sta $72
+            lda $73
+            adc #0
+            sta $73
+            clc
+
+            inc $74         ; one tile filled on the screen
+
+            initial_plot_bank2_span_loop_skip_merged:
+
+            ldy #0
+            lda ($76),y                     ; Load the type number, t,
+            sta $79                         ; record the new current type.
+            jsr read_rotated_sprite_address
+
+            ldy #1
+            lda ($76),y         ; Load the number of tiles minus 1, n - 1.
+            sta $78
+
+            jsr initial_plot_bank2_tile_loop
+
+            lda $74
+            cmp #40
+            beq initial_plot_bank2_span_endloop
+            clc
+
+            lda $76
+            adc #2
+            sta $76
+            lda $77
+            adc #0
+            sta $77
+            clc
+
+            jmp initial_plot_bank2_span_loop
+
+        initial_plot_bank2_span_endloop:
+
+        dex
+        bmi initial_plot_bank2_row_endloop
+        jmp initial_plot_bank2_row_loop
+
+    initial_plot_bank2_row_endloop:
+    clc
+    rts
+
+initial_plot_bank2_tile_loop:
+
+    lda $74
+    cmp #40
+    beq initial_plot_bank2_span_endloop
+    lda $78
+    cmp #0
+    beq initial_plot_bank2_tile_endloop
+
+    jsr plot_tile_bank
+
+    lda $72
+    adc #8
+    sta $72
+    lda $73
+    adc #0
+    sta $73
+    clc
+
+    inc $74         ; one tile filled on the screen
+    dec $78         ; one tile less to plot
+
+    jmp initial_plot_bank2_tile_loop
+
+    initial_plot_bank2_tile_endloop:
+    clc
+    rts
+
+plot_char:
+
+    lda bank_number
+    cmp #0
+    beq plot_char_bank1
+    bne plot_char_bank2
+
+plot_player:
+
+    lda bank_number
+    cmp #0
+    bne plot_player_plot_bank2
+
+        clc
+        jmp plot_char_bank1
+
+    plot_player_plot_bank2:
+
+        clc
+        jmp plot_char_bank2
+
+plot_char_bank1:            ; plots the player character on bank 1
+
+    lda player_lost
+    cmp #0
+    beq plot_char_bank1_continue
+    rts
+
+    plot_char_bank1_continue:
+    ldx player_animation
+    lda player_sprites_low,x
+    sta $70
+    lda player_sprites_high,x
+    sta $71
+
+    ldx player_y
+    lda player_x
+    asl
+    asl
+    asl
+    adc bank1_char_rows_low,x
+    sta $72
+    lda bank1_char_rows_high,x
+    adc #0
+    sta $73
+    clc
+
+    lda player_ys
+    cmp #1
+    bne plot_char_bank1_y0
+    clc
+    lda $72
+    adc #4
+    sta $72
+    jmp plot8x24_y1
+
+    plot_char_bank1_y0:
+    jmp plot8x24_y0
+
+plot_char_bank2:            ; plots the player character on bank 2
+
+    lda player_lost
+    cmp #0
+    beq plot_char_bank2_continue
+    rts
+
+    plot_char_bank2_continue:
+    ldx player_animation
+    lda player_sprites_low,x
+    sta $70
+    lda player_sprites_high,x
+    sta $71
+
+    ldx player_y
+    lda player_x
+    asl
+    asl
+    asl
+    adc bank2_char_rows_low,x
+    sta $72
+    lda bank2_char_rows_high,x
+    adc #0
+    sta $73
+    clc
+
+    lda player_ys
+    cmp #1
+    bne plot_char_bank2_y0
+    clc
+    lda $72
+    adc #4
+    sta $72
+    jmp plot8x24_y1
+
+    plot_char_bank2_y0:
+    jmp plot8x24_y0
+
+plot_monster_bank1:       ; X=monster y offset,Y=offset of monster y offset
+
+    lda bank1_char_rows_low,x   ; y position (low)
+    adc $72
+    sta $72
+    lda $73
+    adc bank1_char_rows_high,x  ; y position (high)
+    sta $73
+    clc
+
+    lda $72                 ; Subtract the starting offset into the data
+    sec                     ; from the screen position to cope with the case
+    sbc $8c                 ; where the monster is partially off the left hand
+    sta $72                 ; side of the screen.
+    lda $73
+    sbc #0
+    sta $73
+    clc
+
+    iny
+    lda ($86),y                 ; dy offset
+    cmp #0
+    bne plot8x8_x0_y1
+    jmp plot8x8_x0_y0
+
+plot_monster_bank2:       ; X=monster y offset,Y=offset of monster y offset
+
+    lda bank2_char_rows_low,x   ; y position (low)
+    adc $72
+    sta $72
+    lda $73
+    adc bank2_char_rows_high,x  ; y position (high)
+    sta $73
+    clc
+
+    lda $72                 ; Subtract the starting offset into the data
+    sec                     ; from the screen position to cope with the case
+    sbc $8c                 ; where the monster is partially off the left hand
+    sta $72                 ; side of the screen.
+    lda $73
+    sbc #0
+    sta $73
+    clc
+
+    iny
+    lda ($86),y                 ; dy offset
+    cmp #0
+    bne plot8x8_x0_y1
+
+plot8x8_x0_y0:          ; $70,$71=source address
+                        ; $72,$73=destination address
+                        ; $8c=first offset in sprite data
+                        ; $8d=last offset in sprite data
+    ldy $8d
+
+    plot8x8_x0_y0_loop:
+        lda ($70),y
+        eor ($72),y
+        sta ($72),y
+        cpy $8c
+        beq plot8x8_x0_y0_exit
+        dey
+        jmp plot8x8_x0_y0_loop
+
+    plot8x8_x0_y0_exit:
+    clc
+    rts
+
+plot8x8_x0_y1:          ; $70,$71=source address
+                        ; $72,$73=destination address
+                        ; $8c=first offset in sprite data
+                        ; $8d=last offset in sprite data
+    clc
+    lda $72
+    adc #4
+    sta $72
+    lda $73
+    adc #0
+    sta $73
+    clc
+
+    ldy $8c                     ; Start reading from the first offset.
+    lda #1
+    sta $89
+
+    plot8x8_x0_y1_outer_loop:
+
+        plot8x8_x0_y1_loop:
+
+            ldx #3                  ; Plot four lines of the sprite.
+
+            plot8x8_x0_y1_inner_loop:
+
+                lda ($70),y
+                eor ($72),y
+                sta ($72),y
+                iny
+                dex
+                bpl plot8x8_x0_y1_inner_loop
+
+            tya
+            adc #4
+            cmp $8d
+            bcs plot8x8_x0_y1_next_row
+            tay
+
+            jmp plot8x8_x0_y1_loop
+
+        plot8x8_x0_y1_next_row:
+
+        dec $89
+        bmi plot8x8_x0_y1_exit
+
+        clc
+        lda $72       ; move the destination pointer to refer to the next line
+        adc #$38
+        sta $72
+        lda $73
+        adc #$01
+        sta $73
+        clc
+
+        lda $8c
+        adc #4
+        tay
+        jmp plot8x8_x0_y1_outer_loop
+
+    plot8x8_x0_y1_exit:
+    clc
+    rts
+
+; Sprite data stored in memory: 00 04 08 0c 10 14 18 1c 20 24 28 2c
+
+plot8x24_y0:            ; $70,$71=source address
+                        ; $72,$73=destination address
+
+    ldx #2
+
+    plot8x24_y0_loop:
+
+        ldy #15
+
+        plotloop8x24_y0_0:
+            lda ($70),y
+            eor ($72),y
+            sta ($72),y
+            dey
+            bpl plotloop8x24_y0_0
+
+        dex
+        bmi plot8x24_y0_exit
+
+        lda $72
+        adc #$40
+        sta $72
+        lda $73
+        adc #$01
+        sta $73
+        clc
+
+        lda $70
+        adc #16
+        sta $70
+        lda $71
+        adc #0
+        sta $71
+        clc
+
+        jmp plot8x24_y0_loop
+
+    plot8x24_y0_exit:
+    clc
+    rts
+
+plot8x24_y1_data:   .byte 4, 12
+plot_upper_offsets: .byte 0, 8, 16, 24
+plot_lower_offsets: .byte 7, 15, 23, 31
+
+plot8x24_y1:            ; $70,$71=source address
+                        ; $72,$73=destination address
+
+    lda #2
+    sta $8d
+
+    plot8x24_y1_loop:
+
+        ldx #0
+        plot8x24_y1_upper_loop_outer:
+
+            ldy plot8x24_y1_data,x
+            lda plot_upper_offsets,x
+            sta $89
+
+            plot8x24_y1_upper_loop_inner:       ; plot the first column until
+                dey                             ; we reach the start
+                cpy $89
+                bmi plot8x24_y1_upper_loop_inner_endloop
+                lda ($70),y
+                eor ($72),y
+                sta ($72),y
+                jmp plot8x24_y1_upper_loop_inner
+
+            plot8x24_y1_upper_loop_inner_endloop:
+            clc
+
+            inx
+            cpx #2
+            bne plot8x24_y1_upper_loop_outer
+
+        clc
+        lda $72       ; move the destination pointer to refer to the next line
+        adc #$38
+        sta $72
+        lda $73
+        adc #$01
+        sta $73
+        clc
+
+        ldx #0
+        plot8x24_y1_lower_loop_outer:
+
+            lda plot_lower_offsets,x
+            tay
+            lda plot8x24_y1_data,x
+            sta $89
+
+            plot8x24_y1_lower_loop_inner:   ; plot until we reach the initial
+                lda ($70),y                 ; offset for the column
+                eor ($72),y
+                sta ($72),y
+                dey
+                cpy $89
+                bpl plot8x24_y1_lower_loop_inner
+
+            inx
+            cpx #2
+            bne plot8x24_y1_lower_loop_outer
+
+        dec $8d
+        bmi plot8x24_y1_exit
+
+        clc
+        lda $70         ; update the source pointer to refer to the next piece
+        adc #16         ; of sprite data
+        sta $70
+        lda $71
+        adc #0
+        sta $71
+        clc
+
+        lda $72         ; update the destination pointer to point to the next
+        adc #8          ; space
+        sta $72
+        lda $73
+        adc #0
+        sta $73
+        clc
+
+        jmp plot8x24_y1_loop
+
+    plot8x24_y1_exit:
+    clc
+    rts
+
+plot_collected_object:  ; Y=special tile number
+
+    lda ($84),y                     ; load the tile number
+    jsr read_sprite_address_next    ; $70,$71=sprite address
+
+    sty $8c         ; temporarily store the special tile number
+    tya             ; tile 
+    and #$0f        ; convert the tile number into a screen position
+    asl
+    asl
+    asl
+    sta $8d                         ; temporarily store the screen offset
+    adc #top_panel_objects_bank1_low
+    sta $72
+    lda #top_panel_objects_bank1_high
+    adc #0
+    sta $73
+    clc
+
+    jsr plot_tile_bank
+
+    ldy $8c                         ; retrieve the special tile number
+    lda ($84),y                     ; load the tile number
+    jsr read_sprite_address_next    ; $70,$71=sprite address
+
+    lda $8d                         ; retrieve the screen offset
+    adc #top_panel_objects_bank2_low
+    sta $72
+    lda #top_panel_objects_bank2_high
+    adc #0
+    sta $73
+    clc
+
+    jsr plot_tile_bank
+    ldy $8c                         ; restore the special tile number
+    rts

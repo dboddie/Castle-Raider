@@ -1,0 +1,597 @@
+; Copyright (C) 2013 David Boddie <david@boddie.org.uk>
+;
+; This program is free software: you can redistribute it and/or modify
+; it under the terms of the GNU General Public License as published by
+; the Free Software Foundation, either version 3 of the License, or
+; (at your option) any later version.
+;
+; This program is distributed in the hope that it will be useful,
+; but WITHOUT ANY WARRANTY; without even the implied warranty of
+; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+; GNU General Public License for more details.
+;
+; You should have received a copy of the GNU General Public License
+; along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+; Monster plotting routines (nnxa)
+
+monster_sprite_low: .byte monster_spr_low0,     monster_spr_low1
+                    .byte monster_spr_sh_low0,  monster_spr_sh_low1
+                    .byte monster_spr_low2,     monster_spr_low3
+                    .byte monster_spr_sh_low2,  monster_spr_sh_low3
+monster_sprite_high:.byte monster_spr_high0,    monster_spr_high1
+                    .byte monster_spr_sh_high0, monster_spr_sh_high1
+                    .byte monster_spr_high2,    monster_spr_high3
+                    .byte monster_spr_sh_high2, monster_spr_sh_high3
+
+plot8x8_lengths: .byte 15, 23
+
+read_monster_row_address:   ; A=index
+                            ; Returns $76,77 (monster row span address)
+    clc
+    asl                         ; index*2
+    adc #<monster_row_address
+    sta $76
+    lda #>monster_row_address
+    adc #0
+    sta $77
+    clc
+
+    rts
+
+plot_monsters:
+
+    lda bank_number
+    cmp #0
+    bne plot_monsters_bank2
+    jmp plot_monsters_bank1
+
+plot_monsters_bank1:            ; Entry point for plotting monsters on bank 1.
+
+    jsr set_monsters_bank1
+    jmp plot_monsters_pre_loop
+
+plot_monsters_bank2:            ; Entry point for plotting monsters on bank 2.
+
+    jsr set_monsters_bank2
+    jmp plot_monsters_pre_loop
+
+set_monsters_bank1:             ; General routine for setting the monster
+                                ; plotting routine. Could be moved into
+    lda #<plot_monster_bank1    ; plot_monsters_bank1 later.
+    sta $7a
+    lda #>plot_monster_bank1
+    sta $7b
+    rts
+
+set_monsters_bank2:             ; General routine for setting the monster
+                                ; plotting routine. Could be moved into
+    lda #<plot_monster_bank2    ; plot_monsters_bank2 later.
+    sta $7a
+    lda #>plot_monster_bank2
+    sta $7b
+    rts
+
+plot_monsters_pre_loop:
+
+    lda #0
+
+    plot_monsters_loop:
+
+        sta $88                     ; store the offset temporarily
+
+        tay
+        lda ($86),y                 ; type, animation and dx
+        cmp #0
+        beq plot_monsters_loop_next
+
+        jsr plot_monster
+
+        plot_monsters_loop_next:
+        clc
+
+        lda $88
+        adc #4
+        cmp #$10
+        bne plot_monsters_loop
+
+    plot_monsters_exit:
+    clc
+    rts
+
+plot_monster:   ; $7a,$7b=sprite plotting routing for a given bank
+                ; (set up in set_monsters_bank1 or set_monsters_bank2)
+                ; A=monster type
+                ; Y=offset into monster table (0, 4, 8, 12)
+
+    ; Determine the sprite to use from the type and dx value, converting the
+    ; value to an offset into the sprite address arrays.
+    and #monster_plot_bits      ; Mask off the non-sprite-related bits.
+    tax
+    and #monster_dx_bit
+    lsr
+    sta $8c                     ; dx=0 or 1
+
+    lda monster_sprite_low,x    ; load the sprite address
+    sta $70
+    lda monster_sprite_high,x
+    sta $71
+
+    ldx $8c                 ; Use the dx value to look up the length of data
+    lda plot8x8_lengths,x   ; to plot for the sprite.
+    sta $8d
+    lda #0                  ; Plot from the beginning of the sprite data.
+    sta $8c
+
+    iny
+    lda ($86),y                 ; x offset
+    sta $8b                     ; Store the x offset.
+
+    cmp #254                    ; Check for x >= 254 (-2 >= x > 0).
+    bcc plot_monster_not_left
+
+    cmp #255
+    beq plot_monster_x_minus_one
+
+        lda #0                  ; Only plot from the left hand edge.
+        sta $8b
+
+        lda #16
+        sta $8c
+        cmp $8d                 ; If the start offset is greater than the
+        bcc plot_monster_plot   ; finish offset then exit.
+
+            clc
+            rts
+
+    plot_monster_x_minus_one:
+
+        lda #0                  ; Only plot from the left hand edge.
+        sta $8b
+
+        lda #8
+        sta $8c
+        jmp plot_monster_plot
+
+    plot_monster_not_left:
+
+    cmp #38
+    bcc plot_monster_plot       ; If x < 38 then just plot everything.
+    beq plot_monster_x_plus_one
+
+    cmp #40
+    bcc plot_monster_x_plus_two
+
+        clc                     ; x >= 40
+        rts
+
+    plot_monster_x_plus_one:    ; x = 38
+
+        lda #15
+        sta $8d
+        jmp plot_monster_plot
+
+    plot_monster_x_plus_two:    ; x = 39
+
+        lda #7
+        sta $8d
+
+    plot_monster_plot:
+
+    lda $8b                     ; Retrieve the x offset.
+    asl
+    asl
+    asl                         ; x position
+    sta $72
+    lda #0
+    adc #0
+    sta $73
+    clc
+
+    iny
+    lda ($86),y                 ; y offset
+    tax
+
+    jmp ($7a)
+    ; The plotting routine returns to the caller of this routine.
+
+; Monster creation/destruction and movement.
+
+create_monster_left:
+
+    lda monster_left_index
+    ldx visible_monster_left_index  ; X=visible index
+    jsr create_monster
+    bcs create_monster_left_exit
+
+    lda #254
+    dex
+    dex
+    sta monster_positions_address,x ; Store the x coordinate.
+
+    create_monster_left_exit:
+    clc
+    rts
+
+create_monster_right:
+
+    lda monster_right_index
+    ldx visible_monster_right_index ; X=visible index
+    jsr create_monster
+    bcs create_monster_right_exit
+
+    lda #40
+    dex
+    dex
+    sta monster_positions_address,x ; Store the x coordinate.
+
+    create_monster_right_exit:
+    clc
+    rts
+
+create_monster:                     ; A=index
+                                    ; X=visible index
+    jsr read_monster_row_address
+    ldy #0
+    lda ($76),y                     ; Read the monster type.
+    cmp #0                          ; If no monster is defined then exit;
+    bne create_monster_check_slot   ; otherwise create the monster.
+    sec
+    rts
+
+    create_monster_check_slot:
+
+    tay                             ; Temporarily store the type.
+
+    lda monster_positions_address,x
+    cmp #0
+    beq create_monster_create
+    rts
+
+    create_monster_create:
+
+    lda bank_number
+    eor #$01
+    asl                 ; 00xa (dx = !bank; a = 0)
+    sta $8c
+
+    tya                             ; Recover the type.
+    and #monster_data_type_bits     ; Extract the monster type number (00000nn0).
+    asl                             ; 0000nn00
+    ora $8c                         ; 0000nnxa (from above)
+    ora #monster_existence_bit      ; Set the existence bit.
+    sta $8c
+
+    tya
+    and #monster_data_axis_bit
+    cmp #0
+    beq create_monster_store_type
+
+    lda #$40                        ; Set the axis bit (vertical motion).
+
+    create_monster_store_type:
+
+    ora $8c
+    sta monster_positions_address,x
+
+    tya                             ; Recover the original type value.
+    and #$f8
+    lsr
+    lsr
+    lsr
+
+    inx
+    inx
+    sta monster_positions_address,x ; Store the y coordinate.
+    inx
+    lda #0
+    sta monster_positions_address,x ; Store the dy coordinate.
+
+    clc
+    rts
+
+move_monsters:
+
+    ; Check the monster movement counter and perform updates now if necessary.
+    lda monster_movement_counter
+    and #$07
+    beq move_monsters_pre_loop
+
+    clc
+    rts
+
+move_monsters_pre_loop:
+
+    lda #0
+    sta $88
+
+    move_monsters_loop:
+
+        ldy $88
+        lda ($86),y                 ; Load the type, animation flag and dx.
+        cmp #0
+        beq move_monsters_loop_next
+
+        eor #monster_animation_bit  ; Flip the animation bit.
+        sta $8c                     ; Temporarily store the type/dx byte.
+
+        and #monster_axis_bit
+        cmp #monster_vertical_motion
+        bne move_monsters_horizontally
+
+            jsr move_monster_vertically
+            jsr check_monster_player
+            jmp move_monsters_loop_update_type
+
+        move_monsters_horizontally:
+
+            jsr move_monster_horizontally
+            jsr check_monster_player
+
+        move_monsters_loop_update_type:
+
+        ldy $88
+        lda $8c
+        sta ($86),y                 ; Store the changed type.
+
+        move_monsters_loop_next:
+        clc
+
+        lda $88
+        adc #4
+        cmp #$10
+        beq move_monsters_exit
+
+        sta $88                     ; Store the offset temporarily.
+        jmp move_monsters_loop
+
+    move_monsters_exit:
+    clc
+    rts
+
+move_monster_vertically:    ; $86,$87=monster table
+                            ; $88=offset into monster table
+                            ; Y=offset into monster table (initially 0)
+        iny
+        iny                         ; Select the y offset.
+
+        iny                         ; Select the dy value.
+        lda ($86),y
+
+        eor #$01                    ; dy = !dy
+        sta $89                     ; Temporarily store dy.
+        sta ($86),y
+
+        dey                         ; Select the y offset.
+
+        lda $8c                     ; Recover the type.
+        and #monster_direction_bit
+        cmp #$00
+        bne move_monster_down
+
+        ; Upward motion
+
+        lda $89                             ; dy
+        cmp #0                              ; If we have just moved up within
+        beq move_monster_vertically_exit    ; the same cell then exit.
+
+        lda ($86),y
+        cmp #0
+        beq move_monsters_change_direction
+
+            sec
+            sbc #1                  ; y -= 1
+            clc
+
+            jsr check_monster_can_move_vertically
+            bcs move_monsters_change_direction
+
+            lda $81
+            sta ($86),y             ; Store the new y offset and exit.
+            rts
+
+        move_monster_down:
+
+        ; Downward motion
+
+        lda $89                         ; dy
+        cmp #0                          ; If we moved within a cell then exit.
+        bne move_monster_vertically_exit
+
+            clc
+            lda ($86),y
+            adc #1                      ; y += 1
+            sta ($86),y                 ; Store the new y offset.
+
+        lda ($86),y
+        cmp #23
+        beq move_monsters_change_direction
+
+            adc #1
+            jsr check_monster_can_move_vertically
+            bcs move_monsters_change_direction
+
+    move_monster_vertically_exit:
+
+    clc
+    rts
+
+move_monsters_change_direction: ; $8c=monster type
+
+    lda $8c                     ; Recover the type.
+    eor #monster_direction_bit
+    sta $8c
+    rts
+
+move_monster_horizontally:  ; $86,$87=monster table
+                            ; $88=offset into monster table
+                            ; Y=offset into monster table (initially 0)
+
+    iny                         ; Select the x offset.
+
+    lda $8c                     ; Recover the type.
+    and #monster_direction_bit
+    cmp #$00
+    bne move_monster_right
+
+    ; Leftward motion
+
+    lda $8c
+    and #$02
+    lsr                                 ; Convert the dx value to a bank number.
+    cmp bank_number                     ; If we are on the edge of a cell as
+                                        ; currently displayed then check for
+    bne move_monster_horizontally_move_left ; tiles; otherwise just move.
+
+        lda ($86),y
+        sta $80                             ; Store the x position.
+        cmp #0                              ; If at the edge of the screen then
+        beq move_monsters_change_direction  ; move right next time.
+
+        lda bank_number
+        cmp #0
+        bne move_monster_horizontally_check_left
+
+        clc
+        dec $80
+
+        move_monster_horizontally_check_left:
+
+        jsr check_monster_can_move_horizontally
+        bcs move_monsters_change_direction
+
+    move_monster_horizontally_move_left:
+
+    lda $8c                     ; Recover the type.
+    eor #$02                    ; dx = !dx
+    sta $8c
+
+    and #$02
+    cmp #0
+    beq move_monster_horizontally_exit
+
+    lda ($86),y
+    sec
+    sbc #1
+    sta ($86),y             ; Store the new y offset and exit.
+
+    clc
+    rts
+
+    move_monster_right:
+
+    ; Rightward motion
+
+    lda $8c
+    and #$02
+    lsr                                 ; Convert the dx value to a bank number.
+    cmp bank_number                     ; If we are on the edge of a cell as
+                                        ; currently displayed then check for
+    bne move_monster_horizontally_move_right    ; tiles; otherwise just move.
+
+        lda ($86),y
+        sta $80
+        cmp #38                             ; If at the edge of the screen then
+        beq move_monsters_change_direction  ; move left next time.
+
+        clc
+        adc #2                      ; The monster is two cells wide.
+        sta $80
+
+        jsr check_monster_can_move_horizontally
+        bcs move_monsters_change_direction
+
+    move_monster_horizontally_move_right:
+
+    lda $8c                     ; Recover the type.
+    eor #$02                    ; dx = !dx
+    sta $8c
+
+    and #$02
+    cmp #0
+    bne move_monster_horizontally_exit
+
+    clc
+    lda ($86),y
+    adc #1                      ; x += 1
+    sta ($86),y                 ; Store the new x offset.
+
+    move_monster_horizontally_exit:
+
+    clc
+    rts
+
+check_monster_can_move_vertically:  ; $86,$87=monster entry in table
+                                    ; A=y position on screen
+                                    ; Y=y offset in monster entry
+
+    sta $81                 ; $81=y position (0-23)
+    dey
+    lda ($86),y
+    sta $80                 ; $80=x position (0-39)
+    iny
+    jmp check_monster_can_move
+
+check_monster_can_move_horizontally:    ; $86,$87=monster entry in table
+                                        ; A=x position on screen
+                                        ; Y=x offset in monster entry
+
+    iny
+    lda ($86),y
+    sta $81                 ; $81=y position (0-23)
+    dey
+    jmp check_monster_can_move
+
+check_monster_can_move:     ; A=row number
+                            ; X=monster type
+                            ; Y=y offset of monster in table
+                            ; Returns C set if cannot move; C clear otherwise.
+
+    sta $8b
+    sty $8d
+
+    jsr check_tile          ; C set if tile is present; C clear otherwise.
+
+    bcs check_monster_can_move_exit ; Leave immediately if a tile is found.
+
+    lda bank_number
+    cmp #1
+    bne check_monster_can_move_exit ; Only check additional tiles on bank 2.
+
+    inc $80
+    jsr check_tile          ; C set if tile is present; C clear otherwise.
+    dec $80
+
+    check_monster_can_move_exit:
+
+    lda $8b
+    ldy $8d
+    rts
+
+check_monster_player:
+
+    ldy $88
+    iny
+    lda ($86),y                     ; Load monster x offset.
+
+    cmp #18
+    bcc check_monster_player_exit
+    cmp #21
+    bcs check_monster_player_exit
+
+    iny
+    lda ($86),y
+    cmp player_y
+    bcc check_monster_player_exit
+    sbc #2
+    clc
+    cmp player_y
+    bcs check_monster_player_exit
+
+    jsr player_demise
+
+    check_monster_player_exit:
+
+    clc
+    rts
+

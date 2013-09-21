@@ -1,0 +1,659 @@
+; Copyright (C) 2013 David Boddie <david@boddie.org.uk>
+;
+; This program is free software: you can redistribute it and/or modify
+; it under the terms of the GNU General Public License as published by
+; the Free Software Foundation, either version 3 of the License, or
+; (at your option) any later version.
+;
+; This program is distributed in the hope that it will be useful,
+; but WITHOUT ANY WARRANTY; without even the implied warranty of
+; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+; GNU General Public License for more details.
+;
+; You should have received a copy of the GNU General Public License
+; along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+init_scrolling:
+
+    ldx #15
+    init_scrolling_loop:
+
+        lda #0
+        sta row_indices,x
+        sta initial_row_tiles,x
+        sta initial_row_offsets,x
+        sta max_row_offsets,x
+        dex
+        bpl init_scrolling_loop
+
+    ; Initialise the monster indices and offsets.
+
+    ; Initialise the on-screen monster indices.
+    ; Usually, the left index trails the right index by the number of monsters
+    ; that appear on screen. If an empty span appears, it is usually 256 cells
+    ; long so the contents of the table are not critical. However, the first
+    ; span is empty and short, so this ensures that the indices are
+    ; synchronised after it appears.
+    sta visible_monster_left_index
+    lda #4
+    sta visible_monster_right_index
+
+    ; The left index and offset are straightforward to set because they are at
+    ; the start of the level, so we store zero in both of them. A padding span
+    ; ensures that monsters will be created before they appear on the left hand
+    ; side of the screen.
+    lda #0
+    sta monster_left_index
+    sta monster_left_offset
+    sta monster_left_max_offset
+
+    ; The right index and offset need to be calculated from the start of the
+    ; level, starting from the span after the empty padding span.
+    lda #2
+    sta monster_right_index         ; Record the initial right edge index.
+    lda #0
+    sta $8d                         ; Keep track of the current column number.
+
+    lda #1
+    jsr read_monster_row_address    ; Examine the monster data at index 1.
+
+    ldy #1                          ; Examine the span information.
+
+    init_scrolling_monster_loop:
+
+        lda ($76),y                     ; Load the span length (n - 1).
+        cmp #40                         ; If this alone exceeds the screen
+        bcs init_scrolling_monster_next ; width then calculate the offset.
+
+        adc $8d                         ; Calculate the next monster position.
+        adc #1
+
+        cmp #41                         ; Continue until we reach the right
+        bcs init_scrolling_monster_next ; edge of the screen.
+
+        sta $8d                     ; Store the new monster position.
+
+        inc monster_right_index     ; Update the index until we reach the edge.
+        lda $76
+        adc #2
+        sta $76
+        lda $77
+        adc #0
+        sta $77
+        clc
+        jmp init_scrolling_monster_loop
+
+    init_scrolling_monster_next:
+    clc
+
+    ; The right index is already set. Calculate the offset from the current
+    ; column value.
+    lda ($76),y
+    sta monster_right_max_offset    ; Store the maximum offset.
+
+    sec                             ; Calculate the remaining offset until the
+    sbc #39                         ; start of the next span.
+    clc
+    adc $8d                         ; Since the position is less than 39, the
+    sta monster_right_offset        ; carry flag should not be set here.
+
+    rts
+
+scroll_right_update:
+
+    lda bank_number
+    cmp #1              ; showing the second bank?
+    beq scroll_right_update_show_bank1
+
+    lda scroll_offset_low
+    cmp #level_extent_low
+    bne scroll_right_update_ok_to_scroll
+    lda scroll_offset_high
+    cmp #level_extent_high
+    bne scroll_right_update_ok_to_scroll
+
+    clc
+    rts
+
+    scroll_right_update_ok_to_scroll:
+    clc
+
+    lda #1
+    sta scrolled
+
+    jsr plot_bank2r
+    lda #19
+    jsr $fff4
+    jsr show_bank2
+
+    jsr scroll_update_bank1_bank2
+
+    lda player_animation
+    ora #$02
+    sta player_animation
+
+    jsr plot_char_bank2         ; plot the player on bank 2
+    jsr scroll_monsters_right
+    jsr plot_monsters_bank2     ; plot the monsters, too
+
+    clc
+    rts
+
+    scroll_right_update_show_bank1:
+    clc
+
+    lda #1
+    sta scrolled
+
+    lda scroll_offset_low   ; Increase the scroll offset before showing bank 1.
+    adc #1
+    sta scroll_offset_low
+    lda scroll_offset_high
+    adc #0
+    sta scroll_offset_high
+    clc
+
+    jsr scroll_right
+
+    jsr plot_bank1r
+    lda #19
+    jsr $fff4
+    jsr show_bank1
+
+    jsr scroll_update_bank2_bank1
+
+    jsr scroll_right_update_monsters
+
+    lda player_animation
+    ora #$02
+    sta player_animation
+
+    jsr plot_char_bank1         ; plot the player on bank 1
+    jsr scroll_monsters_right
+    jsr plot_monsters_bank1     ; plot the monsters, too
+
+    clc
+    rts
+
+scroll_left_update:
+
+    lda bank_number
+    cmp #1              ; showing the second bank?
+    beq scroll_left_update_show_bank1
+
+    lda scroll_offset_low
+    cmp #0
+    bne scroll_left_update_ok_to_scroll
+    lda scroll_offset_high
+    cmp #0
+    bne scroll_left_update_ok_to_scroll
+
+    clc
+    rts
+
+    scroll_left_update_ok_to_scroll:
+    clc
+
+    lda #1
+    sta scrolled
+
+    jsr scroll_left
+
+    jsr plot_bank2l
+    lda #19
+    jsr $fff4
+    jsr show_bank2
+
+    jsr scroll_update_bank1_bank2
+
+    jsr scroll_left_update_monsters
+
+    lda player_animation
+    and #$01
+    sta player_animation
+
+    jsr plot_char_bank2         ; plot the player on bank 2
+    jsr scroll_monsters_left
+    jsr plot_monsters_bank2     ; plot the monsters, too
+
+    lda scroll_offset_low   ; Decrease the scroll offset after showing bank 2.
+    sec
+    sbc #1
+    sta scroll_offset_low
+    lda scroll_offset_high
+    sbc #0
+    sta scroll_offset_high
+    clc
+
+    clc
+    rts
+
+    scroll_left_update_show_bank1:
+    clc
+
+    lda #1
+    sta scrolled
+
+    jsr plot_bank1l
+    lda #19
+    jsr $fff4
+    jsr show_bank1
+
+    jsr scroll_update_bank2_bank1
+
+    lda player_animation
+    and #$01
+    sta player_animation
+
+    jsr plot_char_bank1         ; plot the player on bank 1
+    jsr scroll_monsters_left
+    jsr plot_monsters_bank1     ; plot the monsters, too
+
+    clc
+    rts
+
+scroll_update_bank2_bank1:
+
+    jsr plot_char_bank2         ; unplot the player on bank 2
+    jsr plot_monsters_bank2     ; unplot the monsters, too
+
+    lda player_falling
+    cmp #0
+    beq scroll_update_plot_bank1
+
+    jsr player_drop
+    jmp scroll_update_animation_next
+
+    scroll_update_plot_bank1:
+
+    lda player_jumping
+    cmp #0
+    bne scroll_update_animation_next
+
+    lda player_animation
+    eor #1
+    sta player_animation
+
+    scroll_update_animation_next:
+    clc
+
+    lda #0
+    sta bank_number
+
+    clc
+    rts
+
+scroll_update_bank1_bank2:
+
+    jsr plot_char_bank1         ; unplot the player on bank 1
+    jsr plot_monsters_bank1     ; unplot the monsters, too
+
+    lda player_falling
+    cmp #0
+    beq scroll_update_plot_bank2
+
+    jsr player_drop
+
+    scroll_update_plot_bank2:
+    clc
+
+    lda #1
+    sta bank_number
+
+    clc
+    rts
+
+scroll_right:   ; Scroll the screen right by decreasing the initial row offsets
+                ; until a new span needs to be shown. When this occurs, increase
+                ; the row index, set the initial row tile to the type in the
+                ; span that now starts off-screen, and set the initial row
+                ; offset to the length of that span. The max
+    ldx #15
+    scroll_right_loop:
+
+        lda initial_row_offsets,x
+        cmp #0                              ; Is the current offset zero?
+        beq scroll_right_loop_next_offset   ; If so, update the current span.
+
+        dec initial_row_offsets,x   ; Otherwise, decrease the offset.
+        dex
+        bpl scroll_right_loop       ; Examine the next row.
+
+        clc
+        rts
+
+        scroll_right_loop_next_offset:  ; Update the current span.
+        clc
+
+        jsr read_row_address    ; Read the row address before updating the index.
+
+        inc row_indices,x       ; Increment the index to refer to the next span.
+
+        ldy #0
+        lda ($76),y             ; Load the tile type for the current span.
+        sta initial_row_tiles,x ; Store the tile type.
+
+        ldy #1                  ; Record the number of tiles left in the current
+        lda ($76),y             ; span minus 1 (n - 1).
+        sta initial_row_offsets,x
+        sta max_row_offsets,x   ; This is also the span's maximum offset for
+                                ; use when scrolling left.
+        dex
+        bpl scroll_right_loop
+
+    clc
+    rts
+
+scroll_right_update_monsters:
+
+    ; Update the indices and offsets into the monster data.
+
+    dec monster_right_offset
+    beq scroll_right_create_right_monster   ; Offset is zero - create a monster.
+    lda monster_right_offset
+    cmp #255
+    bne scroll_right_handle_left_edge ; Offset is > 0, so check the left offset.
+
+        ; The offset was zero, so it needs to be reset.
+        ; Was:  v
+        ;       M ...... m (current span = M; distance to M = 0)
+        ; Now:   v
+        ;       M ...... m (current span = m; distance to m = length of M)
+
+        lda monster_right_index     ; Read the address of the right span.
+        jsr read_monster_row_address
+
+        ldy #1
+        lda ($76),y                 ; The current span's length is used to count
+        sta monster_right_offset    ; down to the next monster.
+        sta monster_right_max_offset
+
+        inc monster_right_index     ; Increment the right index to refer to the
+                                    ; next span.
+
+        jmp scroll_right_handle_left_edge
+
+    scroll_right_create_right_monster:
+
+        jsr create_monster_right
+
+        lda visible_monster_right_index     ; Update the visible index to refer
+        adc #4                              ; to the next slot in the monster
+        and #$0c                            ; table after the monster has been
+        sta visible_monster_right_index     ; created.
+        clc
+
+    scroll_right_handle_left_edge:
+
+    dec monster_left_offset
+    beq scroll_right_update_left_index ; Offset is zero - update on-screen index.
+    lda monster_left_offset
+    cmp #255
+    bne scroll_right_update_monsters_exit   ; Offset is > 0, so exit.
+
+        lda monster_left_index          ; Read the address of the current left
+        jsr read_monster_row_address    ; span.
+
+        ldy #1
+        lda ($76),y                 ; The current span's length is used to count
+        sta monster_left_offset     ; down to the next monster.
+        sta monster_left_max_offset
+
+        inc monster_left_index      ; Increment the left index to refer to the
+                                    ; next span.
+        clc
+        rts
+
+    scroll_right_update_left_index:
+
+        clc
+
+        lda visible_monster_left_index  ; Move the on-screen index back
+        adc #4                          ; to its previous value.
+        and #$0c
+        sta visible_monster_left_index
+
+    scroll_right_update_monsters_exit:
+    clc
+    rts
+
+scroll_left:    ; Scroll the screen left by increasing the initial row offsets
+                ; until a new span needs to be shown. When this occurs, decrease
+                ; the row index, set the initial 
+    ldx #15
+    scroll_left_loop:
+
+        lda initial_row_offsets,x
+        cmp max_row_offsets,x                   ; Has the current offset reached
+        beq scroll_left_loop_previous_offset    ; the maximum value?
+
+        inc initial_row_offsets,x   ; If not, keep increasing the offset.
+        dex
+        bpl scroll_left_loop        ; Examine the next row.
+
+        clc
+        rts
+
+        scroll_left_loop_previous_offset:   ; Update the current span.
+        clc
+
+        dec row_indices,x   ; Decrement the index to refer to the previous span.
+
+        jsr read_row_address    ; Read the row address for the previous span.
+
+        lda $76             ; Refer to the span before the previous span, p'.
+        sec
+        sbc #2
+        sta $76
+        lda $77
+        sbc #0
+        sta $77
+        clc
+
+        ldy #0
+        lda ($76),y             ; Load the tile type for span p' and store it as
+        sta initial_row_tiles,x ; the initial tile type.
+
+        ldy #1                  ; Load the number of tiles in span p' minus 1
+        lda ($76),y             ; (n - 1) and store this value as the maximum
+        sta max_row_offsets,x   ; row offset for the previous span
+
+        lda #0                      ; Set the initial row offset of the previous
+        sta initial_row_offsets,x   ; span.
+
+        dex
+        bpl scroll_left_loop
+
+    clc
+    rts
+
+scroll_left_update_monsters:
+
+    ; Update the indices and offsets into the monster data.
+
+    lda monster_right_offset
+    cmp monster_right_max_offset            ; If the offset is at its maximum
+    beq scroll_left_reset_right_offset      ; value then reset it.
+
+        inc monster_right_offset            ; Otherwise, increase the offset.
+        cmp #0                              ; If it was 0, we update the visible
+        bne scroll_left_handle_left_edge    ; right index.
+
+            sec
+            lda visible_monster_right_index ; Move the on-screen index back
+            sbc #4                          ; to its previous value.
+            and #$0c
+            sta visible_monster_right_index
+            clc
+            jmp scroll_left_handle_left_edge    ; Handle the left edge.
+
+    scroll_left_reset_right_offset:
+
+        ; The offset was at the maximum value, so it needs to be reset.
+        ; Was:   v
+        ;       M ...... m (current span = m; distance to m = maximum)
+        ; Now:  v
+        ;       M ...... m (current span = M; distance to M = 0)
+
+        dec monster_right_index     ; Decrement the right index to refer to the
+                                    ; previous span.
+
+        lda #0                      ; The maximum offset was reached, so it
+        sta monster_right_offset    ; needs to be reset. We retain the current
+                                    ; index.
+
+        ldx monster_right_index     ; Read the address of the new right span.
+        dex
+        txa
+        jsr read_monster_row_address
+
+        ldy #1
+        lda ($76),y                     ; The new span's length is used to count
+        sta monster_right_max_offset    ; up to the previous monster.
+
+    scroll_left_handle_left_edge:
+
+    lda monster_left_offset
+    cmp monster_left_max_offset         ; If the offset is at its maximum value
+    beq scroll_left_reset_left_offset   ; then reset it.
+
+        inc monster_left_offset             ; Otherwise, increase the offset.
+        cmp #0                              ; If it was 0, we create a monster.
+        beq scroll_left_create_left_monster
+        rts                                 ; Otherwise, exit.
+
+    scroll_left_reset_left_offset:
+
+        lda #0                  ; The maximum offset was reached, so it needs
+        sta monster_left_offset ; to be reset.
+
+        dec monster_left_index      ; Decrement the left index to refer to the
+                                    ; previous span.
+
+        ldx monster_left_index      ; Read the address of the new left span.
+        dex
+        txa
+        jsr read_monster_row_address
+
+        ldy #1
+        lda ($76),y                 ; The new span's length is used to count
+        sta monster_left_max_offset ; up to the previous monster.
+
+        rts
+
+    scroll_left_create_left_monster:
+
+        lda visible_monster_left_index      ; Update the visible index to refer
+        sec                                 ; to the previous slot in the
+        sbc #4                              ; monster table before creating the
+        and #$0c                            ; monster.
+        sta visible_monster_left_index
+        clc
+
+        jsr create_monster_left
+
+    clc
+    rts
+
+scroll_monsters_left:
+
+    lda #0
+
+    scroll_monsters_left_loop:
+
+        sta $88                     ; store the offset temporarily
+
+        tay
+        lda ($86),y                 ; type, animation flag and dx
+        cmp #0
+        beq scroll_monsters_left_loop_next
+
+        ; Move the monster right on screen.
+
+        eor #monster_dx_bit         ; toggle dx
+        sta ($86),y
+
+        and #monster_dx_bit
+        bne scroll_monsters_left_loop_dx_only
+
+        clc
+        iny
+        lda ($86),y                 ; x offset
+        cmp #40
+        bcc scroll_monsters_left_loop_move_monster
+        cmp #254
+        bcs scroll_monsters_left_loop_move_monster
+
+        lda #0                      ; Clear the type in the monster table.
+        ldy $88
+        sta ($86),y
+
+        jmp scroll_monsters_left_loop_next
+
+        scroll_monsters_left_loop_move_monster:
+        clc
+        adc #1
+        sta ($86),y                 ; x offset
+
+        scroll_monsters_left_loop_dx_only:
+
+        scroll_monsters_left_loop_next:
+        clc
+
+        lda $88
+        adc #4
+        cmp #$10
+        bne scroll_monsters_left_loop
+
+    scroll_monsters_left_exit:
+    jmp move_monsters
+
+scroll_monsters_right:
+
+    lda #0
+
+    scroll_monsters_right_loop:
+
+        sta $88                     ; store the offset temporarily
+
+        tay
+        lda ($86),y                 ; type, animation flag and dx
+        cmp #0
+        beq scroll_monsters_right_loop_next
+
+        ; Move the monster left on screen.
+
+        eor #monster_dx_bit         ; toggle dx
+        sta ($86),y
+
+        and #monster_dx_bit
+        beq scroll_monsters_right_loop_dx_only
+
+        iny
+        lda ($86),y                 ; x offset
+        cmp #254
+        bne scroll_monsters_right_loop_move_monster
+
+        lda #0
+        ldy $88                     ; Clear the type in the monster table.
+        sta ($86),y
+
+        jmp scroll_monsters_right_loop_next
+
+        scroll_monsters_right_loop_move_monster:
+        sec
+        sbc #1
+        sta ($86),y                 ; x offset
+
+        scroll_monsters_right_loop_dx_only:
+
+        scroll_monsters_right_loop_next:
+        clc
+
+        lda $88
+        adc #4
+        cmp #$10
+        bne scroll_monsters_right_loop
+
+    scroll_monsters_right_exit:
+    jmp move_monsters
