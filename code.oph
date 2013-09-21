@@ -508,7 +508,7 @@ check_tile:         ; $80=x position (0-39)
 ; d = door that can be opened with a corresponding key - two consecutive tile
 ;     numbers are used for the door and key tiles
 ; t = treasure - a pair of adjacent tiles is used to represent this in the
-;     level, though the tile numbers used are not consecutive
+;     level, and the tile numbers used differ only by the lowest bit
 
 check_tile_visible:             ; A=tile number
                                 ; returns C set if tile is visible or C
@@ -861,21 +861,6 @@ player_demise:
     sta player_lost
     dec player_lives
 
-    rts
-
-read_visible_sprite:    ; read the regular tile number for a special tile
-
-    tay
-    lda ($82),y                 ; load the visibility of the tile
-    cmp #$80
-    bcs read_visible_sprite_visible
-
-    read_visible_sprite_exit:
-    lda #0
-    rts
-
-    read_visible_sprite_visible:
-    lda ($84),y                 ; load the tile number from a table
     rts
 
 track_position: ; Scroll back to the last stored position.

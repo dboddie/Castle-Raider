@@ -132,7 +132,6 @@ read_sprite_address:        ; $76,$77=span address
     read_sprite_address_next:   ; a regular tile
     clc
 
-    and #$1f                    ; mask off the top 3 bits,
     asl
     asl
     asl
@@ -157,7 +156,6 @@ read_left_sprite_address:       ; A=tile number in high 4 bits
     read_left_sprite_address_next:  ; a regular tile
     clc
 
-    and #$1f                    ; mask off the top 3 bits,
     asl
     asl
     asl
@@ -182,7 +180,6 @@ read_rotated_sprite_address:    ; A=tile number
     read_rotated_sprite_address_next:   ; a regular tile
     clc
 
-    and #$1f                    ; mask off the top 3 bits,
     asl
     asl
     asl
@@ -207,7 +204,6 @@ read_right_sprite_address:      ; A=tile number in high 4 bits
     read_right_sprite_address_next: ; a regular tile
     clc
 
-    and #$1f                    ; mask off the top 3 bits,
     asl
     asl
     asl
@@ -218,6 +214,21 @@ read_right_sprite_address:      ; A=tile number in high 4 bits
     sta $81                     ; S2 ($80,$81)
     clc
 
+    rts
+
+read_visible_sprite:    ; read the regular tile number for a special tile
+
+    tay
+    lda ($82),y                 ; load the visibility of the tile
+    cmp #$80
+    bcs read_visible_sprite_visible
+
+    read_visible_sprite_exit:
+    lda #0
+    rts
+
+    read_visible_sprite_visible:
+    lda ($84),y                 ; load the tile number from a table
     rts
 
 plot_bank1r:

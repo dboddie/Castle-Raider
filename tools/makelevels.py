@@ -99,7 +99,7 @@ def load_level(path):
     
     return level, special
 
-def create_level_data(level, tiles):
+def create_level_data(level, tiles, special):
 
     data = []
     monsters = {}
@@ -187,7 +187,7 @@ def create_level(levels_address, level_path, number_of_special_tiles):
     
     data = ""
     
-    level_data, monster_data = create_level_data(level, tiles)
+    level_data, monster_data = create_level_data(level, tiles, special)
     row_addresses = []
     
     r = 0

@@ -247,16 +247,6 @@ offset.
 
     xxxxxxxx -> offset into visibility and tile number tables
 
-    tile_visibility_table:
-    [16 bytes]
-    tile_visibility_table_start:
-    [values]
-
-    tile_number_table:
-    [16 bytes]
-    tile_number_table_start:
-    [values]
-
 The offsets into the level data for each row are two-byte addresses, so the
 data for each row can start anywhere in memory. However, the total number of
 spans in each row is limited by the row indices which are one byte each. Since
@@ -268,6 +258,67 @@ In the initial memory map for the game, there is about 2560 bytes to use for
 the row spans, which gives an average of 160 bytes per row, or 80 spans. This
 would still yield a possible 20480 tiles or 512 screens.
 
+
+Special tiles
+-------------
+
+Special tiles have values in the level that are 16 or greater. These are used
+as offsets into two tables.
+
+The first of these is a table of values in the following format:
+
+    vcdtnnnn
+    
+        v = visible (initial visibility of the tile)
+        c = collectable item
+        d = door that can be opened with a corresponding key - two consecutive
+            tile numbers are used for the door and key tiles
+        t = treasure - a pair of adjacent tiles is used to represent this in
+            the level, and the tile number used differ only by the lowest bit
+        n = tile number
+
+The second table contains initial visibility values that are used to reset the
+values in the first table when a new game begins.
+
+Both tables have the same number of entries. A reasonable number of special
+tiles appears to be 32. Since the index into each table starts at 16, the base
+address used to access each table is defined 16 bytes lower in memory than the
+actual data stored within it.
+
+    tile_visibility_table:
+    [16 bytes]
+    tile_visibility_table_start:
+    [32 values]
+
+    tile_number_table:
+    [16 bytes]
+    tile_number_table_start:
+    [32 values]
+
+Portals
+-------
+
+Portals are doors that transport the character to a different part of the map.
+These will be used to give the impression that there are additional levels,
+either above or below the main level, or perhaps inside structures on the map.
+
+Since we check for collectable items before treasures, and all treasures are
+collectable, we can use the combination of v=0, c=0 and t=1 flags to represent
+portals. With this combination, we have the following format:
+
+    00d1nnnn
+
+If we change the order of the d and t bits, we could use the lower five bits as
+an index into a portal table by masking off the top three bits:
+
+    001dnnnn
+
+The portal table would contain 32 values, each of which needs to be 2 bytes in
+order to express all positions that are available in the level (0-65535).
+
+Although portal tiles are invisible, and should be tested only under certain
+circumstances - perhaps when the player jumps or uses an enter action - other
+tiles could be used to indicate that the portal is there.
 
 Enemies
 -------
