@@ -276,11 +276,6 @@ scroll_update_bank2_bank1:
 
     scroll_update_animation_next:
     clc
-
-    lda #0
-    sta bank_number
-
-    clc
     rts
 
 scroll_update_bank1_bank2:
@@ -295,11 +290,6 @@ scroll_update_bank1_bank2:
     jsr player_drop
 
     scroll_update_plot_bank2:
-    clc
-
-    lda #1
-    sta bank_number
-
     clc
     rts
 

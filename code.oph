@@ -84,9 +84,6 @@ init:
         bpl init_tile_visibility_loop
     clc
 
-    lda #0              ; Use 0 and 1 for banks 1 and 2.
-    sta bank_number
-
     ; Store table addresses in zero page locations for convenient access.
     lda #tile_visibility_low
     sta $82

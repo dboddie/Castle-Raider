@@ -1066,39 +1066,14 @@ initial_plot_bank_tile_loop:
     jmp initial_plot_bank1_span_endloop
 
 plot_char:
+plot_player:
 
     lda bank_number
     cmp #0
     beq plot_char_bank1
     bne plot_char_bank2
 
-plot_player:
-
-    lda bank_number
-    cmp #0
-    bne plot_player_plot_bank2
-
-        clc
-        jmp plot_char_bank1
-
-    plot_player_plot_bank2:
-
-        clc
-        jmp plot_char_bank2
-
-plot_char_bank1:            ; plots the player character on bank 1
-
-    lda player_lost
-    cmp #0
-    beq plot_char_bank1_continue
-    rts
-
-    plot_char_bank1_continue:
-    ldx player_animation
-    lda player_sprites_low,x
-    sta $70
-    lda player_sprites_high,x
-    sta $71
+plot_char_bank1:
 
     ldx player_y
     lda player_x
@@ -1112,31 +1087,9 @@ plot_char_bank1:            ; plots the player character on bank 1
     sta $73
     clc
 
-    lda player_ys
-    cmp #1
-    bne plot_char_bank1_y0
-    clc
-    lda $72
-    adc #4
-    sta $72
-    jmp plot8x24_y1
+    jmp plot_char_bank
 
-    plot_char_bank1_y0:
-    jmp plot8x24_y0
-
-plot_char_bank2:            ; plots the player character on bank 2
-
-    lda player_lost
-    cmp #0
-    beq plot_char_bank2_continue
-    rts
-
-    plot_char_bank2_continue:
-    ldx player_animation
-    lda player_sprites_low,x
-    sta $70
-    lda player_sprites_high,x
-    sta $71
+plot_char_bank2:
 
     ldx player_y
     lda player_x
@@ -1150,16 +1103,33 @@ plot_char_bank2:            ; plots the player character on bank 2
     sta $73
     clc
 
+    ; fall through
+
+plot_char_bank:
+
+    lda player_lost
+    cmp #0
+    beq plot_char_bank_plot
+    rts
+
+    plot_char_bank_plot:
+
+    ldx player_animation
+    lda player_sprites_low,x
+    sta $70
+    lda player_sprites_high,x
+    sta $71
+
     lda player_ys
     cmp #1
-    bne plot_char_bank2_y0
+    bne plot_char_bank_y0
     clc
     lda $72
     adc #4
     sta $72
     jmp plot8x24_y1
 
-    plot_char_bank2_y0:
+    plot_char_bank_y0:
     jmp plot8x24_y0
 
 plot_monster_bank1:       ; X=monster y offset,Y=offset of monster y offset
@@ -1171,21 +1141,7 @@ plot_monster_bank1:       ; X=monster y offset,Y=offset of monster y offset
     adc bank1_char_rows_high,x  ; y position (high)
     sta $73
     clc
-
-    lda $72                 ; Subtract the starting offset into the data
-    sec                     ; from the screen position to cope with the case
-    sbc $8c                 ; where the monster is partially off the left hand
-    sta $72                 ; side of the screen.
-    lda $73
-    sbc #0
-    sta $73
-    clc
-
-    iny
-    lda ($86),y                 ; dy offset
-    cmp #0
-    bne plot8x8_x0_y1
-    jmp plot8x8_x0_y0
+    jmp plot_monster_both_banks
 
 plot_monster_bank2:       ; X=monster y offset,Y=offset of monster y offset
 
@@ -1197,6 +1153,8 @@ plot_monster_bank2:       ; X=monster y offset,Y=offset of monster y offset
     sta $73
     clc
 
+    plot_monster_both_banks:
+
     lda $72                 ; Subtract the starting offset into the data
     sec                     ; from the screen position to cope with the case
     sbc $8c                 ; where the monster is partially off the left hand
@@ -1210,6 +1168,7 @@ plot_monster_bank2:       ; X=monster y offset,Y=offset of monster y offset
     lda ($86),y                 ; dy offset
     cmp #0
     bne plot8x8_x0_y1
+    ; fall through
 
 plot8x8_x0_y0:          ; $70,$71=source address
                         ; $72,$73=destination address
