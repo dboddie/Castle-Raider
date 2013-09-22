@@ -340,6 +340,15 @@ player_move:
 
     player_move_not_jump:
 
+    ldx #151        ; (/)
+    jsr check_key
+    cpy #255
+    bne player_move_not_enter
+
+    jmp player_enter
+
+    player_move_not_enter:
+
     clc
     rts
 
@@ -510,6 +519,14 @@ check_tile:         ; $80=x position (0-39)
 check_tile_visible:             ; A=tile number
                                 ; returns C set if tile is visible or C
                                 ; clear if not
+    cmp #$30
+    bcc check_tile_visible_not_portal
+
+    clc                         ; Portals are not visible.
+    rts
+
+    check_tile_visible_not_portal:
+
     cmp #$10
     bcs check_tile_visible_special
 
@@ -522,11 +539,7 @@ check_tile_visible:             ; A=tile number
     cmp #$80
     bcs check_tile_visible_next
 
-    and #$60                    ; Check if both c and d bits are set (indicating
-    bne check_tile_portal       ; a portal).
-
-    clc                         ; Not a portal and not visible, so clear C to
-    rts                         ; indicate this.
+    rts                         ; Not visible, and C is clear to indicate this.
 
     check_tile_visible_next:    ; the tile is visible
 
@@ -580,14 +593,6 @@ check_tile_collect_treasure:
 
     check_tile_visible_exit:
     sec
-    rts
-
-check_tile_portal:
-
-    lda ($82),y                     ; load the tile data again
-    and #$1f                        ; read the portal number
-
-    clc
     rts
 
 make_tile_invisible:    ; Y=special tile number
@@ -799,6 +804,52 @@ player_jump:
     sta player_jumping
     lda #0
     sta player_ys
+
+    clc
+    rts
+
+player_enter:
+
+    clc
+    lda player_y
+    adc #2
+    sta $81
+    lda player_x
+    sta $80
+    jsr check_tile
+
+    cmp #$30
+    bcs player_enter_find_portal
+    
+    rts
+
+    player_enter_find_portal:
+    clc
+
+    and #$0f
+    sta $80
+    asl
+    adc $80
+    tax
+
+    lda portal_table_address,x      ; low x
+    sta tracking_low
+    inx
+    lda portal_table_address,x      ; high x
+    sta tracking_high
+    inx
+    lda portal_table_address,x      ; y + 8 blank rows at the top - 2 from the
+    adc #6                          ; foot to the head = 6
+    sta $80
+
+    jsr plot_char
+    lda $80
+    sta player_y
+    jsr plot_char
+    
+    player_enter_tracking:
+        jsr track_position
+        bcs player_enter_tracking
 
     clc
     rts

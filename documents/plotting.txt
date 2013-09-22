@@ -315,18 +315,14 @@ Portals are doors that transport the character to a different part of the map.
 These will be used to give the impression that there are additional levels,
 either above or below the main level, or perhaps inside structures on the map.
 
-Since we want to use various bits to describe the portal number and don't want
-to link the lowest 4 bits to a tile number, we can store portals with v=0 and
-use a combination of the c, d and t bits to ensure that we don't accidentally
-confuse them with invisible items, doors or treasures.
+Since we want to have a number of portals and don't want to use up any of the
+special tiles, we define values from 48 and above as portals. We want to store
+the portal number in the tile value and could subtract 48, mask off the top
+4 bits, or start with values higher than 64 and use the bottom 5 bits to encode
+the portal number. For now, we will just use the bottom 4 bits to encode the
+portal number.
 
-Since there is currently no valid combination of c=1 and d=1, we can use the
-combination of v=0, c=1 and d=1 to represent portals. With this combination, we
-have the following format:
-
-    011tnnnn
-
-The portal table would contain 32 values, each of which needs to be at least 2
+The portal table would contain 16 values, each of which needs to be at least 2
 bytes in order to express all horizontal positions that are available in the
 level (0-65535). Each also needs to contain a row number.
 

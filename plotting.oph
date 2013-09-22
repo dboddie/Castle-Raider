@@ -209,6 +209,9 @@ read_right_sprite_address:      ; A=tile number in high 4 bits
 
 read_visible_sprite:    ; read the regular tile number for a special tile
 
+    cmp #$30                        ; tiles with values of 48 and higher are
+    bcs read_visible_sprite_exit    ; portals, which are invisible
+
     tay
     lda ($82),y                 ; load the visibility of the tile
     cmp #$80

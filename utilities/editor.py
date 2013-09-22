@@ -421,6 +421,8 @@ class EditorWindow(QMainWindow):
         action = self.specialToolBar.addAction("New")
         action.triggered.connect(self.addSpecial)
         
+        self.portalToolBar = self.addToolBar(self.tr("Portals"))
+        
         specialSelector = QComboBox()
         specialSelector.setModel(SelectorModel(self.tileGroup, self))
         self.specialToolBar.addWidget(specialSelector)

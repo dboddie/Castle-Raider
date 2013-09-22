@@ -80,29 +80,39 @@ for monster in monster_order:
 def load_level(path):
 
     lines = map(lambda x: x.rstrip(), open(path).readlines())
+    lines = filter(lambda x: x, lines)
     level = lines[:16]
     
     # The special dictionary maps symbols used in the level map to tuples
     # containing corresponding tiles and indices. Each index is an offset into
     # the visibility table, the initial values for which are below.
     special = {}
+    
     index = 16
-    for line in lines[16:]:
+    for line in lines[16:48]:
     
-        if line:
-            ch, tile, flags_word = line.split()
-            flags = 0
-            for c in flags_word.split(","):
-                flags = flags | flags_values.get(c, 0)
-            special[ch] = (tile, index, flags)
-            index += 1
+        ch, tile, flags_word = line.split()
+        flags = 0
+        for c in flags_word.split(","):
+            flags = flags | flags_values.get(c, 0)
+        special[ch] = (tile, index, flags)
+        index += 1
     
-    return level, special
+    portals = {}
+    index = 48
+    for line in lines[48:64]:
+    
+        src, dest = line.split()
+        portals[src] = (index, dest)
+        index += 1
+    
+    return level, special, portals
 
-def create_level_data(level, tiles, special):
+def create_level_data(level, tiles, special, portals):
 
     data = []
     monsters = {}
+    portal_locations = {}
     l = 0
     
     for line in level:
@@ -119,11 +129,20 @@ def create_level_data(level, tiles, special):
                 n, index, flags = special[ch]
                 # Special tiles have values greater than or equal to 16.
                 c = index
+            
+            elif ch in portals:
+                index, dest = portals[ch]
+                portal_locations[ch] = (i, l)
+                
+                # Portal tiles have values greater than or equal to 48.
+                c = index
+            
             elif ch in monster_tiles:
                 # Record the monster's position and type.
                 monsters[i] = (monster_tiles[ch], l + 8)
                 # Use the blank tile in the level itself.
                 c = tiles["."]
+            
             else:
                 c = tiles[ch]
             
@@ -167,13 +186,14 @@ def create_level_data(level, tiles, special):
     if monster_offset < len(level[0]):
         monster_data.append((previous_monster, previous_y, len(level[0]) - monster_offset))
     
-    return data, monster_data
+    return data, monster_data, portal_locations
 
-def create_level(levels_address, level_path, number_of_special_tiles):
+def create_level(levels_address, level_path, number_of_special_tiles,
+                 maximum_number_of_portals):
 
     global level, special
     
-    level, special = load_level(level_path)
+    level, special, portals = load_level(level_path)
     
     tiles = {}
     for i in range(len(tile_order)):
@@ -183,17 +203,22 @@ def create_level(levels_address, level_path, number_of_special_tiles):
         i += 1
     
     special_tile_numbers_table_size = visibility_table_size = number_of_special_tiles
+    portal_table_size = 3 * maximum_number_of_portals
     row_table_size = (16 * 2)
     
-    data = ""
+    # Convert the level descriptions into level data that can be encoded into
+    # a form the game can use.
+    level_data, monster_data, portal_locations = create_level_data(level, tiles, special, portals)
     
-    level_data, monster_data = create_level_data(level, tiles, special)
+    data = ""
     row_addresses = []
     
     r = 0
     for row in level_data:
     
-        row_addresses.append(levels_address + special_tile_numbers_table_size + visibility_table_size + row_table_size + len(data))
+        row_addresses.append(levels_address + special_tile_numbers_table_size + \
+                             visibility_table_size + portal_table_size + \
+                             row_table_size + len(data))
         row_data = ""
         
         for tile, number in row:
@@ -221,7 +246,10 @@ def create_level(levels_address, level_path, number_of_special_tiles):
     
     print "%i bytes (%04x) of level data" % (len(data), len(data))
     
-    monster_row_address = levels_address + special_tile_numbers_table_size + visibility_table_size + row_table_size + len(data)
+    monster_row_address = levels_address + special_tile_numbers_table_size + \
+                          visibility_table_size + portal_table_size + \
+                          row_table_size + len(data)
+    
     monster_row_data = chr(0) + chr(1)
     
     for monster, y, number in monster_data:
@@ -271,11 +299,32 @@ def create_level(levels_address, level_path, number_of_special_tiles):
     special_tiles_table = "".join(map(chr, special_tile_numbers))
     visibility_table = "".join(map(chr, initial_visibility))
     
+    portal_numbers = []
+    
+    for portal in portals:
+    
+        if portal in portal_locations:
+        
+            # Each portal definition references its destination.
+            index, dest = portals[portal]
+            x, y = portal_locations[dest]
+            
+            # The scroll offset of the portal is 19 cells to the left of the
+            # character.
+            sx = x - 19
+            portal_numbers.append((index, (sx, y)))
+    
+    portal_numbers.sort()
+    portal_table = "".join(map(lambda (index, (x, y)):
+                               chr(x & 0xff) + chr(x >> 8) + chr(y),
+                               portal_numbers))
+    portal_table += "\x00" * ((3 * maximum_number_of_portals) - len(portal_table))
+    
     # Create a table of row offsets.
     table = "".join(map(lambda x: chr(x & 0xff), row_addresses)) + \
             "".join(map(lambda x: chr(x >> 8), row_addresses))
     
     # Append the data to the table of row offsets.
-    data = special_tiles_table + visibility_table + table + data
+    data = special_tiles_table + visibility_table + portal_table + table + data
     
     return data, monster_row_address

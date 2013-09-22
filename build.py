@@ -150,6 +150,7 @@ if __name__ == "__main__":
     code_start = 0x0e00
     
     number_of_special_tiles = 32
+    maximum_number_of_portals = 16
     
     data_start = 0x2000
     
@@ -202,18 +203,21 @@ if __name__ == "__main__":
     # Level data
     level_data_start = initial_row_offsets + 0x10
     
-    # Visibility flags for special tiles.
+    # Visibility flags for special tiles
     special_tile_numbers_address  = level_data_start
     # Low and high bytes are adjusted by 16 bytes so that entries can be
     # addressed directly, starting with an index of 16.
     special_tile_numbers_low      = (special_tile_numbers_address - 0x10) & 0xff
     special_tile_numbers_high     = (special_tile_numbers_address - 0x10) >> 8
     
-    # Visibility flags for special tiles.
+    # Visibility flags for special tiles
     initial_tile_visibility_address = special_tile_numbers_address + number_of_special_tiles
     
+    # Portal destinations
+    portal_table_address = initial_tile_visibility_address + number_of_special_tiles
+    
     # Low bytes for the addresses of the rows.
-    row_table_low                 = initial_tile_visibility_address + number_of_special_tiles
+    row_table_low                 = portal_table_address + (maximum_number_of_portals * 3)
     # High bytes for the addresses of the rows.
     row_table_high                = row_table_low + 0x10
     level_data                    = row_table_high + 0x10
@@ -259,7 +263,7 @@ if __name__ == "__main__":
     
     levels_address = level_data_start
     level_data, monster_row_address = makelevels.create_level(
-        levels_address, level_file, number_of_special_tiles)
+        levels_address, level_file, number_of_special_tiles, maximum_number_of_portals)
     
     level_extent = len(makelevels.level[0]) - 40
     
@@ -304,6 +308,7 @@ if __name__ == "__main__":
         ".alias initial_row_offsets             $%x\n"
         ".alias special_tile_numbers_address    $%x\n"
         ".alias initial_tile_visibility_address $%x\n"
+        ".alias portal_table_address            $%x\n"
         ".alias row_table_low                   $%x\n"
         ".alias row_table_high                  $%x\n"
         ".alias level_data_low                  $%02x\n"
@@ -311,6 +316,7 @@ if __name__ == "__main__":
         "\n"
         ) % (initial_row_tiles, row_indices, initial_row_offsets,
              special_tile_numbers_address, initial_tile_visibility_address,
+             portal_table_address,
              row_table_low, row_table_high, level_data_low, level_data_high)
     
     constants_oph += (
