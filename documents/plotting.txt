@@ -295,6 +295,19 @@ actual data stored within it.
     tile_number_table_start:
     [32 values]
 
+Doors
+-----
+
+If a special tile has the d bit set then the t bit is used as part of the
+tile number:
+
+    v01tnnnn (c=0 for doors)
+
+A check is only performed for visible doors, so the typical special value for a
+door has the following format:
+
+    101tnnnn
+
 Portals
 -------
 
@@ -302,19 +315,20 @@ Portals are doors that transport the character to a different part of the map.
 These will be used to give the impression that there are additional levels,
 either above or below the main level, or perhaps inside structures on the map.
 
-Since we check for collectable items before treasures, and all treasures are
-collectable, we can use the combination of v=0, c=0 and t=1 flags to represent
-portals. With this combination, we have the following format:
+Since we want to use various bits to describe the portal number and don't want
+to link the lowest 4 bits to a tile number, we can store portals with v=0 and
+use a combination of the c, d and t bits to ensure that we don't accidentally
+confuse them with invisible items, doors or treasures.
 
-    00d1nnnn
+Since there is currently no valid combination of c=1 and d=1, we can use the
+combination of v=0, c=1 and d=1 to represent portals. With this combination, we
+have the following format:
 
-If we change the order of the d and t bits, we could use the lower five bits as
-an index into a portal table by masking off the top three bits:
+    011tnnnn
 
-    001dnnnn
-
-The portal table would contain 32 values, each of which needs to be 2 bytes in
-order to express all positions that are available in the level (0-65535).
+The portal table would contain 32 values, each of which needs to be at least 2
+bytes in order to express all horizontal positions that are available in the
+level (0-65535). Each also needs to contain a row number.
 
 Although portal tiles are invisible, and should be tested only under certain
 circumstances - perhaps when the player jumps or uses an enter action - other

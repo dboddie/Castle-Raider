@@ -15,40 +15,27 @@
 
 clear_bank1:
 
-    lda #$00
-    sta $70
     lda #$35
     sta $71
-    ldy #0
-
-    clear_bank1_loop:
-
-        lda #0
-        sta ($70),y
-
-        lda $70
-        adc #1
-        sta $70
-        lda $71
-        adc #0
-        sta $71
-        clc
-
-        cmp #$58
-        bne clear_bank1_loop
-
-    clc
-    rts
+    lda #$58
+    sta $72
+    jmp clear_bank
 
 clear_bank2:
 
-    lda #$00
-    sta $70
     lda #$5d
     sta $71
+    lda #$80
+    sta $72
+    ; fall through
+
+clear_bank:
+
+    lda #$00
+    sta $70
     ldy #0
 
-    clear_bank2_loop:
+    clear_bank_loop:
 
         lda #0
         sta ($70),y
@@ -61,8 +48,8 @@ clear_bank2:
         sta $71
         clc
 
-        cmp #$80
-        bne clear_bank2_loop
+        cmp $72
+        bne clear_bank_loop
 
     clc
     rts
@@ -129,6 +116,7 @@ read_sprite_address:        ; $76,$77=span address
     jsr read_visible_sprite     ; check whether the sprite is visible
                                 ; (it represents a special tile)
 
+    and #$1f
     read_sprite_address_next:   ; a regular tile
     clc
 
@@ -152,6 +140,7 @@ read_left_sprite_address:       ; A=tile number in high 4 bits
 
     jsr read_visible_sprite     ; check whether the sprite is visible
                                 ; (it represents a special tile)
+    and #$1f
 
     read_left_sprite_address_next:  ; a regular tile
     clc
@@ -176,6 +165,7 @@ read_rotated_sprite_address:    ; A=tile number
 
     jsr read_visible_sprite     ; check whether the sprite is visible
                                 ; (it represents a special tile)
+    and #$1f
 
     read_rotated_sprite_address_next:   ; a regular tile
     clc
@@ -200,6 +190,7 @@ read_right_sprite_address:      ; A=tile number in high 4 bits
 
     jsr read_visible_sprite     ; check whether the sprite is visible
                                 ; (it represents a special tile)
+    and #$1f
 
     read_right_sprite_address_next: ; a regular tile
     clc
@@ -856,6 +847,9 @@ plot_merged_tile_bank:  ; $70,$71 source address 1
 
 initial_plot_bank1:
 
+    lda #1                      ; showing bank 2
+    sta bank_number
+
     ldx #15
     initial_plot_bank1_row_loop:
 
@@ -920,38 +914,10 @@ initial_plot_bank1:
     clc
     rts
 
-initial_plot_bank1_tile_loop:   ; $74=column
-                                ; $76,$77=span address
-                                ; $78=number of tiles
-
-    jsr plot_tile_bank
-
-    lda $72
-    adc #8
-    sta $72
-    lda $73
-    adc #0
-    sta $73
-    clc
-
-    inc $74         ; one tile filled on the screen
-
-    lda $74
-    cmp #40
-    beq initial_plot_bank1_span_endloop
-    lda $78
-    cmp #0
-    beq initial_plot_bank1_tile_endloop
-
-    dec $78         ; one tile less to plot
-
-    jmp initial_plot_bank1_tile_loop
-
-    initial_plot_bank1_tile_endloop:
-    clc
-    rts
-
 initial_plot_bank2:
+
+    lda #0                      ; showing bank 1
+    sta bank_number
 
     ldx #15
     initial_plot_bank2_row_loop:
@@ -1044,14 +1010,22 @@ initial_plot_bank2:
     clc
     rts
 
-initial_plot_bank2_tile_loop:
+initial_plot_bank2_tile_loop:   ; $74=column
+                                ; $76,$77=span address
+                                ; $78=number of tiles
 
     lda $74
     cmp #40
     beq initial_plot_bank2_span_endloop
     lda $78
     cmp #0
-    beq initial_plot_bank2_tile_endloop
+    beq initial_plot_bank_tile_endloop
+    ; fall through
+
+initial_plot_bank1_tile_loop:   ; $74=column
+                                ; $76,$77=span address
+                                ; $78=number of tiles
+initial_plot_bank_tile_loop:
 
     jsr plot_tile_bank
 
@@ -1064,13 +1038,32 @@ initial_plot_bank2_tile_loop:
     clc
 
     inc $74         ; one tile filled on the screen
-    dec $78         ; one tile less to plot
 
+    lda bank_number ; check if we are showing bank 2 and plotting on bank 1
+    cmp #1
+    bne initial_plot_bank_tile_loop_not_bank1
+
+    lda $74                                 ; plotting on bank 1 only
+    cmp #40
+    beq initial_plot_bank_tile_loop_span_endloop1
+    lda $78
+    cmp #0
+    beq initial_plot_bank_tile_endloop
+
+    dec $78         ; one tile less to plot
+    jmp initial_plot_bank_tile_loop
+
+    initial_plot_bank_tile_loop_not_bank1:
+
+    dec $78         ; one tile less to plot
     jmp initial_plot_bank2_tile_loop
 
-    initial_plot_bank2_tile_endloop:
+    initial_plot_bank_tile_endloop:
     clc
     rts
+
+    initial_plot_bank_tile_loop_span_endloop1:
+    jmp initial_plot_bank1_span_endloop
 
 plot_char:
 

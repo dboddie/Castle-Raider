@@ -430,8 +430,8 @@ check_tile:         ; $80=x position (0-39)
                     ;           playing area, not the top row of the scenery)
                     ; returns C set if tile found or C clear if not
 
-    lda $81         ; For y positions less than 8 do not check the
-    cmp #8          ; corresponding row.
+    lda $81         ; For y positions less than 8 do not check the corresponding
+    cmp #8          ; row since there are no level spans in these rows.
     bcs check_tile_row
 
     rts
@@ -525,8 +525,11 @@ check_tile_visible:             ; A=tile number
     cmp #$80
     bcs check_tile_visible_next
 
-    clc                         ; not visible, so clear C to indicate this
-    rts
+    and #$60                    ; Check if both c and d bits are set (indicating
+    bne check_tile_portal       ; a portal).
+
+    clc                         ; Not a portal and not visible, so clear C to
+    rts                         ; indicate this.
 
     check_tile_visible_next:    ; the tile is visible
 
@@ -580,6 +583,14 @@ check_tile_collect_treasure:
 
     check_tile_visible_exit:
     sec
+    rts
+
+check_tile_portal:
+
+    lda ($82),y                     ; load the tile data again
+    and #$1f                        ; read the portal number
+
+    clc
     rts
 
 make_tile_invisible:    ; Y=special tile number
