@@ -62,11 +62,12 @@ class LevelWidget(QWidget):
             self.rows.append(row)
         
         self.special = {}
+        self.portals = {}
     
     def loadLevel(self, path):
     
         try:
-            rows, special = makelevels.load_level(path)
+            rows, special, portals = makelevels.load_level(path)
             
             self.level_width = 0
             self.rows = []
@@ -84,6 +85,7 @@ class LevelWidget(QWidget):
                 self.level_width = max(len(row), self.level_width)
             
             self.special = special
+            self.portals = portals
             return True
         
         except IOError:
@@ -190,6 +192,9 @@ class LevelWidget(QWidget):
                     #    tile_image = self.tile_images[n]
                     #else:
                     #    tile_image = self.tile_images["."]
+                
+                elif tile in self.portals:
+                    tile_image = self.tile_images["."]
                 
                 elif tile in self.monster_images:
                     monsters[(c, r)] = tile
