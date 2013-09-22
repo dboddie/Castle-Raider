@@ -826,9 +826,9 @@ player_enter:
     player_enter_find_portal:
     clc
 
-    and #$0f
-    sta $80
-    asl
+    and #$0f                        ; Obtain the portal number from the lowest
+    sta $80                         ; 4 bits and multiply it by 3 to obtain an
+    asl                             ; offset into the portal table.
     adc $80
     tax
 
@@ -840,19 +840,63 @@ player_enter:
     inx
     lda portal_table_address,x      ; y + 8 blank rows at the top - 2 from the
     adc #6                          ; foot to the head = 6
-    sta $80
-
-    jsr plot_char
-    lda $80
     sta player_y
-    jsr plot_char
-    
-    player_enter_tracking:
-        jsr track_position
-        bcs player_enter_tracking
 
+    jsr clear_bank1                 ; Clear both banks, just in case the
+    jsr clear_bank2                 ; character or any monsters are at the top
+                                    ; of the screen,
+
+jump_to_tracking_offset:
+
+    lda scroll_offset_high
+    cmp tracking_high
+    beq jump_to_tracking_offset_low_check
+    bcs jump_to_tracking_offset_left
+    bcc jump_to_tracking_offset_right
+
+    jump_to_tracking_offset_low_check:
+
+    lda scroll_offset_low
+    cmp tracking_low
+    beq jump_to_tracking_offset_exit
+    bcc jump_to_tracking_offset_right
+
+    jump_to_tracking_offset_left:
+    
+    sec
+    lda scroll_offset_low
+    sbc #1
+    sta scroll_offset_low
+    lda scroll_offset_high
+    sbc #0
+    sta scroll_offset_high
     clc
-    rts
+
+    jsr scroll_left_update_monsters
+    jsr scroll_left
+    jmp jump_to_tracking_offset
+
+    jump_to_tracking_offset_right:
+
+    lda scroll_offset_low
+    adc #1
+    sta scroll_offset_low
+    lda scroll_offset_high
+    adc #0
+    sta scroll_offset_high
+    clc
+
+    jsr scroll_right_update_monsters
+    jsr scroll_right
+    jmp jump_to_tracking_offset
+
+    jump_to_tracking_offset_exit:
+
+    jsr initial_plot_bank1
+    jsr initial_plot_bank2
+
+    jsr show_bank1
+    jmp plot_char                   ; plot the player and exit
 
 fall_steps_y:    .byte 0,0,1,1
 fall_offsets_ys: .byte 0,1,0,0
