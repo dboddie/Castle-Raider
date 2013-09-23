@@ -72,6 +72,8 @@ monster_ref = {"V": "images/bat1.png", "^": "images/spider1.png"}
 monster_order = ("V", "^")
 monster_tiles = {}
 
+breakable_order = (".", "*")
+
 i = 1
 for monster in monster_order:
     monster_tiles[monster] = i
@@ -99,7 +101,7 @@ def load_level(path):
         index += 1
     
     portals = {}
-    index = 48
+    index = 64
     for line in lines[48:64]:
     
         src, dest = line.split()
@@ -134,7 +136,7 @@ def create_level_data(level, tiles, special, portals):
                 index, dest = portals[ch]
                 portal_locations[ch] = (i, l)
                 
-                # Portal tiles have values greater than or equal to 48.
+                # Portal tiles have values greater than or equal to 64.
                 c = index
             
             elif ch in monster_tiles:
@@ -198,9 +200,12 @@ def create_level(levels_address, level_path, number_of_special_tiles,
     tiles = {}
     for i in range(len(tile_order)):
         key = tile_order[i]
-        if key:
-            tiles[key] = i
-        i += 1
+        tiles[key] = i
+    
+    for i in range(len(breakable_order)):
+        key = breakable_order[i]
+        if key not in tiles:
+            tiles[key] = 48 + i
     
     special_tile_numbers_table_size = visibility_table_size = number_of_special_tiles
     portal_table_size = 3 * maximum_number_of_portals

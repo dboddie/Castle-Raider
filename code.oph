@@ -164,28 +164,26 @@ main:
 
         main_loop_check_jump:
 
-        lda player_jumping
-        cmp #0
-        bne main_loop_check_fall
+        lda player_jumping          ; Is the character jumping?
+        cmp #0                      ; If so then check for input, which might.
+        bne main_loop_allow_movement ; be ignored.
 
-            jsr check_beneath
+            jsr check_beneath       ; If not, then check below the character.
 
         main_loop_check_fall:
 
-        lda player_falling
+        lda player_falling          ; Is the character falling?
         cmp #0
         beq main_loop_allow_movement
 
-            jsr player_fall
-            bcs main_loop_next
-
+            jsr player_fall         ; Yes, so move them downwards.
+            bcs main_loop_next      ; If they are moving horizontally then skip
+                                    ; past the movement checks.
         main_loop_allow_movement:
 
-            clc
-
-            jsr player_move
-            jmp main_loop_next
-
+            clc                     ; Check for horizontal input. Note that it
+            jsr player_move         ; might still be forbidden by the jumping
+                                    ; counter or falling flag.
         main_loop_next:
 
         lda scrolled
@@ -357,8 +355,8 @@ check_key:      ; x=key code
     ldy #255
     jmp $fff4   ; Return directly from the OS routine.
 
-check_beneath:
-
+check_beneath:      ; Checks beneath the character for solid tiles.
+                    ; Sets player_falling if none exist.
     lda player_y
     cmp #21
     bcs check_beneath_demise_exit
@@ -369,11 +367,11 @@ check_beneath:
     sta $80
 
     jsr check_tile
-    bcs check_beneath_exit
+    bcs check_beneath_solid
 
     inc $80
     jsr check_tile
-    bcs check_beneath_exit
+    bcs check_beneath_solid
 
     lda bank_number         ; When half way across a cell, check another cell
     cmp #1                  ; beneath the player since they could be standing
@@ -382,7 +380,7 @@ check_beneath:
     clc
     inc $80
     jsr check_tile
-    bcs check_beneath_exit
+    bcs check_beneath_solid
 
     check_beneath_fall:
 
@@ -401,11 +399,26 @@ check_beneath:
 
     jsr player_demise
 
-    check_beneath_exit:
+    check_beneath_solid:    ; A solid tile was found.
     clc
+    tax
+
+    lda player_falling
+    cmp #0
+    beq check_beneath_exit
+
+    txa
+    cmp #$30                ; Check the tile to see if it is breakable.
+    bcc check_beneath_exit
+
+    eor #$80                ; Set the top bit to break it.
+    sta ($76),y
+
+    check_beneath_exit:
 
     lda #0
     sta player_falling
+
     rts
 
 read_row_address:           ; X=row number
@@ -519,14 +532,6 @@ check_tile:         ; $80=x position (0-39)
 check_tile_visible:             ; A=tile number
                                 ; returns C set if tile is visible or C
                                 ; clear if not
-    cmp #$30
-    bcc check_tile_visible_not_portal
-
-    clc                         ; Portals are not visible.
-    rts
-
-    check_tile_visible_not_portal:
-
     cmp #$10
     bcs check_tile_visible_special
 
@@ -534,12 +539,29 @@ check_tile_visible:             ; A=tile number
     rts
 
     check_tile_visible_special:
+
+    cmp #$40
+    bcc check_tile_visible_not_portal_or_broken
+
+    clc                         ; Portals and broken tiles (> 64) are not
+    rts                         ; visible.
+
+    check_tile_visible_not_portal_or_broken:
+
+    cmp #$30
+    bcs check_tile_visible_breakable
+
     tay                         ; transfer the tile number to Y
     lda ($82),y                 ; load the visibility of the tile
     cmp #$80
     bcs check_tile_visible_next
 
     rts                         ; Not visible, and C is clear to indicate this.
+
+    check_tile_visible_breakable:
+
+    cmp #$30                    ; Return C set for tiles 49-63; C clear for 48
+    rts
 
     check_tile_visible_next:    ; the tile is visible
 
@@ -818,7 +840,7 @@ player_enter:
     sta $80
     jsr check_tile
 
-    cmp #$30
+    cmp #$40
     bcs player_enter_find_portal
     
     rts

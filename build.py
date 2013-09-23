@@ -152,7 +152,7 @@ if __name__ == "__main__":
     number_of_special_tiles = 32
     maximum_number_of_portals = 16
     
-    data_start = 0x2020
+    data_start = 0x2040
     
     # Monster positions
     monster_positions_address       = data_start
