@@ -316,8 +316,8 @@ These will be used to give the impression that there are additional levels,
 either above or below the main level, or perhaps inside structures on the map.
 
 Since we want to have a number of portals and don't want to use up any of the
-special tiles, we define values from 64 and above as portals. We want to store
-the portal number in the tile value and could subtract 64 or mask off the top
+special tiles, we define values from 128 and above as portals. We want to store
+the portal number in the tile value and could subtract 128 or mask off the top
 3 bits, using the bottom 5 bits to encode the portal number. For now, we will
 just use the bottom 4 bits to encode the portal number.
 
@@ -333,13 +333,13 @@ Breakable tiles
 ---------------
 
 Since portals are invisible, we add another category of invisible tiles with
-values of 128 and above. These correspond to tiles with values of 48-63 which
+values of 64 and above. These correspond to tiles with values of 48-63 which
 represent breakable versions of tiles 0-15, of which tile 48 is already
 "broken"; i.e., invisible and not solid.
 
-When the player's character falls onto these, we toggle the top bit of the type
-byte for the appropriate span. This makes the tile invisible and allows the
-player to fall through it.
+When the player's character falls onto these, we increase the value of the
+span by 0x08, so that the initial value of 0x3x is 0x4x after two hits and it
+becomes invisible, allowing the player to fall through it.
 
 We need to add code to wipe the tile's area on the screen. We need to modify
 the level data generation code to only create breakable tiles with limited span

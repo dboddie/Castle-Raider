@@ -53,6 +53,25 @@ jmp init
 .include "monsters.oph"
 
 init:
+
+    ; Store table addresses in zero page locations for convenient access.
+    lda #tile_visibility_low
+    sta $82
+    lda #tile_visibility_high
+    sta $83
+
+    lda #special_tile_numbers_low
+    sta $84
+    lda #special_tile_numbers_high
+    sta $85
+
+    lda #monster_positions_low
+    sta $86
+    lda #monster_positions_high
+    sta $87
+
+main:
+
     ; Set character's initial position and status.
 
     lda #19
@@ -84,22 +103,6 @@ init:
         bpl init_tile_visibility_loop
     clc
 
-    ; Store table addresses in zero page locations for convenient access.
-    lda #tile_visibility_low
-    sta $82
-    lda #tile_visibility_high
-    sta $83
-
-    lda #special_tile_numbers_low
-    sta $84
-    lda #special_tile_numbers_high
-    sta $85
-
-    lda #monster_positions_low
-    sta $86
-    lda #monster_positions_high
-    sta $87
-
     ; Determine the left and right monster indices and offsets.
 
     lda #0
@@ -114,8 +117,6 @@ init:
         sta monster_positions_address,x
         dex
         bpl init_monster_positions_loop
-
-main:
 
     jsr clear_bank1
     jsr clear_bank2
@@ -411,8 +412,9 @@ check_beneath:      ; Checks beneath the character for solid tiles.
     cmp #$30                ; Check the tile to see if it is breakable.
     bcc check_beneath_exit
 
-    eor #$80                ; Set the top bit to break it.
-    sta ($76),y
+    clc                     ; Increase the tile number in order to set the top
+    adc #$08                ; bit after two hits. This requires that the
+    sta ($76),y             ; initial tiles have values of 0x31 or higher.
 
     check_beneath_exit:
 
@@ -424,7 +426,7 @@ check_beneath:      ; Checks beneath the character for solid tiles.
 read_row_address:           ; X=row number
                             ; Returns $76,$77 (row address)
 
-    lda row_table_low,x     ; Load entry a from the table.
+    lda row_table_low,x     ; Load entry A from the table.
     sta $76
     lda row_table_high,x
     sta $77
@@ -543,8 +545,8 @@ check_tile_visible:             ; A=tile number
     cmp #$40
     bcc check_tile_visible_not_portal_or_broken
 
-    clc                         ; Portals and broken tiles (> 64) are not
-    rts                         ; visible.
+    clc                         ; Portals (> 128) and broken tiles (> 64) are
+    rts                         ; not visible.
 
     check_tile_visible_not_portal_or_broken:
 
@@ -840,7 +842,7 @@ player_enter:
     sta $80
     jsr check_tile
 
-    cmp #$40
+    cmp #$80
     bcs player_enter_find_portal
     
     rts

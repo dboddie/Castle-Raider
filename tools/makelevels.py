@@ -33,18 +33,18 @@ class Action:
 
 tile_ref = {".": "images/blank.png",
             "@": "images/brick.png",
-            "+": "images/grass.png",
-            "=": "images/floor-middle.png",
             "#": "images/ground.png",
-            "X": "images/rock.png",
+            "=": "images/floor-middle.png",
+            "+": "images/grass.png",
             "-": "images/floor.png",
+            "X": "images/rock.png",
             "|": "images/door.png",
+            "?": "images/flag.png",
+            "[": "images/broken-brick.png",
+            "]": "images/broken-ground.png",
             "/": "images/window-topleft.png",
             "\\": "images/window-topright.png",
-            "[": "images/brick-left.png",
-            "]": "images/brick-right.png",
             "{": "images/stalactite.png",
-            "?": "images/flag.png",
             "I": "images/gate.png",
             "%": "images/foliage.png",  # End of scenery tile sprites
                                         # Start of collectable item sprites
@@ -61,8 +61,8 @@ tile_ref = {".": "images/blank.png",
 
 # Collectable items after the first 16 tiles are ignored by the editor.
 
-tile_order = (".", "@", "+", "=", "#", "X", "-", "|",   # regular tiles
-              "/", "\\", "[", "]", "{", "?", "I", "%",  #
+tile_order = (".", "@", "#", "=", "+", "-", "X", "|",   # regular tiles
+              "?", "[", "]", "/", "\\", "{", "I", "%",  #
               "K", "L", "M", "N", "A", "B", "C", "D",   # collectable tiles
               "E", "F")
 
@@ -72,7 +72,7 @@ monster_ref = {"V": "images/bat1.png", "^": "images/spider1.png"}
 monster_order = ("V", "^")
 monster_tiles = {}
 
-breakable_order = (".", "*")
+breakable_order = (None, "*", "$")
 
 i = 1
 for monster in monster_order:
@@ -101,7 +101,7 @@ def load_level(path):
         index += 1
     
     portals = {}
-    index = 64
+    index = 128
     for line in lines[48:64]:
     
         src, dest = line.split()
@@ -136,7 +136,7 @@ def create_level_data(level, tiles, special, portals):
                 index, dest = portals[ch]
                 portal_locations[ch] = (i, l)
                 
-                # Portal tiles have values greater than or equal to 64.
+                # Portal tiles have values greater than or equal to 128.
                 c = index
             
             elif ch in monster_tiles:
