@@ -152,7 +152,7 @@ if __name__ == "__main__":
     number_of_special_tiles = 32
     maximum_number_of_portals = 16
     
-    data_start = 0x2040
+    data_start = 0x2090
     
     # Monster positions
     monster_positions_address       = data_start
@@ -232,7 +232,7 @@ if __name__ == "__main__":
     
     files = []
     
-    sprite_area_address = 0x2a00
+    sprite_area_address = 0x2a80
     tile_sprites = makesprites.read_tiles(tiles)
     sprite_data = makesprites.read_tile_data(tile_sprites)
     all_tiles = len(tiles)
@@ -247,7 +247,7 @@ if __name__ == "__main__":
     right_sprites_low = right_sprites & 0xff
     right_sprites_high = right_sprites >> 8
     
-    char_area_address = 0x2d40
+    char_area_address = 0x2dc0
     char_data, player_sprite_offsets = \
         makesprites.read_sprites(char_sprites, char_area_address)
     
@@ -351,9 +351,12 @@ if __name__ == "__main__":
         ".alias level_extent                    %i\n"
         ".alias level_extent_low                $%02x\n"
         ".alias level_extent_high               $%02x\n"
+        ".alias monster_row_address_low         $%02x\n"
+        ".alias monster_row_address_high        $%02x\n"
         "\n"
         ) % (address_length_end(levels_address, level_data) + (
-            level_extent, level_extent & 0xff, level_extent >> 8))
+            level_extent, level_extent & 0xff, level_extent >> 8) + (
+            monster_row_address & 0xff, monster_row_address >> 8))
     
     constants_oph += (
         ".alias special_tile_numbers_low        $%02x\n"

@@ -103,6 +103,54 @@ main:
         bpl init_tile_visibility_loop
     clc
 
+    ; Reset breakable tiles in the level.
+
+    ldx #0
+    lda row_table_low,x
+    sta $76
+    lda row_table_high,x
+    sta $77
+
+    ldy #0
+
+    init_reset_tiles_loop:
+
+        lda ($76),y                     ; Load the tile number.
+        cmp #$80                        ; Skip anything higher than the
+        bcs init_reset_tiles_next       ; breakable/broken tiles.
+
+        init_reset_tiles_reset:
+
+            cmp #$40                    ; Is the tile (partially) broken?
+            bcc init_reset_tiles_write
+
+            sbc #$18                    ; Unbreak it.
+            jmp init_reset_tiles_reset
+
+        init_reset_tiles_write:
+
+        sta ($76),y                     ; Refresh/store the unbroken value.
+
+        init_reset_tiles_next:
+        clc
+
+        lda $76
+        adc #2
+        sta $76
+        lda $77
+        adc #0
+        sta $77
+        clc
+
+        cmp #monster_row_address_high   ; At the end of the tile data?
+        bne init_reset_tiles_loop
+
+        lda $76
+        cmp #monster_row_address_low    ; At the end of the tile data?
+        bne init_reset_tiles_loop
+
+    clc
+
     ; Determine the left and right monster indices and offsets.
 
     lda #0
@@ -224,8 +272,7 @@ main:
 
     main_loop_endloop:
 
-    clc
-    rts
+    jmp main
 
 player_move:
 
@@ -413,7 +460,7 @@ check_beneath:      ; Checks beneath the character for solid tiles.
     bcc check_beneath_exit
 
     clc                     ; Increase the tile number in order to set the top
-    adc #$08                ; bit after two hits. This requires that the
+    adc #$18                ; bit after two hits. This requires that the
     sta ($76),y             ; initial tiles have values of 0x31 or higher.
 
     check_beneath_exit:
@@ -542,10 +589,10 @@ check_tile_visible:             ; A=tile number
 
     check_tile_visible_special:
 
-    cmp #$40
+    cmp #$50
     bcc check_tile_visible_not_portal_or_broken
 
-    clc                         ; Portals (> 128) and broken tiles (> 64) are
+    clc                         ; Portals (> 128) and broken tiles (> 80) are
     rts                         ; not visible.
 
     check_tile_visible_not_portal_or_broken:

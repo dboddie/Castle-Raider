@@ -333,12 +333,12 @@ Breakable tiles
 ---------------
 
 Since portals are invisible, we add another category of invisible tiles with
-values of 64 and above. These correspond to tiles with values of 48-63 which
+values of 80 and above. These correspond to tiles with values of 48-63 which
 represent breakable versions of tiles 0-15, of which tile 48 is already
 "broken"; i.e., invisible and not solid.
 
 When the player's character falls onto these, we increase the value of the
-span by 0x08, so that the initial value of 0x3x is 0x4x after two hits and it
+span by 0x18, so that the initial value of 0x3x is 0x5x after two hits and it
 becomes invisible, allowing the player to fall through it.
 
 We need to add code to wipe the tile's area on the screen. We need to modify
