@@ -45,30 +45,7 @@
 .alias monster_horizontal_motion        $00
 .alias monster_vertical_motion          $40
 
-jmp init
-
-.include "plotting.oph"
-.include "scrolling.oph"
-.include "bank_routines.oph"
-.include "monsters.oph"
-
-init:
-
-    ; Store table addresses in zero page locations for convenient access.
-    lda #tile_visibility_low
-    sta $82
-    lda #tile_visibility_high
-    sta $83
-
-    lda #special_tile_numbers_low
-    sta $84
-    lda #special_tile_numbers_high
-    sta $85
-
-    lda #monster_positions_low
-    sta $86
-    lda #monster_positions_high
-    sta $87
+; See the end of the file for included routines.
 
 main:
 
@@ -462,6 +439,85 @@ check_beneath:      ; Checks beneath the character for solid tiles.
     clc                     ; Increase the tile number in order to set the top
     adc #$18                ; bit after two hits. This requires that the
     sta ($76),y             ; initial tiles have values of 0x31 or higher.
+    sta $78
+
+    ; Use the x coordinate of the following span ($74 from check_tile) and the
+    ; player's y coordinate ($81) to find the screen location of the tile.
+    
+    lda $74                 ; Load the position of the current span.
+    ldy #1
+    adc ($76),y             ; Add the span length (minus the extra unit).
+    clc
+    sta $75
+
+    lda $81
+    sec
+    sbc #8
+    tax                     ; x=row number
+
+    ; Plot the initial merged tile on bank 2.
+
+    lda $76
+    sec     ; C should already be set
+    sbc #2
+    sta $80
+    lda $77
+    sbc #0
+    sta $81
+    clc
+
+    ldy #0
+    lda ($80),y
+    jsr read_right_sprite_address ; $80,$81=address of the right tile piece
+
+    dec $74 ; Plot the right edge of the previous span with the left edge of
+            ; the current one.
+
+    check_beneath_update_tiles:
+
+        lda $74
+        jsr read_screen_address_bank2
+
+        lda $78
+        jsr read_left_sprite_address ; $70,$71=address of the left tile piece
+        jsr plot_merged_tile_bank
+
+        lda $78
+        jsr read_right_sprite_address ; $80,$81=address of the right tile piece
+
+        inc $74 ; Now plot the next tile on bank 1.
+
+        lda $74                         ; A=column number
+        jsr read_screen_address_bank1
+
+        lda $78
+        jsr read_sprite_address     ; Load $70,$71 with the address of the tile.
+        jsr plot_tile_bank
+
+        lda $74
+        cmp $75
+        beq check_beneath_last_tile_bank2
+
+        jmp check_beneath_update_tiles
+
+    check_beneath_last_tile_bank2:
+
+    clc
+    lda $76
+    adc #2
+    sta $76
+    lda $77
+    adc #0
+    sta $77
+    clc
+
+    lda $74
+    jsr read_screen_address_bank2
+
+    ldy #0
+    lda ($76),y
+    jsr read_left_sprite_address ; $70,$71=address of the left tile piece
+    jsr plot_merged_tile_bank
 
     check_beneath_exit:
 
@@ -512,21 +568,19 @@ check_tile:         ; $80=x position (0-39)
     jsr read_row_address
 
     lda initial_row_offsets,x
-    cmp $80
-    beq check_tile_spans
-    bcc check_tile_spans
+    sta $74                 ; Store the row offset of the current span.
+
+    cmp $80                   ; If less than the character's x coordinate then
+    beq check_tile_spans_loop ; start examining spans until we find one to the
+    bcc check_tile_spans_loop ; right of the x coordinate.
 
     clc
     lda initial_row_tiles,x
     jmp check_tile_visible  ; Check whether the tile is visible and return.
 
-    check_tile_spans:
-    clc
-
-    sta $74                 ; Store the row offset of the next span.
-
     check_tile_spans_loop:
 
+        clc
         ldy #1
         lda ($76),y         ; Load the number of tiles minus 1, n - 1.
         adc #1              ; n
@@ -534,9 +588,9 @@ check_tile:         ; $80=x position (0-39)
         adc $74             ; Add to the row offset
         bcs check_tile_spans_loop_found
 
-        cmp $80
-        beq check_tile_spans_loop_next
-        bcc check_tile_spans_loop_next
+        cmp $80                         ; If the span position is less than or
+        beq check_tile_spans_loop_next  ; equal to the x coordinate then loop
+        bcc check_tile_spans_loop_next  ; again.
 
         check_tile_spans_loop_found:
 
@@ -549,10 +603,10 @@ check_tile:         ; $80=x position (0-39)
 
         check_tile_spans_loop_next:
 
+        sta $74             ; Store the new span offset.
+
         cmp #40
         bpl check_tile_spans_endloop
-
-        sta $74             ; and store the result.
 
         lda $76             ; Increment the row address.
         adc #2
@@ -560,7 +614,6 @@ check_tile:         ; $80=x position (0-39)
         lda $77
         adc #0
         sta $77
-        clc
 
         jmp check_tile_spans_loop
 
@@ -1076,7 +1129,7 @@ track_position: ; Scroll back to the last stored position.
 
 switch_characters:
 
-    ; Switch the left sprites then generate right sprites from them.
+    ; Switch the left and right sprites.
     ldx #95
     switch_characters_left_loop:
 
@@ -1097,3 +1150,8 @@ switch_characters:
 
     clc
     rts
+
+.include "plotting.oph"
+.include "scrolling.oph"
+.include "bank_routines.oph"
+.include "monsters.oph"

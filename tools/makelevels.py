@@ -228,17 +228,28 @@ def create_level(levels_address, level_path, number_of_special_tiles,
         
         for tile, number in row:
         
-            # Split the span into pieces if it is too large to be
-            # represented by a single byte. Each span length is reduced by 1
-            # to enable a larger range of values to be represented. (There
-            # are no zero length spans.)
-            while number > 256:
+            if 48 <= tile < 64:
+                # Breakable tiles are encoded as single or double tiles.
+                while number > 0:
+                    if number >= 2:
+                        row_data += chr(tile) + chr(1)
+                        number -= 2
+                    else:
+                        row_data += chr(tile) + chr(0)
+                        break
             
-                row_data += chr(tile) + chr(255)
-                number -= 256
-            
-            if number > 0:
-                row_data += chr(tile) + chr(number - 1)
+            else:
+                # Split the span into pieces if it is too large to be
+                # represented by a single byte. Each span length is reduced by 1
+                # to enable a larger range of values to be represented. (There
+                # are no zero length spans.)
+                while number > 256:
+                
+                    row_data += chr(tile) + chr(255)
+                    number -= 256
+                
+                if number > 0:
+                    row_data += chr(tile) + chr(number - 1)
         
         if len(row_data) >= 512:
             raise LevelError, "Level %i: Row %i too long or too detailed." % (l, r)

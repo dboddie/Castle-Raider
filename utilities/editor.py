@@ -193,8 +193,25 @@ class LevelWidget(QWidget):
                     #else:
                     #    tile_image = self.tile_images["."]
                 
+                elif tile in makelevels.breakable_order:
+                    index = makelevels.breakable_order.index(tile)
+                    tile_char = makelevels.tile_order[index]
+                    tile_image = self.tile_images[tile_char]
+                    
+                    painter.drawImage(c * 4 * self.xs, (6 + r) * 8 * self.ys,
+                                      tile_image)
+                    
+                    painter.fillRect(c * 4 * self.xs, (6 + r) * 8 * self.ys,
+                                     tile_image.width(), tile_image.height(),
+                                     QBrush(QColor(0, 0, 0, 160)))
+                
                 elif tile in self.portals:
                     tile_image = self.tile_images["."]
+                    
+                    painter.setPen(QPen(Qt.yellow))
+                    painter.setBrush(QBrush(Qt.black))
+                    painter.drawRect(c * 4 * self.xs, (6 + r) * 8 * self.ys,
+                                     tile_image.width() - 1, tile_image.height() - 1)
                 
                 elif tile in self.monster_images:
                     monsters[(c, r)] = tile

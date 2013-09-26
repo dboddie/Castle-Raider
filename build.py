@@ -152,7 +152,7 @@ if __name__ == "__main__":
     number_of_special_tiles = 32
     maximum_number_of_portals = 16
     
-    data_start = 0x2090
+    data_start = 0x20e0
     
     # Monster positions
     monster_positions_address       = data_start
@@ -232,7 +232,7 @@ if __name__ == "__main__":
     
     files = []
     
-    sprite_area_address = 0x2a80
+    sprite_area_address = 0x2a90
     tile_sprites = makesprites.read_tiles(tiles)
     sprite_data = makesprites.read_tile_data(tile_sprites)
     all_tiles = len(tiles)
@@ -247,7 +247,7 @@ if __name__ == "__main__":
     right_sprites_low = right_sprites & 0xff
     right_sprites_high = right_sprites >> 8
     
-    char_area_address = 0x2dc0
+    char_area_address = 0x2dd0
     char_data, player_sprite_offsets = \
         makesprites.read_sprites(char_sprites, char_area_address)
     

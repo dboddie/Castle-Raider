@@ -109,6 +109,22 @@ main:
     ; Copy the panel onto bank1.
     jsr copy_panel
 
+    ; Store table addresses in zero page locations for convenient access.
+    lda #tile_visibility_low
+    sta $82
+    lda #tile_visibility_high
+    sta $83
+
+    lda #special_tile_numbers_low
+    sta $84
+    lda #special_tile_numbers_high
+    sta $85
+
+    lda #monster_positions_low
+    sta $86
+    lda #monster_positions_high
+    sta $87
+
     jmp code_start_address
 
 set_core_palette:

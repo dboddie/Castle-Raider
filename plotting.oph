@@ -132,7 +132,7 @@ read_sprite_address:        ; $76,$77=span address
     clc
     rts
 
-read_left_sprite_address:       ; A=tile number in high 4 bits
+read_left_sprite_address:       ; A=tile number
                                 ; sets $70,$71=sprite address
 
     cmp #$10
@@ -182,7 +182,7 @@ read_rotated_sprite_address:    ; A=tile number
 
     rts
 
-read_right_sprite_address:      ; A=tile number in high 4 bits
+read_right_sprite_address:      ; A=tile number
                                 ; sets $80,$81=sprite address
 
     cmp #$10
