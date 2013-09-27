@@ -136,8 +136,9 @@ main:
     ; Initialise the monster positions.
     jsr init_monster_positions
 
-    jsr clear_bank1
-    jsr clear_bank2
+    jsr clear_banks
+    lda #2
+    jsr change_palette
 
     jsr init_scrolling
 
