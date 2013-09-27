@@ -338,11 +338,9 @@ represent breakable versions of tiles 0-15, of which tile 48 is already
 "broken"; i.e., invisible and not solid.
 
 When the player's character falls onto these, we increase the value of the
-span by 0x17, so that the initial value of 0x3x is 0x5x after two hits and it
-becomes invisible, allowing the player to fall through it. We use 0x17 so that
-a partially broken tile of value 0x39 can also be used as an initially
-"unbroken" tile. After one hit, its new value will be 0x50. The tile number in
-the lowest 4 bits is 0 but it is over the 0x50 anyway.
+span by 0x18, so that the initial value of 0x3x is 0x5x after two hits and it
+becomes invisible, allowing the player to fall through it. Tiles with values of
+0x38 and above with have new values of 0x50 and above after one hit.
 
 We need to add code to wipe the tile's area on the screen. We need to modify
 the level data generation code to only create breakable tiles with limited span
