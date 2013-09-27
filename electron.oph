@@ -36,3 +36,27 @@ show_bank2:
     sta bank_number
 
     rts
+
+palette_entries_fe09_red:        .byte $04, $00
+palette_entries_fe08_green_blue: .byte $44, $40, $04, $00
+
+change_palette:         ; A=colour value (0-7)
+
+    tay
+    and #$01
+    tax
+
+    lda #$31                        ; X X G1=1 G0=1 R3=0 R2=0 R1=0 R0=1
+    ora palette_entries_fe09_red,x
+    sta $fe09
+
+    tya
+    lsr
+    tax
+
+    lda #$b0                        ; B3=1 B2=0 B1=1 B0=1 G3=0 G2=0 X X
+    ora palette_entries_fe08_green_blue,x
+    sta $fe08
+
+    clc
+    rts

@@ -72,13 +72,17 @@ monster_ref = {"V": "images/bat1.png", "^": "images/spider1.png"}
 monster_order = ("V", "^")
 monster_tiles = {}
 
-breakable_order = (None, "*", "$", None, None, None, None, None,
-                   None, "~", "'")
-
 i = 1
 for monster in monster_order:
     monster_tiles[monster] = i
     i += 1
+
+breakable_order = (None, "*", "$", None, None, None, None, None,
+                   None, "~", "'")
+
+colours = {"black": 0, "red": 1, "green": 2, "yellow": 3, "blue": 4,
+           "magenta": 5, "cyan": 6, "white": 7}
+
 
 def load_level(path):
 
@@ -105,8 +109,9 @@ def load_level(path):
     index = 128
     for line in lines[48:64]:
     
-        src, dest = line.split()
-        portals[src] = (index, dest)
+        src, dest, colour = line.split()
+        colour_value = colours[colour]
+        portals[src] = (index, dest, colour_value)
         index += 1
     
     return level, special, portals
@@ -134,11 +139,12 @@ def create_level_data(level, tiles, special, portals):
                 c = index
             
             elif ch in portals:
-                index, dest = portals[ch]
-                portal_locations[ch] = (i, l)
+                index, dest, colour = portals[ch]
+                dest_index, other_dest, dest_colour = portals[dest]
+                portal_locations.setdefault(ch, []).append((i, l))
                 
                 # Portal tiles have values greater than or equal to 128.
-                c = index
+                c = (dest_colour << 4) | index
             
             elif ch in monster_tiles:
                 # Record the monster's position and type.
@@ -188,6 +194,28 @@ def create_level_data(level, tiles, special, portals):
     
     if monster_offset < len(level[0]):
         monster_data.append((previous_monster, previous_y, len(level[0]) - monster_offset))
+    
+    # For portal locations that span multiple cells, find the lowest, middle
+    # location of the portal.
+    
+    for portal, locations in portal_locations.items():
+    
+        xs = set()
+        ys = set()
+        for x, y in locations:
+        
+            xs.add(x)
+            ys.add(y)
+        
+        xs = list(xs)
+        xs.sort()
+        ys = list(ys)
+        ys.sort()
+        
+        # For an even number of tiles, position the character one tile to the
+        # left of centre.
+        offset = 1 - (len(xs) % 2)
+        portal_locations[portal] = (xs[len(xs)/2 - offset], ys[-1])
     
     return data, monster_data, portal_locations
 
@@ -323,7 +351,7 @@ def create_level(levels_address, level_path, number_of_special_tiles,
         if portal in portal_locations:
         
             # Each portal definition references its destination.
-            index, dest = portals[portal]
+            index, dest, colour = portals[portal]
             x, y = portal_locations[dest]
             
             # The scroll offset of the portal is 19 cells to the left of the

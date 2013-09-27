@@ -134,14 +134,7 @@ main:
     sta monster_movement_counter
 
     ; Initialise the monster positions.
-
-    ldx #15
-    lda #0
-
-    init_monster_positions_loop:
-        sta monster_positions_address,x
-        dex
-        bpl init_monster_positions_loop
+    jsr init_monster_positions
 
     jsr clear_bank1
     jsr clear_bank2
@@ -177,8 +170,9 @@ main:
             cmp #0
             beq main_loop_endloop
 
-            jsr track_position      ; Move the player back to the tracking position.
-            bcs main_loop_next
+            jsr clear_banks             ; Clear both banks and show the first.
+
+            jsr jump_to_tracking_offset ; Move to the tracking position.
 
             lda #0
             sta player_lost
@@ -228,18 +222,18 @@ main:
         inc monster_movement_counter
         clc
 
-        ; --- Switch character test code (begin) ---
-        ldx #157            ; (SPACE)
-        jsr check_key
-        cpy #255
-        bne not_space
-
-        clc
-        jsr plot_char
-        jsr switch_characters
-        jsr plot_char
-
-        not_space:
+;        ; --- Switch character test code (begin) ---
+;        ldx #157            ; (SPACE)
+;        jsr check_key
+;        cpy #255
+;        bne not_space
+;
+;        clc
+;        jsr plot_char
+;        jsr switch_characters
+;        jsr plot_char
+;
+;        not_space:
         ; --- Switch character test code (end) ---
 
         ldx #143            ; (Escape)
@@ -950,6 +944,8 @@ player_enter:
     player_enter_find_portal:
     clc
 
+    sta $74                         ; Record the value for later use.
+
     and #$0f                        ; Obtain the portal number from the lowest
     sta $80                         ; 4 bits and multiply it by 3 to obtain an
     asl                             ; offset into the portal table.
@@ -966,9 +962,16 @@ player_enter:
     adc #6                          ; foot to the head = 6
     sta player_y
 
-    jsr clear_bank1                 ; Clear both banks, just in case the
-    jsr clear_bank2                 ; character or any monsters are at the top
-                                    ; of the screen,
+    jsr clear_banks                 ; Clear both banks and show the first.
+
+    lda $74
+    and #$70
+    lsr
+    lsr
+    lsr
+    lsr
+    jsr change_palette              ; Change the palette using the value stored
+                                    ; in $70.
 
 jump_to_tracking_offset:
 
@@ -1019,7 +1022,7 @@ jump_to_tracking_offset:
     jsr initial_plot_bank1
     jsr initial_plot_bank2
 
-    jsr show_bank1
+    jsr init_monster_positions
     jmp plot_char                   ; plot the player and exit
 
 fall_steps_y:    .byte 0,0,1,1
@@ -1090,66 +1093,66 @@ player_demise:
 
     rts
 
-track_position: ; Scroll back to the last stored position.
+;track_position: ; Scroll back to the last stored position.
+;
+;    clc
+;
+;    lda scroll_offset_high
+;    cmp tracking_high
+;    beq track_position_check_low
+;    bcs track_position_scroll_left
+;    bcc track_position_scroll_right
+;
+;    track_position_check_low:
+;    lda scroll_offset_low
+;    cmp tracking_low
+;    beq track_position_check_bank
+;    bcs track_position_scroll_left
+;    bcc track_position_scroll_right
+;
+;    track_position_check_bank:
+;    lda bank_number
+;    cmp #0
+;    beq track_position_exit
+;    bcs track_position_scroll_left
+;
+;    track_position_scroll_right:
+;    jsr scroll_right_update
+;    sec
+;    rts
+;
+;    track_position_scroll_left:
+;    jsr scroll_left_update
+;    sec
+;    rts
+;
+;    track_position_exit:
+;    clc
+;    rts
 
-    clc
-
-    lda scroll_offset_high
-    cmp tracking_high
-    beq track_position_check_low
-    bcs track_position_scroll_left
-    bcc track_position_scroll_right
-
-    track_position_check_low:
-    lda scroll_offset_low
-    cmp tracking_low
-    beq track_position_check_bank
-    bcs track_position_scroll_left
-    bcc track_position_scroll_right
-
-    track_position_check_bank:
-    lda bank_number
-    cmp #0
-    beq track_position_exit
-    bcs track_position_scroll_left
-
-    track_position_scroll_right:
-    jsr scroll_right_update
-    sec
-    rts
-
-    track_position_scroll_left:
-    jsr scroll_left_update
-    sec
-    rts
-
-    track_position_exit:
-    clc
-    rts
-
-switch_characters:
-
-    ; Switch the left and right sprites.
-    ldx #95
-    switch_characters_left_loop:
-
-        ldy player_left1,x
-        lda player_left_alt1,x
-        sta player_left1,x
-        tya
-        sta player_left_alt1,x
-
-        ldy player_right1,x
-        lda player_right_alt1,x
-        sta player_right1,x
-        tya
-        sta player_right_alt1,x
-
-        dex
-        bpl switch_characters_left_loop
-
-    clc
-    rts
+;switch_characters:
+;
+;    ; Switch the left and right sprites.
+;    ldx #95
+;    switch_characters_left_loop:
+;
+;        ldy player_left1,x
+;        lda player_left_alt1,x
+;        sta player_left1,x
+;        tya
+;        sta player_left_alt1,x
+;
+;        ldy player_right1,x
+;        lda player_right_alt1,x
+;        sta player_right1,x
+;        tya
+;        sta player_right_alt1,x
+;
+;        dex
+;        bpl switch_characters_left_loop
+;
+;    clc
+;    rts
 
 .include "plotting.oph"
 .include "scrolling.oph"

@@ -329,6 +329,17 @@ Although portal tiles are invisible, and should be tested only under certain
 circumstances - perhaps when the player jumps or uses an enter action - other
 tiles could be used to indicate that the portal is there.
 
+It would be interesting to change the palette when the character uses a portal.
+To do this, we need to encode three bits per colour. Since we have three spare
+bits to use, and only need to change one colour in the palette, we encode a
+replacement value in bits 4, 5 and 6, giving the following portal byte tile
+format:
+
+    1cccpppp
+
+        where c=0-7 (replacement for colour 2, initially green)
+        and p=0-15 (portal number)
+
 Breakable tiles
 ---------------
 

@@ -13,6 +13,19 @@
 ; You should have received a copy of the GNU General Public License
 ; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+init_monster_positions:
+
+    ldx #15
+    lda #0
+
+    init_monster_positions_loop:
+        sta monster_positions_address,x
+        dex
+        bpl init_monster_positions_loop
+
+    clc
+    rts
+
 ; Monster plotting routines (nnxa)
 
 monster_sprite_low: .byte monster_spr_low0,     monster_spr_low1
