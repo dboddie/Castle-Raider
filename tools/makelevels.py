@@ -61,7 +61,7 @@ tile_ref = {".": "images/blank.png",
 
 # Collectable items after the first 16 tiles are ignored by the editor.
 
-tile_order = (".", "@", "#", "=", "+", "-", "X", "|",   # regular tiles
+tile_order = (".", "=", "@", "#", "+", "-", "X", "|",   # regular tiles
               "?", "[", "]", "/", "\\", "{", "I", "%",  #
               "K", "L", "M", "N", "A", "B", "C", "D",   # collectable tiles
               "E", "F")
@@ -72,7 +72,8 @@ monster_ref = {"V": "images/bat1.png", "^": "images/spider1.png"}
 monster_order = ("V", "^")
 monster_tiles = {}
 
-breakable_order = (None, "*", "$")
+breakable_order = (None, None, "*", "$", None, None, None, None,
+                   None, "~", "'")
 
 i = 1
 for monster in monster_order:

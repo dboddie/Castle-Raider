@@ -101,7 +101,7 @@ main:
             cmp #$40                    ; Is the tile (partially) broken?
             bcc init_reset_tiles_write
 
-            sbc #$18                    ; Unbreak it.
+            sbc #$17                    ; Unbreak it.
             jmp init_reset_tiles_reset
 
         init_reset_tiles_write:
@@ -437,7 +437,7 @@ check_beneath:      ; Checks beneath the character for solid tiles.
     bcc check_beneath_exit
 
     clc                     ; Increase the tile number in order to set the top
-    adc #$18                ; bit after two hits. This requires that the
+    adc #$17                ; bit after two hits. This requires that the
     sta ($76),y             ; initial tiles have values of 0x31 or higher.
     sta $78
 
