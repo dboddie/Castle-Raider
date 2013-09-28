@@ -158,17 +158,17 @@ class LevelWidget(QWidget):
             
             f.write("\n")
             
-            level_width = 40
-            
             for name in self.order:
             
                 f.write(name + "\n")
+                
+                level_width = 50
                 
                 for row in self.rows[name]:
                 
                     i = len(row) - 1
                     
-                    while i > 39:
+                    while i > 49:
                         if row[i] != ".":
                             break
                         else:
@@ -296,6 +296,12 @@ class LevelWidget(QWidget):
                 painter.drawRect(19 * 4 * self.xs, 17 * 8 * self.ys,
                                  2 * 4 * self.xs - 1, 3 * 8 * self.ys - 1)
                 
+        
+        # Plot the character's left scroll extent.
+        if c1 <= 19 and c2 >= 19:
+        
+            painter.setPen(QPen(Qt.white))
+            painter.drawLine(19 * 4 * self.xs, 0, 19 * 4 * self.xs, 24 * 8 * self.ys)
         
         painter.end()
     
