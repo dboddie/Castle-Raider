@@ -249,8 +249,8 @@ class LevelWidget(QWidget):
                         else:
                             i -= 1
                     
-                    # Leave a buffer of 20 cells.
-                    level_width = max(level_width, i + 20)
+                    # Leave a buffer of 30 cells.
+                    level_width = max(level_width, i + 30)
                 
                 for row in self.rows[name]:
                     f.write("".join(row[:level_width]) + "\n")
@@ -353,6 +353,8 @@ class LevelWidget(QWidget):
                                       tile_image)
                 
                 if tile in self.special or tile in self.portals:
+                
+                    painter.setPen(QPen(Qt.white))
                     tx = ((c + 0.5) * 4 * self.xs) - self.font().pixelSize()*0.25
                     ty = ((6.5 + r) * 8 * self.ys) + self.font().pixelSize()*0.25
                     painter.drawText(tx, ty, tile)

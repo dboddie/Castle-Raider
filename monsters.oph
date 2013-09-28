@@ -593,10 +593,10 @@ check_monster_player:
     bcs check_monster_player_exit
 
     iny
-    lda ($86),y
+    lda ($86),y                     ; Load monster y offset.
     cmp player_y
     bcc check_monster_player_exit
-    sbc #2
+    sbc #3
     clc
     cmp player_y
     bcs check_monster_player_exit

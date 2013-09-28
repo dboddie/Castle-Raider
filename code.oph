@@ -544,6 +544,8 @@ player_sprites_low:  .byte <player_left1, <player_left2, <player_right1, <player
 player_sprites_high: .byte >player_left1, >player_left2, >player_right1, >player_right2
 player_y_offset:     .byte 0, 4
 
+; ### The following routine needs to deal with x=-1 for monster movement.
+
 check_tile:         ; $80=x position (0-39)
                     ; $81=y position (0-23) (measured from the top of the
                     ;           playing area, not the top row of the scenery)
@@ -961,6 +963,7 @@ player_enter:
     lda portal_table_address,x      ; y + 8 blank rows at the top - 2 from the
     adc #6                          ; foot to the head = 6
     sta player_y
+    sta tracking_y
 
     jsr clear_banks                 ; Clear both banks and show the first.
 
