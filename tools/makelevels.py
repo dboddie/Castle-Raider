@@ -80,15 +80,18 @@ for monster in monster_order:
 breakable_order = (None, "*", "$", None, None, None, None, None,
                    None, "~", "'")
 
+special_order = "abcdefghijklmnopqrstuvwxyz012345"
+portals_order = "ZYWUTSRQPONMLKJH"
+
 colours = {"black": 0, "red": 1, "green": 2, "yellow": 3, "blue": 4,
            "magenta": 5, "cyan": 6, "white": 7}
 
 
 def load_level(path):
 
+    # Sanitise the lines read from the file.
     lines = map(lambda x: x.rstrip(), open(path).readlines())
     lines = filter(lambda x: x, lines)
-    level = lines[:16]
     
     # The special dictionary maps symbols used in the level map to tuples
     # containing corresponding tiles and indices. Each index is an offset into
@@ -96,28 +99,45 @@ def load_level(path):
     special = {}
     
     index = 16
-    for line in lines[16:48]:
+    for line in lines[:32]:
     
         ch, tile, flags_word = line.split()
-        flags = 0
-        for c in flags_word.split(","):
-            flags = flags | flags_values.get(c, 0)
+        flags = flags_word.split(",")
         special[ch] = (tile, index, flags)
         index += 1
     
     portals = {}
     index = 128
-    for line in lines[48:64]:
+    for line in lines[32:48]:
     
         src, dest, colour = line.split()
-        colour_value = colours[colour]
-        portals[src] = (index, dest, colour_value)
+        portals[src] = (index, dest, colour)
         index += 1
     
-    return level, special, portals
+    levels = []
+    l = 48
+    
+    while l < len(lines):
+    
+        name = lines[l]
+        levels.append((name, lines[l + 1:l + 17]))
+        l += 17
+    
+    return levels, special, portals
 
-def create_level_data(level, tiles, special, portals):
+def create_level_data(levels, tiles, special, portals):
 
+    global level_extent
+    
+    # Stitch the levels together.
+    level = []
+    
+    for i in range(16):
+    
+        level.append("".join(map(lambda (name, rows): rows[i], levels)))
+    
+    level_extent = len(level[0]) - 40
+    
     data = []
     monsters = {}
     portal_locations = {}
@@ -144,7 +164,7 @@ def create_level_data(level, tiles, special, portals):
                 portal_locations.setdefault(ch, []).append((i, l))
                 
                 # Portal tiles have values greater than or equal to 128.
-                c = (dest_colour << 4) | index
+                c = (colours[dest_colour] << 4) | index
             
             elif ch in monster_tiles:
                 # Record the monster's position and type.
@@ -221,10 +241,8 @@ def create_level_data(level, tiles, special, portals):
 
 def create_level(levels_address, level_path, number_of_special_tiles,
                  maximum_number_of_portals):
-
-    global level, special
     
-    level, special, portals = load_level(level_path)
+    levels, special, portals = load_level(level_path)
     
     tiles = {}
     for i in range(len(tile_order)):
@@ -242,7 +260,7 @@ def create_level(levels_address, level_path, number_of_special_tiles,
     
     # Convert the level descriptions into level data that can be encoded into
     # a form the game can use.
-    level_data, monster_data, portal_locations = create_level_data(level, tiles, special, portals)
+    level_data, monster_data, portal_locations = create_level_data(levels, tiles, special, portals)
     
     data = ""
     row_addresses = []
@@ -337,8 +355,13 @@ def create_level(levels_address, level_path, number_of_special_tiles,
     
     for i in range(16, 16 + special_tile_numbers_table_size):
     
-        c, flags = special_visibility.get(i, default_tile)
+        c, flags_list = special_visibility.get(i, default_tile)
         special_tile_numbers.append(tiles[c])
+        
+        flags = 0
+        for c in flags_list:
+            flags = flags | flags_values.get(c, 0)
+        
         initial_visibility.append(flags)
     
     special_tiles_table = "".join(map(chr, special_tile_numbers))
@@ -358,6 +381,11 @@ def create_level(levels_address, level_path, number_of_special_tiles,
             # character.
             sx = x - 19
             portal_numbers.append((index, (sx, y)))
+        
+        else:
+            # Fill in a placeholder value.
+            index, dest, colour = portals[portal]
+            portal_numbers.append((index, (0, 0)))
     
     portal_numbers.sort()
     portal_table = "".join(map(lambda (index, (x, y)):

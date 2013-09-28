@@ -26,6 +26,8 @@ from tools import makelevels
 
 class LevelWidget(QWidget):
 
+    navigationRequested = pyqtSignal(unicode)
+    
     def __init__(self, tile_images, monster_images, parent = None):
     
         QWidget.__init__(self, parent)
@@ -39,8 +41,6 @@ class LevelWidget(QWidget):
         self.maximum_width = 8192
         self.monster_images = monster_images
         
-        self.initRows()
-        
         font = QFont("Monospace")
         font.setPixelSize(min(4 * self.xs - 2, 8 * self.ys - 2))
         self.setFont(font)
@@ -50,42 +50,80 @@ class LevelWidget(QWidget):
         p.setColor(QPalette.Window, Qt.black)
         self.setPalette(p)
     
-    def initRows(self):
+    def initRows(self, name):
     
-        self.rows = []
-        self.level_width = 0
+        self.level = name
+        self.rows = {name: []}
+        self.order = [name]
         
         for i in range(16):
         
             row = ["."] * self.maximum_width
-            self.level_width = max(len(row), self.level_width)
-            self.rows.append(row)
+            self.rows[self.level].append(row)
         
         self.special = {}
+        
+        # Define default special tiles.
+        
+        for i in range(32):
+        
+            ch = makelevels.special_order[i]
+            tile = "I"
+            index = 16 + i
+            flags = ["collectable"]
+            self.special[ch] = (tile, index, flags)
+        
         self.portals = {}
+        self.portal_locations = {}
+        
+        # Define default portals.
+        
+        for i in range(16):
+        
+            src = makelevels.portals_order[i]
+            index = 128 + i
+            dest = makelevels.portals_order[0]
+            colour = "green"
+            self.portals[src] = (index, dest, colour)
     
     def loadLevel(self, path):
     
         try:
-            rows, special, portals = makelevels.load_level(path)
-            
-            self.level_width = 0
-            self.rows = []
-            
-            for row in rows:
-            
-                new_row = map(str, row)
-                
-                if len(new_row) < self.maximum_width:
-                    new_row += (self.maximum_width - len(new_row)) * ["."]
-                elif len(new_row) > self.maximum_width:
-                    new_row = new_row[:self.maximum_width]
-                
-                self.rows.append(new_row)
-                self.level_width = max(len(row), self.level_width)
+            levels, special, portals = makelevels.load_level(path)
             
             self.special = special
             self.portals = portals
+            self.portal_locations = {}
+            
+            self.rows = {}
+            self.order = []
+            
+            for name, rows in levels:
+            
+                self.order.append(name)
+                self.rows[name] = []
+                
+                for r in range(len(rows)):
+                
+                    # Record which level each portal is found in.
+                    for portal in self.portals:
+                        at = rows[r].find(portal)
+                        if at != -1:
+                            self.portal_locations[portal] = (name, at, r)
+                    
+                    # Convert the string to a list of characters.
+                    row = map(str, rows[r])
+                    
+                    # Extend each level to the maximum width, or truncate it
+                    # if it exceeds it.
+                    if len(row) < self.maximum_width:
+                        row += (self.maximum_width - len(row)) * ["."]
+                    elif len(row) > self.maximum_width:
+                        row = row[:self.maximum_width]
+                    
+                    self.rows[name].append(row)
+            
+            self.level = self.order[0]
             return True
         
         except IOError:
@@ -96,25 +134,7 @@ class LevelWidget(QWidget):
         try:
             f = open(unicode(path), "w")
             
-            level_width = 40
-            
-            for row in self.rows:
-            
-                i = len(row) - 1
-                
-                while i > 39:
-                    if row[i] != ".":
-                        break
-                    else:
-                        i -= 1
-                
-                level_width = max(level_width, i + 1)
-            
-            for row in self.rows:
-                f.write("".join(row[:level_width]) + "\n")
-            
-            f.write("\n")
-            
+            # Write the special tiles.
             special_items = self.special.items()
             sorted_special_items = []
             
@@ -125,17 +145,44 @@ class LevelWidget(QWidget):
             
             for index, ch, n, flags in sorted_special_items:
             
-                flags_word = []
-                for k, v in makelevels.flags_values.items():
-                    if flags & v:
-                        flags_word.append(k)
-                if not flags_word:
-                    flags_word.append("undefined")
-                f.write("%s %s %s\n" % (ch, n, ",".join(flags_word)))
+                if not flags:
+                    flags = ["undefined"]
+                f.write("%s %s %s\n" % (ch, n, ",".join(flags)))
+            
+            f.write("\n")
+            
+            # Write the portals.
+            for src, (index, dest, colour) in self.portals.items():
+            
+                f.write("%s %s %s\n" % (src, dest, colour))
+            
+            f.write("\n")
+            
+            level_width = 40
+            
+            for name in self.order:
+            
+                f.write(name + "\n")
+                
+                for row in self.rows[name]:
+                
+                    i = len(row) - 1
+                    
+                    while i > 39:
+                        if row[i] != ".":
+                            break
+                        else:
+                            i -= 1
+                    
+                    level_width = max(level_width, i + 1)
+                
+                for row in self.rows[self.level]:
+                    f.write("".join(row[:level_width]) + "\n")
+            
+                f.write("\n")
             
             f.close()
             
-            self.level_width = min(self.level_width, level_width)
             return True
         
         except IOError:
@@ -145,8 +192,10 @@ class LevelWidget(QWidget):
     
         if event.button() == Qt.LeftButton:
             self.writeTile(event, self.currentTile)
-        elif event.button() == Qt.RightButton:
+        elif event.button() == Qt.MiddleButton:
             self.writeTile(event, ".")
+        elif event.button() == Qt.RightButton:
+            self.showMenu(event.pos(), event.globalPos())
         else:
             event.ignore()
     
@@ -154,7 +203,7 @@ class LevelWidget(QWidget):
     
         if event.buttons() & Qt.LeftButton:
             self.writeTile(event, self.currentTile)
-        elif event.buttons() & Qt.RightButton:
+        elif event.buttons() & Qt.MiddleButton:
             self.writeTile(event, ".")
         else:
             event.ignore()
@@ -182,7 +231,7 @@ class LevelWidget(QWidget):
         for r in range(r1, r2 + 1):
             for c in range(c1, c2 + 1):
             
-                tile = self.rows[r][c]
+                tile = self.rows[self.level][r][c]
                 
                 if tile in self.special:
                 
@@ -208,7 +257,9 @@ class LevelWidget(QWidget):
                 elif tile in self.portals:
                     tile_image = self.tile_images["."]
                     
-                    painter.setPen(QPen(Qt.yellow))
+                    index, dest, colour = self.portals[tile]
+                    
+                    painter.setPen(QPen(QColor(colour)))
                     painter.setBrush(QBrush(Qt.black))
                     painter.drawRect(c * 4 * self.xs, (6 + r) * 8 * self.ys,
                                      tile_image.width() - 1, tile_image.height() - 1)
@@ -218,8 +269,8 @@ class LevelWidget(QWidget):
                 else:
                     tile_image = self.tile_images[tile]
                     
-                    if c > 0 and self.rows[r][c-1] in self.monster_images:
-                        monsters[(c-1, r)] = self.rows[r][c-1]
+                    if c > 0 and self.rows[self.level][r][c-1] in self.monster_images:
+                        monsters[(c-1, r)] = self.rows[self.level][r][c-1]
                     
                     painter.drawImage(c * 4 * self.xs, (6 + r) * 8 * self.ys,
                                       tile_image)
@@ -236,12 +287,41 @@ class LevelWidget(QWidget):
             painter.drawImage(c * 4 * self.xs, (6 + r) * 8 * self.ys,
                               tile_image)
         
+        # Plot the start position.
+        if self.level == self.order[0]:
+        
+            if r1 + 6 <= 19 and r2 + 6 >= 17 and c1 <= 20 and c2 >= 19:
+            
+                painter.setPen(QPen(Qt.white))
+                painter.drawRect(19 * 4 * self.xs, 17 * 8 * self.ys,
+                                 2 * 4 * self.xs - 1, 3 * 8 * self.ys - 1)
+                
+        
         painter.end()
     
     def sizeHint(self):
     
         return QSize(max(self.screen_width, self.maximum_width * 4) * self.xs,
                      self.screen_height * self.ys)
+    
+    def showMenu(self, pos, globalPos):
+    
+        r = max(0, self._row_from_y(pos.y()))
+        c = self._column_from_x(pos.x())
+        
+        tile = self.rows[self.level][r][c]
+        
+        if tile in self.portals:
+        
+            menu = QMenu()
+            
+            index, dest, colour = self.portals[tile]
+            goAction = menu.addAction(self.tr("Go to portal %1").arg(dest))
+            goAction.setEnabled(dest in self.portal_locations)
+            
+            action = menu.exec_(globalPos)
+            if action == goAction:
+                self.navigationRequested.emit(dest)
     
     def _row_from_y(self, y):
     
@@ -266,7 +346,13 @@ class LevelWidget(QWidget):
         
         if 0 <= r < 16 and 0 <= c < self.maximum_width:
         
-            self.rows[r][c] = tile
+            self.rows[self.level][r][c] = tile
+            
+            # If the tile is a portal then update the portal locations.
+            if tile in self.portals:
+                self.portal_locations[tile] = (self.level, c, r)
+            
+            # Update a larger region if the tile is occupied by a monster.
             if tile in self.monster_images:
                 tw = 8 * self.xs
             else:
@@ -295,6 +381,25 @@ class LevelWidget(QWidget):
         
         else:
             return ""
+    
+    def addLevel(self, name):
+    
+        self.rows[name] = []
+        self.order.insert(self.order.index(self.level) + 1, name)
+        
+        for i in range(16):
+        
+            row = ["."] * self.maximum_width
+            self.rows[name].append(row)
+    
+    def removeLevel(self, name):
+    
+        if len(self.rows) == 1:
+            return
+        
+        index = self.order.index(name)
+        del self.order[index]
+        del self.rows[name]
 
 
 class SelectorModel(QAbstractListModel):
@@ -357,13 +462,30 @@ class EditorWindow(QMainWindow):
         self.loadImages()
         
         self.levelWidget = LevelWidget(self.tile_images, self.monster_images)
+        self.levelWidget.navigationRequested.connect(self.jumpToPortal)
         
         self.createMenus()
         self.createToolBars()
         
-        area = QScrollArea()
-        area.setWidget(self.levelWidget)
-        self.setCentralWidget(area)
+        self.levelWidget.initRows("Default")
+        self.updateLevelActions()
+        self.levelGroup.actions()[0].trigger()
+        self.updatePortalActions()
+        
+        self.area = QScrollArea()
+        self.area.setWidget(self.levelWidget)
+        self.setCentralWidget(self.area)
+    
+    def sizeHint(self):
+    
+        levelSize = self.levelWidget.sizeHint()
+        menuSize = self.menuBar().sizeHint()
+        scrollBarSize = self.centralWidget().verticalScrollBar().size()
+        toolBarSize = self.tilesToolBar.size()
+        
+        return QSize(max(levelSize.width(), menuSize.width(), toolBarSize.width()),
+                     levelSize.height() + menuSize.height() + \
+                     scrollBarSize.height() + toolBarSize.height())
     
     def loadImages(self):
     
@@ -412,11 +534,20 @@ class EditorWindow(QMainWindow):
         quitAction = fileMenu.addAction(self.tr("E&xit"))
         quitAction.setShortcut(self.tr("Ctrl+Q"))
         quitAction.triggered.connect(self.close)
+        
+        mapMenu = self.menuBar().addMenu(self.tr("&Map"))
+        
+        addLevelAction = mapMenu.addAction(self.tr("&Add level"))
+        removeLevelAction = mapMenu.addAction(self.tr("&Remove level"))
+        
+        addLevelAction.triggered.connect(self.addLevel)
+        removeLevelAction.triggered.connect(self.removeLevel)
     
     def createToolBars(self):
     
         self.tilesToolBar = self.addToolBar(self.tr("Tiles"))
         self.tileGroup = QActionGroup(self)
+        self.tileGroup.triggered.connect(self.setCurrentTile)
         
         for symbol in makelevels.tile_order[:16]:
         
@@ -424,7 +555,6 @@ class EditorWindow(QMainWindow):
             action = self.tilesToolBar.addAction(icon, symbol)
             action.setCheckable(True)
             self.tileGroup.addAction(action)
-            action.triggered.connect(self.setCurrentTile)
         
         # Select the first tile in the tiles toolbar.
         self.tileGroup.actions()[0].trigger()
@@ -437,19 +567,28 @@ class EditorWindow(QMainWindow):
             action = self.monsterToolBar.addAction(icon, symbol)
             action.setCheckable(True)
             self.tileGroup.addAction(action)
-            action.triggered.connect(self.setCurrentTile)
         
         self.specialToolBar = self.addToolBar(self.tr("Special"))
         action = self.specialToolBar.addAction("New")
         action.triggered.connect(self.addSpecial)
         
         self.portalToolBar = self.addToolBar(self.tr("Portals"))
+        self.portalActions = []
         
         specialSelector = QComboBox()
         specialSelector.setModel(SelectorModel(self.tileGroup, self))
         self.specialToolBar.addWidget(specialSelector)
         
+        self.levelToolBar = self.addToolBar(self.tr("Levels"))
+        self.levelToolBar.actionTriggered.connect(self.selectLevel)
+        self.levelGroup = QActionGroup(self)
+        
         tilesMenu = self.menuBar().addMenu(self.tr("&Tiles"))
+        tilesMenu.addAction(self.tilesToolBar.toggleViewAction())
+        tilesMenu.addAction(self.monsterToolBar.toggleViewAction())
+        tilesMenu.addAction(self.specialToolBar.toggleViewAction())
+        tilesMenu.addAction(self.portalToolBar.toggleViewAction())
+        tilesMenu.addAction(self.levelToolBar.toggleViewAction())
     
     def newLevel(self):
     
@@ -462,6 +601,7 @@ class EditorWindow(QMainWindow):
         if not path.isEmpty():
         
             if self.levelWidget.loadLevel(unicode(path)):
+            
                 self.path = path
                 self.levelWidget.update()
                 
@@ -482,6 +622,13 @@ class EditorWindow(QMainWindow):
                 specialSelector = QComboBox()
                 specialSelector.setModel(SelectorModel(self.tileGroup, self))
                 self.specialToolBar.addWidget(specialSelector)
+                
+                # Update the level and portal actions.
+                self.updateLevelActions()
+                self.levelGroup.actions()[0].trigger()
+                self.updatePortalActions()
+                
+                self.tileGroup.actions()[0].trigger()
                 
                 self.saveAction.setEnabled(True)
                 self.setWindowTitle(self.tr(path))
@@ -509,9 +656,9 @@ class EditorWindow(QMainWindow):
                 QMessageBox.warning(self, self.tr("Save Level"),
                                     self.tr("Failed to save level: %1").arg(path))
     
-    def setCurrentTile(self):
+    def setCurrentTile(self, action):
     
-        self.levelWidget.currentTile = unicode(self.sender().text())
+        self.levelWidget.currentTile = unicode(action.text())
     
     def addSpecial(self):
     
@@ -527,7 +674,6 @@ class EditorWindow(QMainWindow):
         action.setCheckable(True)
         self.tileGroup.addAction(action)
         
-        action.triggered.connect(self.setCurrentTile)
         action.trigger()
     
     def editSpecial(self):
@@ -559,16 +705,72 @@ class EditorWindow(QMainWindow):
         
         return QIcon(pixmap)
     
-    def sizeHint(self):
+    def updateLevelActions(self):
     
-        levelSize = self.levelWidget.sizeHint()
-        menuSize = self.menuBar().sizeHint()
-        scrollBarSize = self.centralWidget().verticalScrollBar().size()
-        toolBarSize = self.tilesToolBar.size()
+        self.levelToolBar.clear()
+        self.levelGroup.deleteLater()
+        self.levelGroup = QActionGroup(self)
         
-        return QSize(max(levelSize.width(), menuSize.width(), toolBarSize.width()),
-                     levelSize.height() + menuSize.height() + \
-                     scrollBarSize.height() + toolBarSize.height())
+        for name in self.levelWidget.order:
+        
+            action = self.levelToolBar.addAction(name)
+            action.setCheckable(True)
+            self.levelGroup.addAction(action)
+    
+    def addLevel(self):
+    
+        name, ok = QInputDialog.getText(self, self.tr("Add Level"),
+                                    self.tr("Level name:"))
+        
+        if ok and not name.isEmpty():
+            self.levelWidget.addLevel(unicode(name))
+            action = self.levelToolBar.addAction(name)
+            action.setCheckable(True)
+            self.levelGroup.addAction(action)
+    
+    def removeLevel(self):
+    
+        action = self.levelGroup.checkedAction()
+        name = unicode(action.text())
+        index = self.levelWidget.order.index(name)
+        
+        self.levelWidget.removeLevel(name)
+        self.updateLevelActions()
+        
+        self.levelGroup.actions()[min(index, len(self.levelWidget.order) - 1)].trigger()
+    
+    def selectLevel(self, action):
+    
+        name = action.text()
+        self.levelWidget.level = unicode(name)
+        self.levelWidget.adjustSize()
+        self.levelWidget.update()
+    
+    def jumpToPortal(self, name):
+    
+        name = unicode(name)
+        level, c, r = self.levelWidget.portal_locations[name]
+        
+        index = self.levelWidget.order.index(level)
+        self.levelGroup.actions()[index].trigger()
+        self.area.horizontalScrollBar().setValue(self.levelWidget._x_from_column(c - 19))
+        self.area.verticalScrollBar().setValue(self.levelWidget._y_from_row(r))
+    
+    def updatePortalActions(self):
+    
+        self.portalToolBar.clear()
+        
+        for action in self.portalActions:
+            self.tileGroup.removeAction(action)
+        
+        self.portalActions = []
+        
+        for portal in self.levelWidget.portals:
+        
+            action = self.portalToolBar.addAction(portal)
+            action.setCheckable(True)
+            self.tileGroup.addAction(action)
+            self.portalActions.append(action)
 
 
 if __name__ == "__main__":

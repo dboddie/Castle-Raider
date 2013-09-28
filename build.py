@@ -265,7 +265,7 @@ if __name__ == "__main__":
     level_data, monster_row_address = makelevels.create_level(
         levels_address, level_file, number_of_special_tiles, maximum_number_of_portals)
     
-    level_extent = len(makelevels.level[0]) - 40
+    level_extent = makelevels.level_extent
     
     panel_address = 0x3000
     panel, offsets = makesprites.read_sprites(["images/panel.png"], panel_address)
