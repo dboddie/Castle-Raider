@@ -528,7 +528,7 @@ if __name__ == "__main__":
     code_finish = code_start + code_size
     print "CODE    runs from %04x to %04x" % (code_start, code_finish)
     if code_finish > data_start:
-        sys.stderr.write("CODE overruns following data.\n")
+        sys.stderr.write("CODE overruns following data by %i bytes.\n" % (code_finish - data_start))
         sys.exit(1)
     
     print "data    runs from %04x to %04x" % (data_start, level_data_start)
@@ -536,19 +536,19 @@ if __name__ == "__main__":
     levels_finish = levels_address + len(level_data)
     print "LEVELS  runs from %04x to %04x" % (levels_address, levels_finish)
     if levels_finish > sprite_area_address:
-        sys.stderr.write("LEVELS overruns following data.\n")
+        sys.stderr.write("LEVELS overruns following data by %i bytes.\n" % (levels_finish - sprite_area_address))
         sys.exit(1)
     
     sprite_area_finish = sprite_area_address + len(sprite_data)
     print "TILES   runs from %04x to %04x" % (sprite_area_address, sprite_area_finish)
     if sprite_area_finish > char_area_address:
-        sys.stderr.write("TILES overruns following data.\n")
+        sys.stderr.write("TILES overruns following data by %i bytes.\n" % (sprite_area_finish - char_area_address))
         sys.exit(1)
     
     char_area_finish = char_area_address + len(char_data)
     print "SPRITES runs from %04x to %04x" % (char_area_address, char_area_finish)
     if char_area_finish > panel_address:
-        sys.stderr.write("SPRITES overruns following data.\n")
+        sys.stderr.write("SPRITES overruns following data by %i bytes.\n" % (char_area_finish - panel_address))
         sys.exit(1)
     
     u = UEFfile.UEFfile(creator = 'build.py '+version)

@@ -24,6 +24,81 @@ from PyQt4.QtGui import *
 
 from tools import makelevels
 
+standard_palette = [qRgb(0, 0, 0), qRgb(255, 0, 0), qRgb(0, 255, 0),
+                    qRgb(255, 255, 0), qRgb(0, 0, 255), qRgb(255, 0, 255),
+                    qRgb(0, 255, 255), qRgb(255, 255, 255)]
+
+class ColourDialog(QDialog):
+
+    def __init__(self, parent, title):
+    
+        QDialog.__init__(self, parent)
+        
+        group = QButtonGroup(self)
+        group.buttonClicked[int].connect(self.selected)
+        
+        layout = QHBoxLayout(self)
+        
+        for i in range(len(standard_palette)):
+        
+            button = QToolButton()
+            button.setText(str(i))
+            
+            palette = QPalette()
+            palette.setColor(QPalette.Window, QColor(standard_palette[i]))
+            palette.setColor(QPalette.ButtonText, QColor(standard_palette[7 - i]))
+            button.setPalette(palette)
+            layout.addWidget(button)
+            
+            group.addButton(button, i)
+        
+        self.setWindowTitle(title)
+    
+    def selected(self, id):
+    
+        self.colour = ("black", "red", "green", "yellow", "blue", "magenta",
+                       "cyan", "white")[id]
+        self.accept()
+
+
+class DestinationDialog(QDialog):
+
+    def __init__(self, parent, title, portals):
+    
+        QDialog.__init__(self, parent)
+        
+        group = QButtonGroup(self)
+        group.buttonClicked[int].connect(self.selected)
+        
+        layout = QGridLayout(self)
+        
+        for i in range(len(makelevels.portals_order)):
+        
+            symbol = makelevels.portals_order[i]
+            
+            button = QToolButton()
+            button.setText(symbol)
+            
+            index, dest, colour = portals[symbol]
+            text_colour = standard_palette[7 - makelevels.colours[colour]]
+            
+            palette = QPalette()
+            colour = standard_palette[makelevels.colours[colour]]
+            palette.setColor(QPalette.Window, QColor(colour))
+            palette.setColor(QPalette.ButtonText, QColor(text_colour))
+            button.setPalette(palette)
+            layout.addWidget(button, i / 4, i % 4)
+            
+            group.addButton(button, i)
+        
+        self.setWindowTitle(title)
+    
+    def selected(self, id):
+    
+        self.destination = makelevels.portals_order[id]
+        self.accept()
+
+
 class LevelWidget(QWidget):
 
     navigationRequested = pyqtSignal(unicode)
@@ -86,7 +161,7 @@ class LevelWidget(QWidget):
             colour = "green"
             self.portals[src] = (index, dest, colour)
     
-    def loadLevel(self, path):
+    def loadMap(self, path):
     
         try:
             levels, special, portals = makelevels.load_level(path)
@@ -129,7 +204,7 @@ class LevelWidget(QWidget):
         except IOError:
             return False
     
-    def saveLevel(self, path):
+    def saveMap(self, path):
     
         try:
             f = open(unicode(path), "w")
@@ -162,19 +237,20 @@ class LevelWidget(QWidget):
             
                 f.write(name + "\n")
                 
-                level_width = 50
+                level_width = 40
                 
                 for row in self.rows[name]:
                 
                     i = len(row) - 1
                     
-                    while i > 49:
+                    while i > 39:
                         if row[i] != ".":
                             break
                         else:
                             i -= 1
                     
-                    level_width = max(level_width, i + 1)
+                    # Leave a buffer of 20 cells.
+                    level_width = max(level_width, i + 20)
                 
                 for row in self.rows[name]:
                     f.write("".join(row[:level_width]) + "\n")
@@ -259,6 +335,7 @@ class LevelWidget(QWidget):
                     
                     index, dest, colour = self.portals[tile]
                     
+                    colour = standard_palette[makelevels.colours[colour]]
                     painter.setPen(QPen(QColor(colour)))
                     painter.setBrush(QBrush(Qt.black))
                     painter.drawRect(c * 4 * self.xs, (6 + r) * 8 * self.ys,
@@ -275,9 +352,9 @@ class LevelWidget(QWidget):
                     painter.drawImage(c * 4 * self.xs, (6 + r) * 8 * self.ys,
                                       tile_image)
                 
-                if tile in self.special:
-                    tx = ((c + 0.5) * 4 * self.xs) - self.font().pixelSize()*0.5
-                    ty = ((6.5 + r) * 8 * self.ys) + self.font().pixelSize()*0.5
+                if tile in self.special or tile in self.portals:
+                    tx = ((c + 0.5) * 4 * self.xs) - self.font().pixelSize()*0.25
+                    ty = ((6.5 + r) * 8 * self.ys) + self.font().pixelSize()*0.25
                     painter.drawText(tx, ty, tile)
         
         # Plot the monsters.
@@ -300,7 +377,9 @@ class LevelWidget(QWidget):
         # Plot the character's left scroll extent.
         if c1 <= 19 and c2 >= 19:
         
-            painter.setPen(QPen(Qt.white))
+            pen = QPen(Qt.white)
+            pen.setStyle(Qt.DashLine)
+            painter.setPen(pen)
             painter.drawLine(19 * 4 * self.xs, 0, 19 * 4 * self.xs, 24 * 8 * self.ys)
         
         painter.end()
@@ -321,12 +400,27 @@ class LevelWidget(QWidget):
         
             menu = QMenu()
             
+            colourAction = menu.addAction(self.tr("Set colour"))
+            
+            destinationAction = menu.addAction(self.tr("Set destination"))
+            
             index, dest, colour = self.portals[tile]
             goAction = menu.addAction(self.tr("Go to portal %1").arg(dest))
             goAction.setEnabled(dest in self.portal_locations)
             
             action = menu.exec_(globalPos)
-            if action == goAction:
+            if action == colourAction:
+                dialog = ColourDialog(self, self.tr("Set Colour"))
+                if dialog.exec_() == QDialog.Accepted:
+                    self.portals[tile] = index, dest, dialog.colour
+                    self.setPortalPalette(tile)
+                    
+            elif action == destinationAction:
+                dialog = DestinationDialog(self, self.tr("Set Destination"), self.portals)
+                if dialog.exec_() == QDialog.Accepted:
+                    self.portals[tile] = index, dialog.destination, colour
+            
+            elif action == goAction:
                 self.navigationRequested.emit(dest)
     
     def _row_from_y(self, y):
@@ -406,6 +500,18 @@ class LevelWidget(QWidget):
         index = self.order.index(name)
         del self.order[index]
         del self.rows[name]
+    
+    def setPortalPalette(self, name):
+    
+        dest, index, colour = self.portals[name]
+        
+        for tile, image in self.tile_images.items():
+        
+            rgb = standard_palette[makelevels.colours[colour]]
+            new_palette = standard_palette[:2] + [rgb] + standard_palette[3:]
+
+            image.setColorTable(new_palette)
+            self.tile_images[tile] = image
 
 
 class SelectorModel(QAbstractListModel):
@@ -507,6 +613,8 @@ class EditorWindow(QMainWindow):
         
             path = d.filePath(image_path)
             image = QImage(path).scaled(self.xs * 4, self.ys * 8)
+            image = image.convertToFormat(QImage.Format_Indexed8,
+                                          standard_palette)
             self.tile_images[key] = image
         
         self.monster_images = {}
@@ -515,6 +623,8 @@ class EditorWindow(QMainWindow):
         
             path = d.filePath(image_path)
             image = QImage(path).scaled(self.xs * 8, self.ys * 8)
+            image = image.convertToFormat(QImage.Format_Indexed8,
+                                          standard_palette)
             self.monster_images[key] = image
     
     def createMenus(self):
@@ -526,11 +636,11 @@ class EditorWindow(QMainWindow):
         
         openAction = fileMenu.addAction(self.tr("&Open..."))
         openAction.setShortcut(QKeySequence.Open)
-        openAction.triggered.connect(self.openLevel)
+        openAction.triggered.connect(self.openMap)
         
         self.saveAction = fileMenu.addAction(self.tr("&Save"))
         self.saveAction.setShortcut(QKeySequence.Save)
-        self.saveAction.triggered.connect(self.saveLevel)
+        self.saveAction.triggered.connect(self.saveMap)
         self.saveAction.setEnabled(False)
         
         saveAsAction = fileMenu.addAction(self.tr("Save &As..."))
@@ -568,7 +678,10 @@ class EditorWindow(QMainWindow):
         
             symbol = makelevels.breakable_order[i]
             if symbol:
+            
                 image = QImage(self.tile_images[makelevels.tile_order[i]])
+                image = image.convertToFormat(QImage.Format_ARGB32_Premultiplied,
+                                              standard_palette)
                 painter = QPainter()
                 painter.begin(image)
                 painter.fillRect(image.rect(), QColor(0, 0, 0, 80))
@@ -619,51 +732,54 @@ class EditorWindow(QMainWindow):
     
         pass
     
-    def openLevel(self):
+    def openMap(self):
     
         path = QFileDialog.getOpenFileName(self, self.tr("Open Level"),
                                            self.path)
         if not path.isEmpty():
+            self._openMap(path)
+    
+    def _openMap(self, path):
+    
+        if self.levelWidget.loadMap(unicode(path)):
         
-            if self.levelWidget.loadLevel(unicode(path)):
+            self.path = path
+            self.levelWidget.update()
             
-                self.path = path
-                self.levelWidget.update()
-                
-                self.specialToolBar.clear()
-                
-                for action in self.specialToolBar.actions():
-                    self.tileGroup.removeAction(action)
-                
-                specialKeys = self.levelWidget.special.keys()
-                specialKeys.sort()
-                
-                for symbol in specialKeys:
-                    self._addSpecialAction(symbol)
-                
-                action = self.specialToolBar.addAction("New")
-                action.triggered.connect(self.addSpecial)
-                
-                specialSelector = QComboBox()
-                specialSelector.setModel(SelectorModel(self.tileGroup, self))
-                self.specialToolBar.addWidget(specialSelector)
-                
-                # Update the level and portal actions.
-                self.updateLevelActions()
-                self.levelGroup.actions()[0].trigger()
-                self.updatePortalActions()
-                
-                self.tileGroup.actions()[0].trigger()
-                
-                self.saveAction.setEnabled(True)
-                self.setWindowTitle(self.tr(path))
-            else:
-                QMessageBox.warning(self, self.tr("Open Level"),
-                                    self.tr("Failed to open level: %1").arg(path))
+            self.specialToolBar.clear()
+            
+            for action in self.specialToolBar.actions():
+                self.tileGroup.removeAction(action)
+            
+            specialKeys = self.levelWidget.special.keys()
+            specialKeys.sort()
+            
+            for symbol in specialKeys:
+                self._addSpecialAction(symbol)
+            
+            action = self.specialToolBar.addAction("New")
+            action.triggered.connect(self.addSpecial)
+            
+            specialSelector = QComboBox()
+            specialSelector.setModel(SelectorModel(self.tileGroup, self))
+            self.specialToolBar.addWidget(specialSelector)
+            
+            # Update the level and portal actions.
+            self.updateLevelActions()
+            self.levelGroup.actions()[0].trigger()
+            self.updatePortalActions()
+            
+            self.tileGroup.actions()[0].trigger()
+            
+            self.saveAction.setEnabled(True)
+            self.setWindowTitle(self.tr(path))
+        else:
+            QMessageBox.warning(self, self.tr("Open Level"),
+                                self.tr("Failed to open level: %1").arg(path))
     
-    def saveLevel(self):
+    def saveMap(self):
     
-        if not self.levelWidget.saveLevel(unicode(self.path)):
+        if not self.levelWidget.saveMap(unicode(self.path)):
             QMessageBox.warning(self, self.tr("Save Level"),
                                 self.tr("Failed to save level: %1").arg(self.path))
     
@@ -673,7 +789,7 @@ class EditorWindow(QMainWindow):
                                            self.path)
         if not path.isEmpty():
         
-            if self.levelWidget.saveLevel(unicode(path)):
+            if self.levelWidget.saveMap(unicode(path)):
                 self.path = path
                 self.saveAction.setEnabled(True)
                 self.setWindowTitle(self.tr(path))
@@ -780,6 +896,8 @@ class EditorWindow(QMainWindow):
         self.levelGroup.actions()[index].trigger()
         self.area.horizontalScrollBar().setValue(self.levelWidget._x_from_column(c - 19))
         self.area.verticalScrollBar().setValue(self.levelWidget._y_from_row(r))
+        
+        self.levelWidget.setPortalPalette(name)
     
     def updatePortalActions(self):
     
@@ -803,5 +921,9 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
     
     window = EditorWindow()
+    
+    if app.arguments() > 1:
+        window._openMap(app.arguments()[1])
+        
     window.show()
     sys.exit(app.exec_())

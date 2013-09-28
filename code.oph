@@ -924,8 +924,7 @@ player_jump:
     lda #0
     sta player_ys
 
-    clc
-    rts
+    jmp check_beneath
 
 player_enter:
 
