@@ -38,7 +38,7 @@ class LevelWidget(QWidget):
         
         self.tile_images = tile_images
         self.currentTile = "."
-        self.maximum_width = 8192
+        self.maximum_width = 1024
         self.monster_images = monster_images
         
         font = QFont("Monospace")
@@ -176,7 +176,7 @@ class LevelWidget(QWidget):
                     
                     level_width = max(level_width, i + 1)
                 
-                for row in self.rows[self.level]:
+                for row in self.rows[name]:
                     f.write("".join(row[:level_width]) + "\n")
             
                 f.write("\n")
@@ -252,7 +252,7 @@ class LevelWidget(QWidget):
                     
                     painter.fillRect(c * 4 * self.xs, (6 + r) * 8 * self.ys,
                                      tile_image.width(), tile_image.height(),
-                                     QBrush(QColor(0, 0, 0, 160)))
+                                     QBrush(QColor(0, 0, 0, 80)))
                 
                 elif tile in self.portals:
                     tile_image = self.tile_images["."]
@@ -485,7 +485,7 @@ class EditorWindow(QMainWindow):
         
         return QSize(max(levelSize.width(), menuSize.width(), toolBarSize.width()),
                      levelSize.height() + menuSize.height() + \
-                     scrollBarSize.height() + toolBarSize.height())
+                     scrollBarSize.height() + 2 * toolBarSize.height())
     
     def loadImages(self):
     
@@ -556,6 +556,23 @@ class EditorWindow(QMainWindow):
             action.setCheckable(True)
             self.tileGroup.addAction(action)
         
+        # Add breakable tiles.
+        
+        for i in range(len(makelevels.breakable_order)):
+        
+            symbol = makelevels.breakable_order[i]
+            if symbol:
+                image = QImage(self.tile_images[makelevels.tile_order[i]])
+                painter = QPainter()
+                painter.begin(image)
+                painter.fillRect(image.rect(), QColor(0, 0, 0, 80))
+                painter.end()
+                
+                icon = QIcon(QPixmap.fromImage(image))
+                action = self.tilesToolBar.addAction(icon, symbol)
+                action.setCheckable(True)
+                self.tileGroup.addAction(action)
+        
         # Select the first tile in the tiles toolbar.
         self.tileGroup.actions()[0].trigger()
         
@@ -572,23 +589,25 @@ class EditorWindow(QMainWindow):
         action = self.specialToolBar.addAction("New")
         action.triggered.connect(self.addSpecial)
         
-        self.portalToolBar = self.addToolBar(self.tr("Portals"))
+        self.portalToolBar = QToolBar(self.tr("Portals"))
+        self.addToolBar(Qt.RightToolBarArea, self.portalToolBar)
         self.portalActions = []
         
         specialSelector = QComboBox()
         specialSelector.setModel(SelectorModel(self.tileGroup, self))
         self.specialToolBar.addWidget(specialSelector)
         
-        self.levelToolBar = self.addToolBar(self.tr("Levels"))
+        self.levelToolBar = QToolBar(self.tr("Levels"))
+        self.addToolBar(Qt.BottomToolBarArea, self.levelToolBar)
         self.levelToolBar.actionTriggered.connect(self.selectLevel)
         self.levelGroup = QActionGroup(self)
         
-        tilesMenu = self.menuBar().addMenu(self.tr("&Tiles"))
-        tilesMenu.addAction(self.tilesToolBar.toggleViewAction())
-        tilesMenu.addAction(self.monsterToolBar.toggleViewAction())
-        tilesMenu.addAction(self.specialToolBar.toggleViewAction())
-        tilesMenu.addAction(self.portalToolBar.toggleViewAction())
-        tilesMenu.addAction(self.levelToolBar.toggleViewAction())
+        docksMenu = self.menuBar().addMenu(self.tr("&Docks"))
+        docksMenu.addAction(self.tilesToolBar.toggleViewAction())
+        docksMenu.addAction(self.monsterToolBar.toggleViewAction())
+        docksMenu.addAction(self.specialToolBar.toggleViewAction())
+        docksMenu.addAction(self.portalToolBar.toggleViewAction())
+        docksMenu.addAction(self.levelToolBar.toggleViewAction())
     
     def newLevel(self):
     
