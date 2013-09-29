@@ -106,7 +106,7 @@ main:
     lda #140
     jsr $fff4   ; *TAPE (reclaim any workspace used on high PAGE systems)
 
-    ; Copy the panel onto bank1.
+    ; Copy the panel onto bank 2.
     jsr copy_panel
 
     ; Store table addresses in zero page locations for convenient access.
