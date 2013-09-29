@@ -41,13 +41,15 @@ tile_ref = {".": "images/blank.png",
             "|": "images/door.png",
             "?": "images/flag.png",
             "[": "images/broken-brick.png",
-            "]": "images/broken-ground.png",
+            "]": "images/door2.png",
             "/": "images/window-topleft.png",
             "\\": "images/window-topright.png",
             "{": "images/stalactite.png",
             "I": "images/gate.png",
-            "%": "images/foliage.png",  # End of scenery tile sprites
-                                        # Start of collectable item sprites
+            "%": "images/brick-alt.png",
+            # End of scenery tile sprites
+            
+            # Start of collectable item sprites
             "K": "images/key.png",
             "L": "images/key1.png",
             "M": "images/key2.png",
@@ -77,8 +79,8 @@ for monster in monster_order:
     monster_tiles[monster] = i
     i += 1
 
-breakable_order = (None, "*", "$", None, None, None, None, None,
-                   None, "~", "'")
+breakable_order = (None, "*", None, None, None, None, None, None,
+                   None, "~", None)
 
 special_order = "abcdefghijklmnopqrstuvwxyz012345"
 portals_order = "ZYWUTSRQPONMLKJH"

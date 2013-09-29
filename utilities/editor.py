@@ -249,8 +249,7 @@ class LevelWidget(QWidget):
                         else:
                             i -= 1
                     
-                    # Leave a buffer of 30 cells.
-                    level_width = max(level_width, i + 30)
+                    level_width = max(level_width, i + 1)
                 
                 for row in self.rows[name]:
                     f.write("".join(row[:level_width]) + "\n")
