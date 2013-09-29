@@ -543,9 +543,26 @@ check_monster_can_move_vertically:  ; $86,$87=monster entry in table
     lda ($86),y
     sta $80                 ; $80=x position (0-39)
     iny
-    jmp check_monster_can_move
+
+    lda bank_number
+    cmp #1
+    bne check_monster_can_move_vertically_next
+
+    inc $80
+
+    check_monster_can_move_vertically_next:
+
+    jsr check_monster_can_move  ; Check the left tile.
+    bcs check_monster_can_move_vertically_exit
+    
+    inc $80
+    jmp check_monster_can_move  ; Check the right tile.
+
+    check_monster_can_move_vertically_exit:
+    rts
 
 check_monster_can_move_horizontally:    ; $86,$87=monster entry in table
+                                        ; $80=x position
                                         ; A=x position on screen
                                         ; Y=x offset in monster entry
 
@@ -553,31 +570,29 @@ check_monster_can_move_horizontally:    ; $86,$87=monster entry in table
     lda ($86),y
     sta $81                 ; $81=y position (0-23)
     dey
-    jmp check_monster_can_move
 
-check_monster_can_move:     ; A=row number
-                            ; X=monster type
-                            ; Y=y offset of monster in table
+    jsr check_monster_can_move
+    bcs check_monster_can_move_horizontally_exit ; Leave immediately if a tile
+                                                 ; is found.
+    lda bank_number
+    cmp #1
+    bne check_monster_can_move_horizontally_exit ; Only check additional tiles
+                                                 ; on bank 2.
+    inc $80
+    jsr check_monster_can_move  ; C set if tile is present; C clear otherwise.
+    dec $80
+
+    check_monster_can_move_horizontally_exit:
+    rts
+
+check_monster_can_move:     ; $80=x position
+                            ; $81=y position
                             ; Returns C set if cannot move; C clear otherwise.
 
-    sta $8b
     sty $8d
 
     jsr check_tile          ; C set if tile is present; C clear otherwise.
 
-    bcs check_monster_can_move_exit ; Leave immediately if a tile is found.
-
-    lda bank_number
-    cmp #1
-    bne check_monster_can_move_exit ; Only check additional tiles on bank 2.
-
-    inc $80
-    jsr check_tile          ; C set if tile is present; C clear otherwise.
-    dec $80
-
-    check_monster_can_move_exit:
-
-    lda $8b
     ldy $8d
     rts
 

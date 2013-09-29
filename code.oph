@@ -345,13 +345,6 @@ player_move:
     jsr $fff4
     jsr plot_player                 ; unplot
 
-    lda scroll_offset_low
-    sta tracking_low
-    lda scroll_offset_high
-    sta tracking_high
-    lda player_y
-    sta tracking_y
-
     jsr player_jump
 
     jsr plot_player                 ; plot
@@ -860,8 +853,8 @@ player_move_left:
     clc
     rts
 
-jump_steps_y:    .byte 0,1,1,1,1,0,0,0
-jump_offsets_ys: .byte 0,0,0,0,1,0,0,0
+jump_steps_y:    .byte 0,1,1,1,1,0,0,0,0
+jump_offsets_ys: .byte 0,0,0,0,1,0,0,0,0
 
 player_jump:
 
@@ -911,7 +904,7 @@ player_jump:
     sta player_ys
 
     inx
-    cpx #8                          ; After the end of the list of offsets,
+    cpx #9                          ; After the end of the list of offsets,
     bcs player_jump_stop_jumping    ; stop jumping.
 
     stx player_jumping
