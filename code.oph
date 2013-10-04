@@ -29,22 +29,6 @@
 .alias monster_positions_table_low      $86
 .alias monster_positions_table_high     $87
 
-; Each monster type is defined as yyyyynnd.
-.alias monster_data_axis_bit            $01
-.alias monster_data_type_bits           $06
-
-; Each monster visible type is defined as nnxa.
-.alias monster_animation_bit            $01
-.alias monster_dx_bit                   $02
-.alias monster_type_bits                $0c
-.alias monster_plot_bits                $0f
-.alias monster_direction_bit            $20
-.alias monster_axis_bit                 $40
-.alias monster_existence_bit            $80
-
-.alias monster_horizontal_motion        $00
-.alias monster_vertical_motion          $40
-
 ; See the end of the file for included routines.
 
 main:

@@ -1,5 +1,7 @@
 To Do
 
+Find out why monsters sometimes fail to scroll onto the screen.
+
 Add support for plotting the view onto the level from any point in the level.
 Ensure that the player simply falls when jumping against the end of the level.
 Ensure that the player cannot jump when falling off the bottom of the level.
