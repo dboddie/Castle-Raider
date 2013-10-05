@@ -29,6 +29,8 @@
 .alias monster_positions_table_low      $86
 .alias monster_positions_table_high     $87
 
+.alias check_monster_tile               $8a
+
 ; See the end of the file for included routines.
 
 main:
@@ -52,6 +54,7 @@ main:
     sta player_lives
     lda #0
     sta player_lost
+    sta check_monster_tile
 
     ; Initialise the tile visibility values.
 
@@ -526,6 +529,7 @@ player_y_offset:     .byte 0, 4
 check_tile:         ; $80=x position (0-39)
                     ; $81=y position (0-23) (measured from the top of the
                     ;           playing area, not the top row of the scenery)
+                    ; $8a=0 (player's character) or $8a=1 (monsters)
                     ; returns C set if tile found or C clear if not
 
     lda $81         ; For y positions less than 8 do not check the corresponding
@@ -640,6 +644,11 @@ check_tile_visible:             ; A=tile number
     rts
 
     check_tile_visible_next:    ; the tile is visible
+    ldx $8a
+    cpx #0
+    bne check_tile_visible_exit ; exit with C set for monsters
+                                ; continue for the player's character, in order
+                                ; to collect objects or open doors
 
     and #$7f                    ; mask off the visible bit
     cmp #$40                    ; check for collectable objects (vCdtnnnn)
@@ -671,9 +680,7 @@ check_tile_collect_visible_object:
     and #$1f                ; mask off the visible, collectable and door bits
     cmp #$10                        ; check for treasure (vcdTnnnn)
     bcs check_tile_collect_treasure ; remove both parts of the object 
-
-    jsr plot_collected_object       ; not treasure, just a regular object
-    jmp make_tile_invisible ; make all tiles of this type invisible and exit
+    bcc check_tile_collect_object   ; not treasure, just a regular object
 
 check_tile_collect_treasure:
 
@@ -686,10 +693,13 @@ check_tile_collect_treasure:
     eor #1                          ; do the same for the corresponding tile
     tay
 
-    jsr plot_collected_object       ; show the item of treasure in the header
-    jsr make_tile_invisible         ; make all tiles of this type invisible
+    check_tile_collect_object:
 
-    check_tile_visible_exit:
+    jsr plot_collected_object       ; show the item of treasure in the header
+    jmp make_tile_invisible         ; make all tiles of this type invisible
+
+check_tile_visible_exit:
+
     sec
     rts
 

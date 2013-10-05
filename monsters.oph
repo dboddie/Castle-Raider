@@ -607,7 +607,9 @@ check_monster_can_move:     ; $80=x position
 
     sty $8d
 
+    inc $8a                 ; set the monster flag when checking tiles
     jsr check_tile          ; C set if tile is present; C clear otherwise.
+    dec $8a                 ; clear the monster flag
 
     ldy $8d
     rts

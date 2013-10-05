@@ -401,9 +401,9 @@ class LevelWidget(QWidget):
         
             menu = QMenu()
             
-            colourAction = menu.addAction(self.tr("Set colour"))
+            colourAction = menu.addAction(self.tr("Set colour..."))
             
-            destinationAction = menu.addAction(self.tr("Set destination"))
+            destinationAction = menu.addAction(self.tr("Set destination..."))
             
             index, dest, colour = self.portals[tile]
             goAction = menu.addAction(self.tr("Go to portal %1").arg(dest))
