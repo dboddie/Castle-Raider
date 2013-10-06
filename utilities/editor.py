@@ -400,9 +400,7 @@ class LevelWidget(QWidget):
         if tile in self.portals:
         
             menu = QMenu()
-            
             colourAction = menu.addAction(self.tr("Set colour..."))
-            
             destinationAction = menu.addAction(self.tr("Set destination..."))
             
             index, dest, colour = self.portals[tile]
@@ -423,6 +421,24 @@ class LevelWidget(QWidget):
             
             elif action == goAction:
                 self.navigationRequested.emit(dest)
+        
+        elif tile in self.monster_images:
+        
+            axis = makelevels.monster_axes[tile]
+            
+            menu = QMenu()
+            horizontalAction = menu.addAction(self.tr("Horizontal Motion"))
+            horizontalAction.setCheckable(True)
+            horizontalAction.setChecked(axis == 0)
+            verticalAction = menu.addAction(self.tr("Vertical Motion"))
+            verticalAction.setCheckable(True)
+            verticalAction.setChecked(axis == 1)
+            
+            action = menu.exec_(globalPos)
+            if action == horizontalAction and axis != 0:
+                self.rows[self.level][r][c] = makelevels.monster_axis_flip[tile]
+            elif action == verticalAction and axis != 1:
+                self.rows[self.level][r][c] = makelevels.monster_axis_flip[tile]
     
     def _row_from_y(self, y):
     

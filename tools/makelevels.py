@@ -70,14 +70,15 @@ tile_order = (".", "@", "#", "=", "+", "-", "X", "|",   # regular tiles
 
 flags_values = {"visible": 0x80, "collectable": 0x40, "door": 0x20, "treasure": 0x10}
 
-monster_ref = {"V": "images/bat1.png", "^": "images/spider1.png"}
+monster_ref = {"V": "images/bat1.png", "^": "images/spider1.png",
+               "<": "images/bat1.png", ">": "images/spider1.png"}
+monster_tiles = {"V": 1,    # bat (vertical)
+                 "<": 1,    # bat (horizontal)
+                 "^": 2,    # spider (vertical)
+                 ">": 2}    # spider (horizontal)
 monster_order = ("V", "^")
-monster_tiles = {}
-
-i = 1
-for monster in monster_order:
-    monster_tiles[monster] = i
-    i += 1
+monster_axes = {"V": 1, "^": 1, "<": 0, ">": 0}
+monster_axis_flip = {"V": "<", "^": ">", "<": "V", ">": "^"}
 
 breakable_order = (None, "*", None, None, None, None, None, None,
                    None, "~", None)
@@ -170,7 +171,7 @@ def create_level_data(levels, tiles, special, portals):
             
             elif ch in monster_tiles:
                 # Record the monster's position and type.
-                monsters[i] = (monster_tiles[ch], l + 8)
+                monsters[i] = (monster_tiles[ch], l + 8, monster_axes[ch])
                 # Use the blank tile in the level itself.
                 c = tiles["."]
             
@@ -198,24 +199,26 @@ def create_level_data(levels, tiles, special, portals):
     monster_data = []
     previous_monster = 0
     previous_y = 0
+    previous_axis = 0
     monster_offset = 0
     
     monsters = monsters.items()
     monsters.sort()
     
-    for i, (monster, y) in monsters:
+    for i, (monster, y, axis) in monsters:
     
         if i > monster_offset:
         
             # Add the previous monster to the list of monster spans.
-            monster_data.append((previous_monster, previous_y, i - monster_offset))
+            monster_data.append((previous_monster, previous_y, i - monster_offset, previous_axis))
         
         monster_offset = i
         previous_monster = monster
         previous_y = y
+        previous_axis = axis
     
     if monster_offset < len(level[0]):
-        monster_data.append((previous_monster, previous_y, len(level[0]) - monster_offset))
+        monster_data.append((previous_monster, previous_y, len(level[0]) - monster_offset, axis))
     
     # For portal locations that span multiple cells, find the lowest, middle
     # location of the portal.
@@ -317,15 +320,11 @@ def create_level(levels_address, level_path, number_of_special_tiles,
     
     monster_row_data = chr(0) + chr(1)
     
-    for monster, y, number in monster_data:
+    for monster, y, number, axis in monster_data:
     
         # Write spans to fill the space but only include a monster in the first
         # one.
         if monster > 0:
-            if monster == 2:
-                axis = 0
-            else:
-                axis = 1
             type_number = (y << 3) | ((monster - 1) << 1) | axis
             if type_number == 0:
                 raise LevelError, "Resulting monster type is zero (monster = 0 and y = 0)."
