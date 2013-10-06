@@ -387,64 +387,64 @@ move_monsters_pre_loop:
 move_monster_vertically:    ; $86,$87=monster table
                             ; $88=offset into monster table
                             ; Y=offset into monster table (initially 0)
-        iny
-        iny                         ; Select the y offset.
+    iny
+    iny                         ; Select the y offset.
 
-        iny                         ; Select the dy value.
+    iny                         ; Select the dy value.
+    lda ($86),y
+
+    eor #$01                    ; dy = !dy
+    sta $89                     ; Temporarily store dy.
+    sta ($86),y
+
+    dey                         ; Select the y offset.
+
+    lda $8b                     ; Recover the type.
+    and #monster_direction_bit
+    cmp #$00
+    bne move_monster_down
+
+    ; Upward motion
+
+    lda $89                             ; dy
+    cmp #0                              ; If we have just moved up within
+    beq move_monster_vertically_exit    ; the same cell then exit.
+
+    lda ($86),y
+    cmp #0
+    beq move_monsters_change_direction
+
+        sec
+        sbc #1                  ; y -= 1
+        clc
+
+        jsr check_monster_can_move_vertically
+        bcs move_monsters_change_direction
+
+        lda $81
+        sta ($86),y             ; Store the new y offset and exit.
+        rts
+
+    move_monster_down:
+
+    ; Downward motion
+
+    lda $89                         ; dy
+    cmp #0                          ; If we moved within a cell then exit.
+    bne move_monster_vertically_exit
+
+        clc
         lda ($86),y
+        adc #1                      ; y += 1
+        sta ($86),y                 ; Store the new y offset.
 
-        eor #$01                    ; dy = !dy
-        sta $89                     ; Temporarily store dy.
-        sta ($86),y
+    lda ($86),y
+    cmp #23
+    beq move_monsters_change_direction
 
-        dey                         ; Select the y offset.
-
-        lda $8b                     ; Recover the type.
-        and #monster_direction_bit
-        cmp #$00
-        bne move_monster_down
-
-        ; Upward motion
-
-        lda $89                             ; dy
-        cmp #0                              ; If we have just moved up within
-        beq move_monster_vertically_exit    ; the same cell then exit.
-
-        lda ($86),y
-        cmp #0
-        beq move_monsters_change_direction
-
-            sec
-            sbc #1                  ; y -= 1
-            clc
-
-            jsr check_monster_can_move_vertically
-            bcs move_monsters_change_direction
-
-            lda $81
-            sta ($86),y             ; Store the new y offset and exit.
-            rts
-
-        move_monster_down:
-
-        ; Downward motion
-
-        lda $89                         ; dy
-        cmp #0                          ; If we moved within a cell then exit.
-        bne move_monster_vertically_exit
-
-            clc
-            lda ($86),y
-            adc #1                      ; y += 1
-            sta ($86),y                 ; Store the new y offset.
-
-        lda ($86),y
-        cmp #23
-        beq move_monsters_change_direction
-
-            adc #1
-            jsr check_monster_can_move_vertically
-            bcs move_monsters_change_direction
+        adc #1
+        jsr check_monster_can_move_vertically
+        bcs move_monsters_change_direction
 
     move_monster_vertically_exit:
 
