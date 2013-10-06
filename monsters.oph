@@ -228,6 +228,8 @@ plot_monster:   ; $7a,$7b=sprite plotting routing for a given bank
 
 create_monster_left:
 
+    lda #$20                        ; direction bit (1=right)
+    sta $8d
     lda monster_left_index
     ldx visible_monster_left_index  ; X=visible index
     jsr create_monster
@@ -237,6 +239,7 @@ create_monster_left:
     dex
     dex
     sta monster_positions_address,x ; Store the x coordinate.
+    dex
 
     create_monster_left_exit:
     clc
@@ -244,6 +247,8 @@ create_monster_left:
 
 create_monster_right:
 
+    lda #$00                        ; direction bit (0=left)
+    sta $8d
     lda monster_right_index
     ldx visible_monster_right_index ; X=visible index
     jsr create_monster
@@ -289,6 +294,7 @@ create_monster:                     ; A=index
     asl                             ; 0000nn00
     ora $8c                         ; 0000nnxa (from above)
     ora #monster_existence_bit      ; Set the existence bit.
+    ora $8d                         ; Combine with the direction bit.
     sta $8c
 
     tya
@@ -300,7 +306,7 @@ create_monster:                     ; A=index
 
     create_monster_store_type:
 
-    ora $8c
+    ora $8c                         ; Combine the axis with the rest of the byte.
     sta monster_positions_address,x
 
     tya                             ; Recover the original type value.
