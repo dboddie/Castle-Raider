@@ -350,6 +350,7 @@ move_monsters_pre_loop:
         eor #monster_animation_bit  ; Flip the animation bit.
         sta $8b                     ; Temporarily store the type/dx byte.
 
+        iny                         ; Select the x offset.
         and #monster_axis_bit
         cmp #monster_vertical_motion
         bne move_monsters_horizontally
@@ -387,7 +388,7 @@ move_monsters_pre_loop:
 move_monster_vertically:    ; $86,$87=monster table
                             ; $88=offset into monster table
                             ; Y=offset into monster table (initially 0)
-    iny
+
     iny                         ; Select the y offset.
 
     iny                         ; Select the dy value.
@@ -461,8 +462,6 @@ move_monsters_change_direction: ; $8b=monster type
 move_monster_horizontally:  ; $86,$87=monster table
                             ; $88=offset into monster table
                             ; Y=offset into monster table (initially 0)
-
-    iny                         ; Select the x offset.
 
     lda $8b                     ; Recover the type.
     and #monster_direction_bit
