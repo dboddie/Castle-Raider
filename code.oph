@@ -534,11 +534,8 @@ check_tile:         ; $80=x position (0-39)
 
     lda $81         ; For y positions less than 8 do not check the corresponding
     cmp #8          ; row since there are no level spans in these rows.
-    bcs check_tile_row
+    bcc check_tile_exit
 
-    rts
-
-    check_tile_row:
     sbc #8
     clc
 
@@ -596,8 +593,9 @@ check_tile:         ; $80=x position (0-39)
         jmp check_tile_spans_loop
 
     check_tile_spans_endloop:
+    clc                         ; In theory, we should never reach here.
 
-    clc             ; In theory, we should never reach here.
+    check_tile_exit:
     rts
 
 ; Special tiles have numbers greater or equal to 16 (0x10). The top four bits
