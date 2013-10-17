@@ -238,7 +238,6 @@ player_move:
     lda player_jumping
     cmp #0
     beq player_move_check_fall
-    clc
 
     ; Whether moving or not, the player needs to be replotted before any
     ; scrolling occurs because the scrolling routine will replot the player.
@@ -257,7 +256,6 @@ player_move:
     bne player_move_not_moving_left
 
     jsr player_move_left
-    clc
     rts
 
     player_move_not_moving_left:
@@ -267,8 +265,6 @@ player_move:
     jsr player_move_right
 
     player_move_not_moving_right:
-
-    clc
     rts
 
     player_move_check_fall:
@@ -277,7 +273,6 @@ player_move:
     cmp #0
     beq player_move_check_keys
 
-    clc
     rts
 
     player_move_check_keys:
@@ -289,7 +284,6 @@ player_move:
     jsr check_key
     cpy #255
     bne player_move_not_left
-    clc
 
     jsr player_move_left   ; allow the player to jump while moving
 
@@ -299,7 +293,6 @@ player_move:
     jmp player_move_check_jump
 
     player_move_not_left:
-    clc
 
     ldx #189        ; (X)
     jsr check_key
@@ -346,8 +339,6 @@ player_move:
     jmp player_enter
 
     player_move_not_enter:
-
-    clc
     rts
 
 check_key:      ; x=key code
@@ -400,7 +391,6 @@ check_beneath:      ; Checks beneath the character for solid tiles.
     jsr player_demise
 
     check_beneath_solid:    ; A solid tile was found.
-    clc
     tax
 
     lda player_falling
@@ -526,7 +516,7 @@ player_y_offset:     .byte 0, 4
 
 ; ### The following routine needs to deal with x=-1 for monster movement.
 
-check_tile:         ; $80=x position (0-39)
+check_tile:         ; $80=x position (-2 to 42) (-2 is represented as 254)
                     ; $81=y position (0-23) (measured from the top of the
                     ;           playing area, not the top row of the scenery)
                     ; $8a=0 (player's character) or $8a=1 (monsters)
@@ -539,17 +529,17 @@ check_tile:         ; $80=x position (0-39)
     sbc #8
     clc
 
-    tax
+    tax                       ; Transfer the y coordinate to the X register.
     jsr read_row_address
 
     lda initial_row_offsets,x
-    sta $74                 ; Store the row offset of the current span.
+    sta $74                   ; Store the row offset of the current span.
 
     cmp $80                   ; If less than the character's x coordinate then
     beq check_tile_spans_loop ; start examining spans until we find one to the
     bcc check_tile_spans_loop ; right of the x coordinate.
 
-    clc
+    ;clc
     lda initial_row_tiles,x
     jmp check_tile_visible  ; Check whether the tile is visible and return.
 
@@ -569,7 +559,7 @@ check_tile:         ; $80=x position (0-39)
 
         check_tile_spans_loop_found:
 
-        clc
+        ;clc
         ldy #0
         lda ($76),y             ; Load the type number, t,
         jmp check_tile_visible  ; Check whether the tile is visible and return,
@@ -731,7 +721,6 @@ check_move_right:
 
 player_move_right:
 
-    clc
     jsr check_move_right
     bcs player_move_right_cannot_move
 
@@ -754,7 +743,6 @@ check_move_left:
     rts
 
     check_move_left_continue:
-    clc
 
     lda player_x
     sec
@@ -819,6 +807,7 @@ check_move:
     dec player_y            ; We should really check to make sure that there
     jsr plot_player         ; is space above the player to do this.
 
+    check_move_exit_ok:
     clc
     rts
 
@@ -826,13 +815,8 @@ check_move:
     sec
     rts
 
-    check_move_exit_ok:
-    clc
-    rts
-
 player_move_left:
 
-    clc
     jsr check_move_left
     bcs player_move_left_cannot_move
 
@@ -849,8 +833,6 @@ jump_steps_y:    .byte 0,1,1,1,1,0,0,0,0
 jump_offsets_ys: .byte 0,0,0,0,1,0,0,0,0
 
 player_jump:
-
-    clc
 
     ldx player_jumping      ; Load the number of rows to move.
     lda jump_steps_y,x
@@ -900,11 +882,9 @@ player_jump:
     bcs player_jump_stop_jumping    ; stop jumping.
 
     stx player_jumping
-    clc
     rts
 
     player_jump_stop_jumping:
-    clc
 
     lda #0
     sta player_jumping
