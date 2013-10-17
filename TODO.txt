@@ -1,7 +1,8 @@
 To Do
 
+Check for tiles off the left hand side of the screen when moving monsters there.
 Find out why monsters sometimes fail to scroll onto the screen.
-Ensure that monsters move towards the centre of the screen when they appear.
+Ensure that objects are removed from the panel when a new game starts.
 
 Add support for plotting the view onto the level from any point in the level.
 Ensure that the player simply falls when jumping against the end of the level.
