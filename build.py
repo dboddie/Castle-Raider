@@ -147,12 +147,22 @@ if __name__ == "__main__":
         level_file = sys.argv[3]
     
     # Memory map
-    code_start = 0x0e00
+    memory_map = {
+        "code start": 0x0e00,
+        "data start": 0x2140,
+        "tile sprites": 0x2aa0 + 0xc0,
+        "character and object sprites": 0x2de0 + 0xc0,
+        "bank 1 (panel)": 0x3000,
+        "(loader code)": 0x3500,
+        "bank 2": 0x5800
+        }
+    
+    code_start = memory_map["code start"]
     
     number_of_special_tiles = 32
     maximum_number_of_portals = 16
     
-    data_start = 0x20c0
+    data_start = memory_map["data start"]
     
     # Monster positions
     monster_positions_address       = data_start
@@ -224,15 +234,16 @@ if __name__ == "__main__":
     level_data_low                = level_data & 0xff
     level_data_high               = level_data >> 8
     
-    # 2a00      tile sprites
-    # 2e00      character and object sprites
-    # 3000      bank 1 (panel)
-    # 3500             (loader code)
-    # 5800      bank 2
+    # Create the level data.
+    levels_address = level_data_start
+    level_data, monster_row_address = makelevels.create_level(
+        levels_address, level_file, number_of_special_tiles, maximum_number_of_portals)
+    
+    level_extent = makelevels.level_extent
     
     files = []
     
-    sprite_area_address = 0x2aa0
+    sprite_area_address = memory_map["tile sprites"]
     tile_sprites = makesprites.read_tiles(tiles)
     sprite_data = makesprites.read_tile_data(tile_sprites)
     all_tiles = len(tiles)
@@ -247,25 +258,25 @@ if __name__ == "__main__":
     right_sprites_low = right_sprites & 0xff
     right_sprites_high = right_sprites >> 8
     
-    char_area_address = 0x2de0
-    char_data, player_sprite_offsets = \
-        makesprites.read_sprites(char_sprites, char_area_address)
+    # Place the monster and character sprite data after the tile data.
+    # Allow the end of the data to overlap where the panel data will be loaded
+    # because we will discard one set of character sprites when the user
+    # chooses a character.
+    char_area_address = right_sprites + (all_tiles * 8)
     
-    monster_sprites_address = char_area_address + len(char_data)
+    monster_sprites_address = char_area_address
     monster_sprites_data, monster_sprites_addresses = \
         makesprites.read_sprites(monster_sprites, monster_sprites_address)
-    char_data += monster_sprites_data
+    char_data = monster_sprites_data
     
     monster_sprites_shifted_address = char_area_address + len(char_data)
     monster_sprites_data, monster_sprites_shifted_addresses = \
         makesprites.read_shifted_sprites(monster_sprites, monster_sprites_shifted_address)
     char_data += monster_sprites_data
     
-    levels_address = level_data_start
-    level_data, monster_row_address = makelevels.create_level(
-        levels_address, level_file, number_of_special_tiles, maximum_number_of_portals)
-    
-    level_extent = makelevels.level_extent
+    player_data, player_sprite_offsets = \
+        makesprites.read_sprites(char_sprites, char_area_address + len(char_data))
+    char_data += player_data
     
     panel_address = 0x3000
     panel, offsets = makesprites.read_sprites(["images/panel.png"], panel_address)
@@ -522,6 +533,9 @@ if __name__ == "__main__":
              ("PANEL", panel_address, panel_address, panel),
              ("CODE", code_start, code_start, code)]
     
+    loader_size = os.stat("LOADER")[stat.ST_SIZE]
+    print "%i bytes (%04x) of loader code" % (loader_size, loader_size)
+    
     code_size = os.stat("CODE")[stat.ST_SIZE]
     print "%i bytes (%04x) of code" % (code_size, code_size)
     
@@ -547,9 +561,9 @@ if __name__ == "__main__":
     
     char_area_finish = char_area_address + len(char_data)
     print "SPRITES runs from %04x to %04x" % (char_area_address, char_area_finish)
-    if char_area_finish > panel_address:
-        sys.stderr.write("SPRITES overruns following data by %i bytes.\n" % (char_area_finish - panel_address))
-        sys.exit(1)
+    #if char_area_finish > panel_address:
+    #    sys.stderr.write("SPRITES overruns following data by %i bytes.\n" % (char_area_finish - panel_address))
+    #    sys.exit(1)
     
     u = UEFfile.UEFfile(creator = 'build.py '+version)
     u.minor = 6

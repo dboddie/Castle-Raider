@@ -297,7 +297,7 @@ scroll_right:   ; Scroll the screen right by decreasing the initial row offsets
                 ; until a new span needs to be shown. When this occurs, increase
                 ; the row index, set the initial row tile to the type in the
                 ; span that now starts off-screen, and set the initial row
-                ; offset to the length of that span. The max
+                ; offset to the length of that span.
     ldx #15
     scroll_right_loop:
 

@@ -532,8 +532,8 @@ check_tile:         ; $80=x position (-2 to 42) (-2 is represented as 254)
     tax                       ; Transfer the y coordinate to the X register.
     jsr read_row_address
 
-    lda initial_row_offsets,x
-    sta $74                   ; Store the row offset of the current span.
+    lda initial_row_offsets,x ; Store the number of tiles that are shown on
+    sta $74                   ; screen in the current span.
 
     cmp $80                   ; If less than the character's x coordinate then
     beq check_tile_spans_loop ; start examining spans until we find one to the
