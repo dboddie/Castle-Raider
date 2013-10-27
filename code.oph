@@ -208,6 +208,7 @@ main:
         clc
 
         inc monster_movement_counter
+        inc monster_movement_counter
         clc
 
 ;        ; --- Switch character test code (begin) ---
@@ -510,10 +511,6 @@ read_row_address:           ; X=row number
 
     rts
 
-player_sprites_low:  .byte <player_left1, <player_left2, <player_right1, <player_right2
-player_sprites_high: .byte >player_left1, >player_left2, >player_right1, >player_right2
-player_y_offset:     .byte 0, 4
-
 ; ### The following routine needs to deal with x=-1 for monster movement.
 
 check_tile:         ; $80=x position (-2 to 42) (-2 is represented as 254)
@@ -535,9 +532,9 @@ check_tile:         ; $80=x position (-2 to 42) (-2 is represented as 254)
     lda initial_row_offsets,x ; Store the number of tiles that are shown on
     sta $74                   ; screen in the current span.
 
-    cmp $80                   ; If less than the character's x coordinate then
-    beq check_tile_spans_loop ; start examining spans until we find one to the
-    bcc check_tile_spans_loop ; right of the x coordinate.
+    cmp $80                   ; If less than the x coordinate then start
+    beq check_tile_spans_loop ; examining spans until we find one to the right
+    bcc check_tile_spans_loop ; of the x coordinate.
 
     ;clc
     lda initial_row_tiles,x
@@ -1026,9 +1023,7 @@ player_fall:        ; sets C if the player is moving horizontally
 
     jsr player_drop
 
-    jsr plot_player
-
-    rts
+    jmp plot_player         ; Branch and exit.
 
 player_drop:
 

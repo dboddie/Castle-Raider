@@ -939,7 +939,7 @@ if __name__ == "__main__":
     
     window = EditorWindow()
     
-    if app.arguments() > 1:
+    if len(app.arguments()) > 1:
         window._openMap(app.arguments()[1])
         
     window.show()
