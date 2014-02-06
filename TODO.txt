@@ -1,6 +1,5 @@
 To Do
 
-Check for tiles off the left hand side of the screen when moving monsters there.
 Find out why monsters sometimes fail to scroll onto the screen.
 Ensure that objects are removed from the panel when a new game starts.
 

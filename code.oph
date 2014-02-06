@@ -113,7 +113,7 @@ main:
         cmp #monster_row_address_low    ; At the end of the tile data?
         bne init_reset_tiles_loop
 
-    clc
+    clc ; End breakable tile reset.
 
     ; Determine the left and right monster indices and offsets.
 
@@ -511,8 +511,6 @@ read_row_address:           ; X=row number
 
     rts
 
-; ### The following routine needs to deal with x=-1 for monster movement.
-
 check_tile:         ; $80=x position (-2 to 42) (-2 is represented as 254)
                     ; $81=y position (0-23) (measured from the top of the
                     ;           playing area, not the top row of the scenery)
@@ -527,11 +525,61 @@ check_tile:         ; $80=x position (-2 to 42) (-2 is represented as 254)
     clc
 
     tax                       ; Transfer the y coordinate to the X register.
-    jsr read_row_address
+    jsr read_row_address      ; Set $76,$77 with the address of the first span
+                              ; in the row.
 
     lda initial_row_offsets,x ; Store the number of tiles that are shown on
     sta $74                   ; screen in the current span.
 
+    lda $80                   ; if x >= 128 (-128 <= x < 0)
+    cmp #128                  ; then traverse the span, increasing the x value
+    bcc check_tile_positive   ; until it is positive.
+
+    ;                   Screen edge
+    ;                        |
+    ;              |<-  D  ->|<- row offset ->|
+    ; - - ---------|--------------------------|---------|--- - - Spans
+    ;              |<-    max row offset    ->|
+    ;              |<-d->|
+    ;              |     ^
+    ;                 monster position
+
+    ; Subtract the row offset from the maximum row offset to find the
+    ; distance from the previous span to the edge of the screen, D.
+    ; Adding the x coordinate to this gives the distance from the start of
+    ; the previous span to the position to check, d. If this value is positive
+    ; then we have found the span to use. If still negative then decrement the
+    ; span address and read the span before the previous span, and so on.
+    
+    sec
+    sbc $74                     ; Subtract the initial row offset from x.
+    clc
+
+    check_tile_negative_loop:
+
+        lda $76                 ; Refer to the previous span, p'.
+        sec
+        sbc #2
+        sta $76
+        lda $77
+        sbc #0
+        sta $77
+        clc
+
+        ldy #1                  ; Load the number of tiles in span p' minus 1.
+        adc ($76),y             ; (n - 1).
+        adc #1                  ; Add span length to find D.
+
+        cmp #0
+        bcc check_tile_negative_loop
+
+        ldy #0
+        lda ($76),y             ; Load the tile type for span p'.
+        jmp check_tile_visible
+
+    check_tile_positive:
+
+    lda $74
     cmp $80                   ; If less than the x coordinate then start
     beq check_tile_spans_loop ; examining spans until we find one to the right
     bcc check_tile_spans_loop ; of the x coordinate.
