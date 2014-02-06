@@ -540,24 +540,33 @@ if __name__ == "__main__":
     print "%i bytes (%04x) of code" % (code_size, code_size)
     
     code_finish = code_start + code_size
-    print "CODE    runs from %04x to %04x" % (code_start, code_finish)
+    print "CODE    runs from %04x to %04x" % (code_start, code_finish),
     if code_finish > data_start:
+        print
         sys.stderr.write("CODE overruns following data by %i bytes.\n" % (code_finish - data_start))
         sys.exit(1)
+    else:
+        print " (%i bytes free)" % (data_start - code_finish)
     
     print "data    runs from %04x to %04x" % (data_start, level_data_start)
     
     levels_finish = levels_address + len(level_data)
-    print "LEVELS  runs from %04x to %04x" % (levels_address, levels_finish)
+    print "LEVELS  runs from %04x to %04x" % (levels_address, levels_finish),
     if levels_finish > sprite_area_address:
+        print
         sys.stderr.write("LEVELS overruns following data by %i bytes.\n" % (levels_finish - sprite_area_address))
         sys.exit(1)
+    else:
+        print " (%i bytes free)" % (sprite_area_address - levels_finish)
     
     sprite_area_finish = sprite_area_address + len(sprite_data)
-    print "TILES   runs from %04x to %04x" % (sprite_area_address, sprite_area_finish)
+    print "TILES   runs from %04x to %04x" % (sprite_area_address, sprite_area_finish),
     if sprite_area_finish > char_area_address:
+        print
         sys.stderr.write("TILES overruns following data by %i bytes.\n" % (sprite_area_finish - char_area_address))
         sys.exit(1)
+    else:
+        print " (%i bytes free)" % (char_area_address - sprite_area_finish)
     
     char_area_finish = char_area_address + len(char_data)
     print "SPRITES runs from %04x to %04x" % (char_area_address, char_area_finish)
