@@ -44,3 +44,47 @@ show_bank2:
     sta bank_number
 
     rts
+
+palette_entries_fe21_logical_02: .byte $80
+
+palette_entries_fe21_entries: .byte $00, $10, $40, $50
+
+palette_entries_logical_standard_00:  .byte $07
+palette_entries_logical_standard_01:  .byte $26
+palette_entries_logical_standard_03:  .byte $a4
+
+change_palette:         ; A=colour value (0-7)
+
+    eor #$07                            ; Process the physical colour.
+    ora palette_entries_fe21_logical_02 ; Mix in the logical colour.
+    sta $74                             ; Store this value for later use.
+
+    ldx #3
+    change_palette_loop:
+
+        lda palette_entries_fe21_entries,x
+        ora $74
+        sta $fe21
+        dex
+        bpl change_palette_loop
+
+    ; Set the other standard colours.
+
+    ldx #3
+    change_palette_standard_loop:
+
+        lda palette_entries_fe21_entries,x
+        tay
+        ora palette_entries_logical_standard_00
+        sta $fe21
+        tya
+        ora palette_entries_logical_standard_01
+        sta $fe21
+        tya
+        ora palette_entries_logical_standard_03
+        sta $fe21
+        dex
+        bpl change_palette_standard_loop
+
+    clc
+    rts
