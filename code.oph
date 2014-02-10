@@ -326,6 +326,7 @@ player_move:
     jsr $fff4
     jsr plot_player                 ; unplot
 
+    jsr player_jump_animation
     jsr player_jump
 
     jsr plot_player                 ; plot
@@ -511,7 +512,7 @@ read_row_address:           ; X=row number
 
     rts
 
-check_tile:         ; $80=x position (-2 to 42) (-2 is represented as 254)
+check_tile:         ; $80=x position (-3 to 43) (-3 is represented as 253)
                     ; $81=y position (0-23) (measured from the top of the
                     ;           playing area, not the top row of the scenery)
                     ; $8a=0 (player's character) or $8a=1 (monsters)
@@ -615,7 +616,7 @@ check_tile:         ; $80=x position (-2 to 42) (-2 is represented as 254)
 
         sta $74             ; Store the new span offset.
 
-        cmp #40
+        cmp #43
         bpl check_tile_spans_endloop
 
         lda $76             ; Increment the row address.
@@ -931,12 +932,21 @@ player_jump:
 
     player_jump_stop_jumping:
 
+    jsr player_jump_animation
+
     lda #0
     sta player_jumping
     lda #0
     sta player_ys
 
     jmp check_beneath
+
+player_jump_animation:
+
+    lda player_animation
+    eor #1
+    sta player_animation
+    rts
 
 player_enter:
 
