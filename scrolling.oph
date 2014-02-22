@@ -441,8 +441,8 @@ scroll_left:    ; Scroll the screen left by increasing the initial row offsets
         clc
 
         ldy #0
-        lda ($76),y             ; Load the tile type for span p' and store it as
-        sta initial_row_tiles,x ; the initial tile type.
+        lda ($76),y             ; Load the tile type for span p' minus 1 and
+        sta initial_row_tiles,x ; store it as the initial tile type.
 
         ldy #1                  ; Load the number of tiles in span p' minus 1
         lda ($76),y             ; (n - 1) and store this value as the maximum
@@ -569,9 +569,9 @@ scroll_monsters_left:
         clc
         iny
         lda ($86),y                 ; x offset
-        cmp #40
+        cmp #60
         bcc scroll_monsters_left_loop_move_monster
-        cmp #254
+        cmp #236
         bcs scroll_monsters_left_loop_move_monster
 
         lda #0                      ; Clear the type in the monster table.
@@ -621,8 +621,10 @@ scroll_monsters_right:
 
         iny
         lda ($86),y                 ; x offset
-        cmp #254
-        bne scroll_monsters_right_loop_move_monster
+        cmp #60
+        bcc scroll_monsters_right_loop_move_monster
+        cmp #236
+        bcs scroll_monsters_right_loop_move_monster
 
         lda #0
         ldy $88                     ; Clear the type in the monster table.

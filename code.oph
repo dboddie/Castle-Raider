@@ -512,7 +512,7 @@ read_row_address:           ; X=row number
 
     rts
 
-check_tile:         ; $80=x position (-3 to 43) (-3 is represented as 253)
+check_tile:         ; $80=x position (-20 to 60) (-20 is represented as 236)
                     ; $81=y position (0-23) (measured from the top of the
                     ;           playing area, not the top row of the scenery)
                     ; $8a=0 (player's character) or $8a=1 (monsters)
@@ -543,17 +543,18 @@ check_tile:         ; $80=x position (-3 to 43) (-3 is represented as 253)
     ;              |<-    max row offset    ->|
     ;              |<-d->|
     ;              |     ^
-    ;                 monster position
+    ;                 negative x position
 
-    ; Subtract the row offset from the maximum row offset to find the
-    ; distance from the previous span to the edge of the screen, D.
-    ; Adding the x coordinate to this gives the distance from the start of
-    ; the previous span to the position to check, d. If this value is positive
-    ; then we have found the span to use. If still negative then decrement the
-    ; span address and read the span before the previous span, and so on.
+    ; Subtract the row offset from the maximum row offset to find D, the
+    ; distance from the start of the previous span to the edge of the screen.
+    ; Add the negative x coordinate to D to find d, the offset into the span.
+    ; If this value is positive then we have found the span to use. If still
+    ; negative then decrement the span address and read the span before the
+    ; previous span, and so on.
     
     sec
     sbc $74                     ; Subtract the initial row offset from x.
+    sta $74                     ; Record the result.
     clc
 
     check_tile_negative_loop:
@@ -567,12 +568,17 @@ check_tile:         ; $80=x position (-3 to 43) (-3 is represented as 253)
         sta $77
         clc
 
-        ldy #1                  ; Load the number of tiles in span p' minus 1.
-        adc ($76),y             ; (n - 1).
-        adc #1                  ; Add span length to find D.
+        ldy #1                  ; Load the number of tiles in span p'.
+        lda ($76),y             ; (n - 1).
+        adc #1                  ; Add span length (max row offset) to find d.
+        adc $74                 ; Add the current offset from the span end.
 
-        cmp #0
-        bcc check_tile_negative_loop
+        cmp #128
+        bcc check_tile_negative_loop_exit
+        sta $74
+        jmp check_tile_negative_loop
+
+        check_tile_negative_loop_exit:
 
         ldy #0
         lda ($76),y             ; Load the tile type for span p'.
@@ -616,7 +622,7 @@ check_tile:         ; $80=x position (-3 to 43) (-3 is represented as 253)
 
         sta $74             ; Store the new span offset.
 
-        cmp #43
+        cmp #60
         bpl check_tile_spans_endloop
 
         lda $76             ; Increment the row address.
