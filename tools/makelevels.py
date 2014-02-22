@@ -46,7 +46,7 @@ tile_ref = {".": "images/blank.png",
             "\\": "images/window-topright.png",
             "{": "images/stalactite.png",
             "I": "images/gate.png",
-            "%": "images/brick-alt.png",
+            "%": "images/brick-alt3.png",
             # End of scenery tile sprites
             
             # Start of collectable item sprites
