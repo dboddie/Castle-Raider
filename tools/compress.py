@@ -34,29 +34,45 @@ class Compressor:
         
         return index
     
-    def compress(self, data):
+    def compress(self, data, block_size = 256):
     
         output = ""
         i = 0
+        if not 1 <= block_size <= 256:
+            block_size = 256
         
         while i < len(data):
         
-            # Take 256 bytes at a time because we can't use offsets larger
-            # than a byte.
-            block = data[i:i + 256]
+            # Take a maximum of 256 bytes at a time because we can't use
+            # offsets larger than a byte.
+            block = data[i:i + block_size]
             index = self.create_index(block)
             
             # Find the most common byte and use it as the default byte.
             items = map(lambda (value, offsets): (len(offsets), value),
                         index.items())
             items.sort()
-            number, default = items[-1]
+            number, default = items.pop()
             
             # Remove the default value from the index.
             del index[default]
             
             # Count the remaining items.
             remaining = len(index)
+            
+            # Calculate the total size the encoded data would have.
+            size = 4 + remaining + sum(map(lambda (n, v): n, items)) + 1
+            if size > len(block):
+            
+                # Just write the data uncompressed.
+                output += chr(0)
+                output += chr(len(block) - 1)
+                output += block
+                i += len(block)
+                continue
+            
+            # Write a value indicating that the data is compressed.
+            output += chr(1)
             
             # Write the default value and the number of bytes in the block
             # minus 1.
@@ -106,18 +122,29 @@ class Compressor:
         
         while i < len(data):
         
+            # Read the compression byte.
+            compression = ord(data[i])
+            
+            if compression == 0:
+            
+                # Read the uncompressed data.
+                length = ord(data[i + 1]) + 1
+                output += data[i + 2:i + 2 + length]
+                i += 2 + length
+                continue
+            
             # Read the default value and length minus 1.
-            default, length = data[i], ord(data[i + 1]) + 1
+            default, length = data[i + 1], ord(data[i + 2]) + 1
             
             # Create data for the block using the default value.
             block = [default] * length
             
             # Read the number of remaining entries minus 1.
-            remaining = ord(data[i + 2]) + 1
+            remaining = ord(data[i + 3]) + 1
             
             # Read the entries.
             entries = []
-            i += 3
+            i += 4
             j = 0
             while j < remaining:
             
@@ -155,16 +182,25 @@ class Compressor:
 if __name__ == "__main__":
 
     import sys
-    if len(sys.argv) != 4:
-        sys.stderr.write("Usage: %s -c|-d <input file> <output file>\n" % sys.argv[0])
+    if not 4 <= len(sys.argv) <= 5:
+        sys.stderr.write("Usage: %s -c|-d [block size] <input file> <output file>\n" % sys.argv[0])
         sys.exit(1)
     
     c = Compressor()
-    data = open(sys.argv[1]).read()
+    method = sys.argv[1]
     
-    if sys.argv[1] == "-c":
-        open(sys.argv[2], "w").write(c.compress(data))
-    elif sys.argv[1] == "-d":
-        open(sys.argv[2], "w").write(c.uncompress(data))
+    if len(sys.argv) == 4:
+        size = 256
+        i = 2
+    else:
+        size = int(sys.argv[2])
+        i = 3
+    
+    data = open(sys.argv[i]).read()
+    
+    if method == "-c":
+        open(sys.argv[i + 1], "w").write(c.compress(data, size))
+    elif method == "-d":
+        open(sys.argv[i + 1], "w").write(c.uncompress(data))
     
     sys.exit()
