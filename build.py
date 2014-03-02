@@ -281,10 +281,10 @@ if __name__ == "__main__":
     panel_address = 0x3000
     panel, offsets = makesprites.read_sprites(["images/panel.png"], panel_address)
     
-    top_panel_objects_bank1 = 0x31f0
+    top_panel_objects_bank1 = 0x31e0
     top_panel_objects_bank1_low = top_panel_objects_bank1 & 0xff
     top_panel_objects_bank1_high = top_panel_objects_bank1 >> 8
-    top_panel_objects_bank2 = 0x59f0
+    top_panel_objects_bank2 = 0x59e0
     top_panel_objects_bank2_low = top_panel_objects_bank2 & 0xff
     top_panel_objects_bank2_high = top_panel_objects_bank2 >> 8
     
@@ -532,6 +532,14 @@ if __name__ == "__main__":
              ("LEVELS", levels_address, levels_address, level_data),
              ("PANEL", panel_address, panel_address, panel),
              ("CODE", code_start, code_start, code)]
+    
+    #from tools.compress import Compressor
+    #c = Compressor()
+    #for info in files:
+    #    data = info[-1]
+    #    compressed = c.compress(data)
+    #    uncompressed = c.uncompress(compressed)
+    #    print info[0], len(data), len(compressed), data == uncompressed
     
     loader_size = os.stat("LOADER")[stat.ST_SIZE]
     print "%i bytes (%04x) of loader code" % (loader_size, loader_size)

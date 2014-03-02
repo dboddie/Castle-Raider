@@ -256,17 +256,15 @@ player_move:
     cmp #1
     bne player_move_not_moving_left
 
-    jsr player_move_left
-    rts
+    jmp player_move_left            ; jsr then rts
 
     player_move_not_moving_left:
     cmp #2
-    bne player_move_not_moving_right
-
-    jsr player_move_right
-
-    player_move_not_moving_right:
+    beq player_move_moving_right
     rts
+
+    player_move_moving_right:
+    jmp player_move_right           ; jsr then rts
 
     player_move_check_fall:
 
@@ -1004,6 +1002,8 @@ player_enter:
 
 jump_to_tracking_offset:
 
+    jsr init_monster_positions
+
     lda scroll_offset_high
     cmp tracking_high
     beq jump_to_tracking_offset_low_check
@@ -1051,7 +1051,6 @@ jump_to_tracking_offset:
     jsr initial_plot_bank1
     jsr initial_plot_bank2
 
-    jsr init_monster_positions
     jmp plot_char                   ; plot the player and exit
 
 fall_steps_y:    .byte 0,0,1,1
