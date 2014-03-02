@@ -207,8 +207,9 @@ main:
         main_loop_after_monsters:
         clc
 
-        inc monster_movement_counter
-        inc monster_movement_counter
+        lda monster_movement_counter
+        adc #4
+        sta monster_movement_counter
         clc
 
 ;        ; --- Switch character test code (begin) ---

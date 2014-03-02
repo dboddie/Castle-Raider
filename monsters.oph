@@ -330,20 +330,20 @@ move_monsters:
     ; Check the monster movement counter and perform updates now if necessary.
     lda monster_movement_counter
     and #$03
-    beq move_monsters_pre_loop
+    beq move_monster
 
     clc
     rts
 
-move_monsters_pre_loop:
+move_monster:                   ; Move just one monster, if present.
 
     lda monster_movement_counter
     and #$0f                    ; Limit the offset to the table size.
     sta $88
     tay
     lda ($86),y                 ; Load the type, animation flag and dx.
-    cmp #0
-    beq move_monsters_exit
+    cmp #0                      ; If the slot is empty then this is zero,
+    beq move_monsters_exit      ; so we exit.
 
     eor #monster_animation_bit  ; Flip the animation bit.
     sta $8b                     ; Temporarily store the type/dx byte.
