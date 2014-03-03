@@ -622,7 +622,7 @@ check_monster_player:
 
     check_monster_player_bank2:
     lda bank_number
-    cmp #0                          ; x = 20 is only a potential hit if
+    cmp #0                          ; x = 17,20 is only a potential hit if
     beq check_monster_player_exit   ; bank 2 is showing.
 
     check_monster_player_vertical:
