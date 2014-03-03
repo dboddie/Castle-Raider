@@ -247,10 +247,9 @@ player_move:
 
     lda #19
     jsr $fff4
+
     jsr plot_player                 ; unplot
-
     jsr player_jump
-
     jsr plot_player                 ; plot
 
     lda player_moving
@@ -321,8 +320,6 @@ player_move:
     bne player_move_not_jump
     clc
 
-    lda #19
-    jsr $fff4
     jsr plot_player                 ; unplot
 
     jsr player_jump_animation
@@ -1079,14 +1076,18 @@ player_fall:        ; sets C if the player is moving horizontally
     player_fall_not_moving_right:
 
     ; When not moving horizontally, the player character must be unplotted and
-    ; replotted because redrawing due to scrolling does not occur.
+    ; replotted because redrawing because scrolling does not occur.
+
+    lda scrolled
+    cmp #0
+    bne player_fall_plot
 
     lda #19
     jsr $fff4
+
+    player_fall_plot:
     jsr plot_player
-
     jsr player_drop
-
     jmp plot_player         ; Branch and exit.
 
 player_drop:
