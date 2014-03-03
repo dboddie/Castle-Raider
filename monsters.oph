@@ -612,11 +612,21 @@ check_monster_player:
     iny
     lda ($86),y                     ; Load monster x offset.
 
-    cmp #18
+    cmp #17
     bcc check_monster_player_exit
-    cmp #21
+    beq check_monster_player_bank2
+    cmp #20
+    bcc check_monster_player_vertical
+    beq check_monster_player_bank2
     bcs check_monster_player_exit
 
+    check_monster_player_bank2:
+    lda bank_number
+    cmp #0                          ; x = 20 is only a potential hit if
+    beq check_monster_player_exit   ; bank 2 is showing.
+
+    check_monster_player_vertical:
+    clc
     iny
     lda ($86),y                     ; Load monster y offset.
     cmp player_y
