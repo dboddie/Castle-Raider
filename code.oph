@@ -39,22 +39,19 @@ main:
 
     lda #19
     sta player_x
-    lda #19
     sta player_y
     sta tracking_y      ; Set the vertical tracking position of the character.
-    lda #0
-    sta player_ys
     lda #2
     sta player_animation
     lda #0
+    sta player_ys
     sta player_jumping
     sta player_moving
     sta player_falling
-    lda #9
-    sta player_lives
-    lda #0
     sta player_lost
     sta check_monster_tile
+    lda #9
+    sta player_lives
 
     ; Initialise the tile visibility values.
 
@@ -120,9 +117,6 @@ main:
     lda #0
     sta monster_movement_counter
 
-    ; Initialise the monster positions.
-    jsr init_monster_positions
-
     jsr clear_banks
     lda #2
     jsr change_palette
@@ -132,14 +126,19 @@ main:
     jsr show_bank2          ; Hide the bank being plotted.
     jsr initial_plot_bank1
     jsr plot_char_bank1
+
+    ; Initialise the monster positions.
+    jsr reset_monster_positions
+    jsr init_monster_positions
+
     jsr plot_monsters_bank1 ; Show any initial monsters.
+
     jsr show_bank1          ; Show the completed bank.
     jsr initial_plot_bank2
 
     lda #0                  ; Set the initial scroll offset and tracking offset.
     sta scroll_offset_low
     sta tracking_low
-    lda #0
     sta scroll_offset_high
     sta tracking_high
 
@@ -938,7 +937,6 @@ player_jump:
 
     lda #0
     sta player_jumping
-    lda #0
     sta player_ys
 
     jmp check_beneath
@@ -1000,7 +998,7 @@ player_enter:
 
 jump_to_tracking_offset:
 
-    jsr init_monster_positions
+    jsr reset_monster_positions
 
     lda scroll_offset_high
     cmp tracking_high
@@ -1047,9 +1045,11 @@ jump_to_tracking_offset:
     jump_to_tracking_offset_exit:
 
     jsr initial_plot_bank1
+    jsr init_monster_positions
+    jsr plot_monsters_bank1         ; Show any initial monsters.
     jsr initial_plot_bank2
 
-    jmp plot_char                   ; plot the player and exit
+    jmp plot_player                 ; plot the player and exit
 
 fall_steps_y:    .byte 0,0,1,1
 fall_offsets_ys: .byte 0,1,0,0

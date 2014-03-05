@@ -29,16 +29,70 @@
 .alias monster_horizontal_motion        $00
 .alias monster_vertical_motion          $40
 
-init_monster_positions:
+reset_monster_positions:            ; Clears the table of on-screen monsters.
 
     ldx #15
     lda #0
 
-    init_monster_positions_loop:
+    reset_monster_positions_loop:
         sta monster_positions_address,x
         dex
-        bpl init_monster_positions_loop
+        bpl reset_monster_positions_loop
 
+    clc
+    rts
+
+init_monster_positions:
+
+    lda monster_left_index          ; Load the index into the monster spans
+                                    ; for the left screen edge.
+    sta $7b
+
+    lda #254                        ; Keep track of the current column number
+    sta $7d                         ; (initially -2)
+    lda #0                          ; and the visible monster indices.
+    sta visible_monster_left_index
+    lda #4
+    sta visible_monster_right_index
+
+    init_monster_positions_loop:
+
+        lda $7b                         ; Load the monster index.
+        jsr read_monster_row_address    ; Examine the monster data at this index.
+                                        ; Sets $76,$77.
+
+        ldy #1                          ; Examine the span information.
+        lda ($76),y                     ; Load the span length (n - 1).
+        cmp #40                         ; If this alone exceeds the screen
+        bcs init_monster_positions_exit ; width then exit.
+
+        adc $7d                         ; Calculate the next monster position.
+        adc #1
+
+        cmp #41                         ; Continue until we reach the right
+        bcs init_monster_positions_exit ; edge of the screen.
+
+        sta $7d                         ; Store the new monster position.
+
+        and #$20                        ; Retain the direction bit (1=right)
+        sta $8d
+        inc $7b                         ; Examine the next monster index.
+        lda $7b                         ; Load the monster index
+        ldx visible_monster_right_index ; and the visible monster index.
+        jsr create_monster
+        bcs init_monster_positions_loop ; If no monster was created then loop.
+
+        lda $7d
+        jsr create_monster_store_x_pos
+
+        lda visible_monster_right_index ; Move to the next slot in the monster 
+        adc #4                          ; table until there are no more slots.
+        and #$0c
+        sta visible_monster_right_index
+        cmp #0
+        bne init_monster_positions_loop
+
+    init_monster_positions_exit:
     clc
     rts
 
@@ -233,17 +287,10 @@ create_monster_left:
     lda monster_left_index
     ldx visible_monster_left_index  ; X=visible index
     jsr create_monster
-    bcs create_monster_left_exit
+    bcs create_monster_common_exit
 
     lda #254
-    dex
-    dex
-    sta monster_positions_address,x ; Store the x coordinate.
-    dex
-
-    create_monster_left_exit:
-    clc
-    rts
+    jmp create_monster_store_x_pos
 
 create_monster_right:
 
@@ -252,19 +299,21 @@ create_monster_right:
     lda monster_right_index
     ldx visible_monster_right_index ; X=visible index
     jsr create_monster
-    bcs create_monster_right_exit
+    bcs create_monster_common_exit
 
     lda #40
+    create_monster_store_x_pos:
     dex
     dex
     sta monster_positions_address,x ; Store the x coordinate.
 
-    create_monster_right_exit:
+    create_monster_common_exit:
     clc
     rts
 
 create_monster:                     ; A=index
                                     ; X=visible index
+                                    ; $8d=byte containing direction bit
     jsr read_monster_row_address
     ldy #0
     lda ($76),y                     ; Read the monster type.

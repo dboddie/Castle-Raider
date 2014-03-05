@@ -54,8 +54,8 @@ init_scrolling:
     lda #0
     sta $8d                         ; Keep track of the current column number.
 
-    lda #1
-    jsr read_monster_row_address    ; Examine the monster data at index 1.
+    lda #1                          ; Examine the monster data at index 1.
+    jsr read_monster_row_address    ; Sets $76,$77.
 
     ldy #1                          ; Examine the span information.
 
