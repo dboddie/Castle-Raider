@@ -48,18 +48,27 @@ init_monster_positions:
                                     ; for the left screen edge.
     sta $7b
 
-    lda #254                        ; Keep track of the current column number
-    sta $7d                         ; (initially -2)
-    lda #0                          ; and the visible monster indices.
+    lda #0                          ; Keep track of the visible monster indices.
     sta visible_monster_left_index
     lda #4
     sta visible_monster_right_index
+
+    lda #0                          ; Keep track of the screen column number
+    adc monster_left_offset         ; (initially -2, but count from 0), adding
+    clc                             ; the current offset to the default value
+    sta $7d                         ; to find the location of the first visible
+                                    ; span.
+
+    jmp init_monster_positions_create   ; Jump into the loop to skip the span
+                                        ; length addition.
 
     init_monster_positions_loop:
 
         lda $7b                         ; Load the monster index.
         jsr read_monster_row_address    ; Examine the monster data at this index.
                                         ; Sets $76,$77.
+
+        inc $7b                         ; Examine the next monster index.
 
         ldy #1                          ; Examine the span information.
         lda ($76),y                     ; Load the span length (n - 1).
@@ -69,20 +78,26 @@ init_monster_positions:
         adc $7d                         ; Calculate the next monster position.
         adc #1
 
-        cmp #41                         ; Continue until we reach the right
-        bcs init_monster_positions_exit ; edge of the screen.
+    init_monster_positions_create:
+
+        cmp #43                         ; Continue until we reach the right
+        bcs init_monster_positions_exit ; edge of the screen (including some
+                                        ; extra columns to allow for the
+                                        ; implicit addition of 2 columns).
 
         sta $7d                         ; Store the new monster position.
 
         and #$20                        ; Retain the direction bit (1=right)
         sta $8d
-        inc $7b                         ; Examine the next monster index.
         lda $7b                         ; Load the monster index
         ldx visible_monster_right_index ; and the visible monster index.
         jsr create_monster
         bcs init_monster_positions_loop ; If no monster was created then loop.
 
         lda $7d
+        sec
+        sbc #2
+        clc
         jsr create_monster_store_x_pos
 
         lda visible_monster_right_index ; Move to the next slot in the monster 
