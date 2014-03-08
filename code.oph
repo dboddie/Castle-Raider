@@ -214,7 +214,6 @@ main:
 ;        ; --- Switch character test code (begin) ---
 ;        ldx #157            ; (SPACE)
 ;        jsr check_key
-;        cpy #255
 ;        bne not_space
 ;
 ;        clc
@@ -227,7 +226,6 @@ main:
 
         ldx #143            ; (Escape)
         jsr check_key
-        cpy #255
         bne main_loop
 
     main_loop_endloop:
@@ -280,7 +278,6 @@ player_move:
 
     ldx #158        ; (Z)
     jsr check_key
-    cpy #255
     bne player_move_not_left
 
     jsr player_move_left   ; allow the player to jump while moving
@@ -294,7 +291,6 @@ player_move:
 
     ldx #189        ; (X)
     jsr check_key
-    cpy #255
     bne player_move_not_right
     clc
 
@@ -315,7 +311,6 @@ player_move:
 
     ldx #182        ; (Return)
     jsr check_key
-    cpy #255
     bne player_move_not_jump
     clc
 
@@ -330,7 +325,6 @@ player_move:
 
     ldx #151        ; (/)
     jsr check_key
-    cpy #255
     bne player_move_not_enter
 
     jmp player_enter
@@ -341,7 +335,9 @@ player_move:
 check_key:      ; x=key code
     lda #129    ; returns y=255 or 0
     ldy #255
-    jmp $fff4   ; Return directly from the OS routine.
+    jsr $fff4
+    cpy #255    ; Perform the check for a pressed key here.
+    rts
 
 check_beneath:      ; Checks beneath the character for solid tiles.
                     ; Sets player_falling if none exist.

@@ -58,6 +58,7 @@ main:
         bne title_text_loop
 
     jsr draw_title
+    jsr plot_characters
 
     jsr init_update_title
 
@@ -68,12 +69,27 @@ main:
 
         jsr update_title
 
-        ldx #157            ; (SPACE)
+        ldx #207                    ; 1
         jsr check_key
-        cpy #255
+        beq choose_character_1
+
+        ldx #206                    ; 2
+        jsr check_key
+        beq choose_character_2
+
         bne title_animation_loop
 
+    choose_character_2:
     clc
+    jsr plot_characters
+    jsr switch_characters
+    jmp start_loading
+
+    choose_character_1:
+    clc
+    jsr plot_characters
+
+    start_loading:
 
     lda #1                  ; set polling flag to ensure that the interrupt
     sta $8f                 ; routine gives enough time to the OS
@@ -210,35 +226,129 @@ copy_panel:
     rts
 
 check_key:      ; x=key code
-    lda #129    ; returns y=255 or 0
+    lda #129    ; returns Z flag set if the key is pressed
     ldy #255
     jsr $fff4
+    cpy #255
     rts
 
 
-;switch_characters:
-;
-;    ; Switch the left and right sprites.
-;    ldx #95
-;    switch_characters_left_loop:
-;
-;        ldy player_left1,x
-;        lda player_left_alt1,x
-;        sta player_left1,x
-;        tya
-;        sta player_left_alt1,x
-;
-;        ldy player_right1,x
-;        lda player_right_alt1,x
-;        sta player_right1,x
-;        tya
-;        sta player_right_alt1,x
-;
-;        dex
-;        bpl switch_characters_left_loop
-;
-;    clc
-;    rts
+plot8x24_y0:            ; $70,$71=source address
+                        ; $72,$73=destination address
+
+    ldx #2
+
+    plot8x24_y0_loop:
+
+        ldy #15
+
+        plotloop8x24_y0_0:
+            lda ($70),y
+            eor ($72),y
+            sta ($72),y
+            dey
+            bpl plotloop8x24_y0_0
+
+        dex
+        bmi plot8x24_y0_exit
+
+        lda $72
+        adc #$40
+        sta $72
+        lda $73
+        adc #$01
+        sta $73
+        clc
+
+        lda $70
+        adc #16
+        sta $70
+        lda $71
+        adc #0
+        sta $71
+        clc
+
+        jmp plot8x24_y0_loop
+
+    plot8x24_y0_exit:
+    clc
+    rts
+
+plot_characters:
+
+    lda #$60                        ; direction offset
+    sta $74
+
+    ldy #0
+    jsr plot_character
+
+    lda #0                          ; direction offset
+    sta $74
+
+    ldy #1
+    ; Fall through into the following routine.
+
+plot_character:
+
+    lda #<player_left1
+    adc $74                         ; add direction offset
+    sta $70
+    lda #>player_left1
+    adc #0
+    sta $71
+    clc
+
+    lda #$a0
+    sta $72
+    lda #$77
+    sta $73
+
+    cpy #1
+    bne plot_character_plot
+
+    clc
+    lda $70
+    adc #$c0                        ; plot sprites for the second character
+    sta $70
+    lda $71
+    adc #0
+    sta $71
+    clc
+
+    lda $72
+    adc #$70                        ; plot 7 characters to the right
+    sta $72
+    lda $73
+    adc #0
+    sta $73
+
+    plot_character_plot:
+    clc
+    jmp plot8x24_y0
+
+switch_characters:
+
+    ; Switch the left and right sprites.
+    ldx #95
+    switch_characters_left_loop:
+
+        ldy player_left1,x
+        lda player_left_alt1,x
+        sta player_left1,x
+        tya
+        sta player_left_alt1,x
+
+        ldy player_right1,x
+        lda player_right_alt1,x
+        sta player_right1,x
+        tya
+        sta player_right_alt1,x
+
+        dex
+        bpl switch_characters_left_loop
+
+    clc
+    rts
 
 
 
