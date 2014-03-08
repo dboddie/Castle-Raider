@@ -1158,30 +1158,6 @@ player_demise:
 ;    clc
 ;    rts
 
-;switch_characters:
-;
-;    ; Switch the left and right sprites.
-;    ldx #95
-;    switch_characters_left_loop:
-;
-;        ldy player_left1,x
-;        lda player_left_alt1,x
-;        sta player_left1,x
-;        tya
-;        sta player_left_alt1,x
-;
-;        ldy player_right1,x
-;        lda player_right_alt1,x
-;        sta player_right1,x
-;        tya
-;        sta player_right_alt1,x
-;
-;        dex
-;        bpl switch_characters_left_loop
-;
-;    clc
-;    rts
-
 .include "plotting.oph"
 .include "scrolling.oph"
 .include "bank_routines.oph"

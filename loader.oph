@@ -36,6 +36,19 @@ main:
 
     jsr set_core_palette
 
+    ; Load the sprites.
+
+    lda #255
+    ldx #<sprites_block
+    ldy #>sprites_block
+    jsr $ffdd
+
+    ; Clear the screen.
+    lda #12
+    jsr $ffee
+
+    ; Display the title.
+
     ldx #0
     title_text_loop:
         lda title_text,x
@@ -79,11 +92,6 @@ main:
     lda #255
     ldx #<tiles_block
     ldy #>tiles_block
-    jsr $ffdd
-
-    lda #255
-    ldx #<sprites_block
-    ldy #>sprites_block
     jsr $ffdd
 
     lda #255
@@ -206,6 +214,34 @@ check_key:      ; x=key code
     ldy #255
     jsr $fff4
     rts
+
+
+;switch_characters:
+;
+;    ; Switch the left and right sprites.
+;    ldx #95
+;    switch_characters_left_loop:
+;
+;        ldy player_left1,x
+;        lda player_left_alt1,x
+;        sta player_left1,x
+;        tya
+;        sta player_left_alt1,x
+;
+;        ldy player_right1,x
+;        lda player_right_alt1,x
+;        sta player_right1,x
+;        tya
+;        sta player_right_alt1,x
+;
+;        dex
+;        bpl switch_characters_left_loop
+;
+;    clc
+;    rts
+
+
+
 
 tiles_block: .byte <tiles_file_name, >tiles_file_name
              .byte sprite_area_low, sprite_area_high, 0, 0

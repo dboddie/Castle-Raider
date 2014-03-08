@@ -482,7 +482,6 @@ if __name__ == "__main__":
     loader_start = 0x3500
     
     marker_info = [(sprite_area_address, sprite_data),
-                   (char_area_address, char_data),
                    (levels_address, level_data),
                    (panel_address, panel),
                    (code_start, code)]
@@ -527,8 +526,8 @@ if __name__ == "__main__":
     
     files = [("CASTLE", bootloader_start, bootloader_start, bootloader_code),
              ("LOADER", loader_start, loader_start, loader_code),
-             ("TILES", sprite_area_address, sprite_area_address, sprite_data),
              ("SPRITES", char_area_address, char_area_address, char_data),
+             ("TILES", sprite_area_address, sprite_area_address, sprite_data),
              ("LEVELS", levels_address, levels_address, level_data),
              ("PANEL", panel_address, panel_address, panel),
              ("CODE", code_start, code_start, code)]
