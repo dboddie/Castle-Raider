@@ -48,9 +48,13 @@ init_monster_positions:
                                     ; for the left screen edge.
     sta $7b
 
+    ; Initialise the on-screen monster indices.
+    ; Usually, the left index trails the right index by the number of monsters
+    ; that appear on screen. If an empty span appears, it is usually 256 cells
+    ; long so the contents of the table are not critical.
     lda #0                          ; Keep track of the visible monster indices.
     sta visible_monster_left_index
-    lda #4
+    lda #0
     sta visible_monster_right_index
 
     lda #0                          ; Keep track of the screen column number
@@ -72,8 +76,10 @@ init_monster_positions:
 
         ldy #1                          ; Examine the span information.
         lda ($76),y                     ; Load the span length (n - 1).
-        cmp #40                         ; If this alone exceeds the screen
-        bcs init_monster_positions_exit ; width then exit.
+        cmp #43                         ; If this alone exceeds the screen
+        bcs init_monster_positions_exit ; width then exit (including some
+                                        ; extra columns to allow for the
+                                        ; implicit addition of 2 columns).
 
         adc $7d                         ; Calculate the next monster position.
         adc #1

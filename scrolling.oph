@@ -28,16 +28,6 @@ init_scrolling:
 
     ; Initialise the monster indices and offsets.
 
-    ; Initialise the on-screen monster indices.
-    ; Usually, the left index trails the right index by the number of monsters
-    ; that appear on screen. If an empty span appears, it is usually 256 cells
-    ; long so the contents of the table are not critical. However, the first
-    ; span is empty and short, so this ensures that the indices are
-    ; synchronised after it appears.
-    sta visible_monster_left_index
-    lda #4
-    sta visible_monster_right_index
-
     ; The left index and offset are straightforward to set because they are at
     ; the start of the level, so we store zero in both of them. A padding span
     ; ensures that monsters will be created before they appear on the left hand
