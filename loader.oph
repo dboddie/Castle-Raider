@@ -49,16 +49,33 @@ main:
 
     ; Display the title.
 
-    ldx #0
-    title_text_loop:
-        lda title_text,x
-        jsr $ffee
-        inx
-        cpx #[title_text_end - title_text]
-        bne title_text_loop
-
     jsr draw_title
     jsr plot_characters
+
+    ldx #2
+    jsr set_colour
+
+    ldx #0
+    show_message_loop:
+        lda message_text,x
+        jsr $ffee
+        inx
+        cpx #[message_text_end - message_text]
+        bne show_message_loop
+
+    ldx #6
+    ldy #29
+    jsr tab_x_y                     ; TAB(6, 28)
+    ldx #3
+    jsr set_colour
+    lda #49                         ; "1"
+    jsr $ffee
+
+    ldx #13
+    ldy #29
+    jsr tab_x_y                     ; TAB(13, 28)
+    lda #50                         ; "2"
+    jsr $ffee
 
     jsr init_update_title
 
@@ -91,6 +108,22 @@ main:
 
     start_loading:
 
+    ; Write the copyright and license text.
+
+    ldx #0
+    ldy #0
+    jsr tab_x_y
+
+    ldx #0
+    title_text_loop:
+        lda title_text,x
+        jsr $ffee
+        inx
+        cpx #[title_text_end - title_text]
+        bne title_text_loop
+
+    ; Configure the interrupt routine.
+
     lda #1                  ; set polling flag to ensure that the interrupt
     sta $8f                 ; routine gives enough time to the OS
 
@@ -102,7 +135,7 @@ main:
         lda init_load_window_vdu_bytes,x
         jsr $ffee
         inx
-        cpx #5
+        cpx #6
         bne init_load_window_loop
 
     lda #255
@@ -184,6 +217,22 @@ set_palette:
     ldy #$3d
     jsr $fff1
     rts
+
+tab_x_y:      
+
+    lda #31
+    jsr $ffee
+    txa
+    jsr $ffee
+    tya
+    jmp $ffee
+
+set_colour:
+
+    lda #17
+    jsr $ffee
+    txa
+    jmp $ffee
 
 copy_panel:
 
@@ -393,14 +442,20 @@ code_block: .byte <code_file_name, >code_file_name
 
 code_file_name: .byte "CODE", 13
 
-init_load_window_vdu_bytes: .byte 28,0,28,19,26
+message_text: .byte 10, 10, " Choose a character"
+message_text_end:
 
-title_text: .byte "   Castle Raider", 13, 10
-            .byte "Pre-release  version"
-            .byte " Copyright (C) 2013", 13, 10
+init_load_window_vdu_bytes: .byte 28,0,30,19,26,12
+
+title_text: .byte " Copyright (C) 2014", 13, 10
             .byte "    David Boddie", 13, 10
-            .byte "GNU GPL v3 or later"
+            .byte " for Retro Software", 13, 10
+            .byte "GNU GPL v.3 or later"
 title_text_end:
+
+.alias title_start_address $5e48
+.alias title_upper_address $5e4c
+.alias title_lower_address $5f84
 
 draw_title:
 
@@ -413,18 +468,18 @@ draw_title:
         cmp #4
         bcc draw_title_outer_loop_upper
 
-        lda #$c4
+        lda #<title_lower_address
         sta $72
-        lda #$60
+        lda #>title_lower_address
         sta $73
 
         jmp draw_title_outer_loop_columns
 
         draw_title_outer_loop_upper:
 
-        lda #$8c
+        lda #<title_upper_address
         sta $72
-        lda #$5f
+        lda #>title_upper_address
         sta $73
 
         draw_title_outer_loop_columns:
@@ -581,9 +636,9 @@ update_title1:
     lda $79         ; copy the index into another register for use in the
     sta $80         ; inner loop
 
-    lda #$88
+    lda #<title_start_address
     sta $72
-    lda #$5f
+    lda #>title_start_address
     sta $73
 
     lda #0

@@ -148,7 +148,7 @@ plot_monsters:
     lda bank_number
     cmp #0
     bne plot_monsters_bank2
-    jmp plot_monsters_bank1
+    beq plot_monsters_bank1
 
 plot_monsters_bank1:            ; Entry point for plotting monsters on bank 1.
 
@@ -679,6 +679,7 @@ check_monster_can_move:     ; $80=x position
 check_monster_player:
 
     ldy $88
+check_monster_player1:
     iny
     lda ($86),y                     ; Load monster x offset.
 
@@ -713,3 +714,30 @@ check_monster_player:
     clc
     rts
 
+check_player_monster:
+
+    lda #0
+    sta $88
+
+    check_player_monster_loop:
+
+        ldy $88
+        lda ($86),y
+        cmp #0
+        beq check_player_monster_next
+
+        jsr check_monster_player1
+
+        check_player_monster_next:
+        clc
+
+        lda $88
+        adc #4
+        cmp #$10
+        beq check_player_monster_exit
+        sta $88
+        bne check_player_monster_loop
+
+    check_player_monster_exit:
+    clc
+    rts

@@ -191,6 +191,10 @@ main:
             clc                     ; Check for horizontal input. Note that it
             jsr player_move         ; might still be forbidden by the jumping
                                     ; counter or falling flag.
+
+            bcs main_loop_next
+            jsr check_player_monster
+
         main_loop_next:
 
         lda scrolled
@@ -456,7 +460,7 @@ check_beneath:      ; Checks beneath the character for solid tiles.
         cmp $75
         beq check_beneath_last_tile_bank2
 
-        jmp check_beneath_update_tiles
+        bne check_beneath_update_tiles
 
     check_beneath_last_tile_bank2:
 
@@ -567,7 +571,7 @@ check_tile:         ; $80=x position (-20 to 60) (-20 is represented as 236)
         cmp #128
         bcc check_tile_negative_loop_exit
         sta $74
-        jmp check_tile_negative_loop
+        bcs check_tile_negative_loop
 
         check_tile_negative_loop_exit:
 
@@ -1114,6 +1118,10 @@ player_demise:
     lda #1
     sta player_lost
     dec player_lives
+
+    lda #0
+    sta player_jumping
+    sta player_falling
 
     rts
 
