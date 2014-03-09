@@ -53,13 +53,19 @@ main:
     lda #9
     sta player_lives
 
-    ; Initialise the tile visibility values.
+    ; Initialise the tile visibility values and erase any collected objects in
+    ; the panel.
 
     ldx #31
 
     init_tile_visibility_loop:
         lda initial_tile_visibility_address,x
         sta tile_visibility_address,x
+
+        txa
+        tay
+        jsr erase_collected_object
+
         dex
         bpl init_tile_visibility_loop
     clc
@@ -163,6 +169,7 @@ main:
 
             lda #0
             sta player_lost
+            sta player_ys
 
             lda tracking_y
             sta player_y
@@ -181,19 +188,19 @@ main:
 
         lda player_falling          ; Is the character falling?
         cmp #0
-        beq main_loop_allow_movement
+        beq main_loop_allow_movement    ; No, so allow movement.
 
-            jsr player_fall         ; Yes, so move them downwards.
-            bcs main_loop_next      ; If they are moving horizontally then skip
-                                    ; past the movement checks.
+            jsr player_fall             ; Yes, so move them downwards.
+            bcs main_loop_check_monsters ; If they are moving horizontally then
+                                         ; skip past the movement checks.
         main_loop_allow_movement:
 
             clc                     ; Check for horizontal input. Note that it
             jsr player_move         ; might still be forbidden by the jumping
                                     ; counter or falling flag.
 
-            bcs main_loop_next
-            jsr check_player_monster
+        main_loop_check_monsters:
+        jsr check_player_monsters
 
         main_loop_next:
 

@@ -149,7 +149,7 @@ if __name__ == "__main__":
     # Memory map
     memory_map = {
         "code start": 0x0e00,
-        "data start": 0x2160,
+        "data start": 0x21a0,
         "tile sprites": 0x2aa0 + 0xc0,
         "character and object sprites": 0x2de0 + 0xc0,
         "bank 1 (panel)": 0x3000,
@@ -400,14 +400,18 @@ if __name__ == "__main__":
         ".alias top_panel_end_low               $%02x\n"
         ".alias top_panel_end_high              $%02x\n"
         "\n"
+        ".alias top_panel_objects_bank1         $%04x\n"
         ".alias top_panel_objects_bank1_low     $%02x\n"
         ".alias top_panel_objects_bank1_high    $%02x\n"
+        ".alias top_panel_objects_bank2         $%04x\n"
         ".alias top_panel_objects_bank2_low     $%02x\n"
         ".alias top_panel_objects_bank2_high    $%02x\n"
         "\n"
         ) % (address_length_end(panel_address, panel) + \
-            (top_panel_objects_bank1_low,
+            (top_panel_objects_bank1,
+             top_panel_objects_bank1_low,
              top_panel_objects_bank1_high,
+             top_panel_objects_bank2,
              top_panel_objects_bank2_low,
              top_panel_objects_bank2_high))
     

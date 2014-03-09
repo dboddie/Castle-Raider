@@ -1410,14 +1410,34 @@ plot_collected_object:  ; Y=special tile number
 
     lda ($84),y                     ; load the tile number
     jsr read_sprite_address_next    ; $70,$71=sprite address
+    sty $8c                         ; temporarily store the special tile number
 
-    sty $8c         ; temporarily store the special tile number
+    jsr collected_object_offset
+    sta $8d                         ; temporarily store the screen offset
+
+    jsr plot_collected_object_bank1
+
+    ldy $8c                         ; retrieve the special tile number
+    lda ($84),y                     ; load the tile number
+    jsr read_sprite_address_next    ; $70,$71=sprite address
+
+    lda $8d                         ; retrieve the screen offset
+    jsr plot_collected_object_bank2
+
+    ldy $8c                         ; restore the special tile number
+    rts
+
+collected_object_offset:    ; Y=tile
+
     tya             ; tile 
     and #$0f        ; convert the tile number into a screen position
     asl
     asl
     asl
-    sta $8d                         ; temporarily store the screen offset
+    rts
+
+plot_collected_object_bank1:    ; A=screen offset
+
     adc #top_panel_objects_bank1_low
     sta $72
     lda #top_panel_objects_bank1_high
@@ -1425,13 +1445,10 @@ plot_collected_object:  ; Y=special tile number
     sta $73
     clc
 
-    jsr plot_tile_bank
+    jmp plot_tile_bank
 
-    ldy $8c                         ; retrieve the special tile number
-    lda ($84),y                     ; load the tile number
-    jsr read_sprite_address_next    ; $70,$71=sprite address
+plot_collected_object_bank2:    ; A=screen offset
 
-    lda $8d                         ; retrieve the screen offset
     adc #top_panel_objects_bank2_low
     sta $72
     lda #top_panel_objects_bank2_high
@@ -1439,6 +1456,20 @@ plot_collected_object:  ; Y=special tile number
     sta $73
     clc
 
-    jsr plot_tile_bank
-    ldy $8c                         ; restore the special tile number
-    rts
+    jmp plot_tile_bank
+
+erase_collected_object:  ; Y=special tile number
+
+    jsr collected_object_offset
+    sta $8d                         ; temporarily store the screen offset
+
+    lda #sprite_area_low
+    sta $70
+    lda #sprite_area_high
+    sta $71
+
+    lda $8d
+    jsr plot_collected_object_bank1
+
+    lda $8d
+    jmp plot_collected_object_bank2
