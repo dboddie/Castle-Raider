@@ -149,7 +149,7 @@ if __name__ == "__main__":
     # Memory map
     memory_map = {
         "code start": 0x0e00,
-        "data start": 0x21a0,
+        "data start": 0x2100,
         "tile sprites": 0x2aa0 + 0xc0,
         "character and object sprites": 0x2de0 + 0xc0,
         "bank 1 (panel)": 0x3000,
@@ -159,7 +159,7 @@ if __name__ == "__main__":
     
     code_start = memory_map["code start"]
     
-    number_of_special_tiles = 32
+    maximum_number_of_special_tiles = 16
     maximum_number_of_portals = 16
     
     data_start = memory_map["data start"]
@@ -175,7 +175,7 @@ if __name__ == "__main__":
     tile_visibility_high = (tile_visibility_address - 0x10) >> 8
     
     # The furthest that spans can be displaced to the right.
-    max_row_offsets               = tile_visibility_address + number_of_special_tiles
+    max_row_offsets               = tile_visibility_address + maximum_number_of_special_tiles
     
     player_information            = max_row_offsets + 0x10
     player_x                      = player_information + 0
@@ -221,10 +221,10 @@ if __name__ == "__main__":
     special_tile_numbers_high     = (special_tile_numbers_address - 0x10) >> 8
     
     # Visibility flags for special tiles
-    initial_tile_visibility_address = special_tile_numbers_address + number_of_special_tiles
+    initial_tile_visibility_address = special_tile_numbers_address + maximum_number_of_special_tiles
     
     # Portal destinations
-    portal_table_address = initial_tile_visibility_address + number_of_special_tiles
+    portal_table_address = initial_tile_visibility_address + maximum_number_of_special_tiles
     
     # Low bytes for the addresses of the rows.
     row_table_low                 = portal_table_address + (maximum_number_of_portals * 3)
@@ -237,7 +237,7 @@ if __name__ == "__main__":
     # Create the level data.
     levels_address = level_data_start
     level_data, monster_row_address = makelevels.create_level(
-        levels_address, level_file, number_of_special_tiles, maximum_number_of_portals)
+        levels_address, level_file, maximum_number_of_special_tiles, maximum_number_of_portals)
     
     level_extent = makelevels.level_extent
     
@@ -373,12 +373,13 @@ if __name__ == "__main__":
         ".alias special_tile_numbers_low        $%02x\n"
         ".alias special_tile_numbers_high       $%02x\n"
         ".alias tile_visibility_address         $%x\n"
-        ".alias tile_visibility_low             $%02x\n"
-        ".alias tile_visibility_high            $%02x\n"
+        ".alias tile_visibility_low             $%02x   ; 16 bytes less than full address\n"
+        ".alias tile_visibility_high            $%02x   ; for easier referencing\n"
+        ".alias tile_visibility_length          %i\n"
         "\n"
         ) % (special_tile_numbers_low, special_tile_numbers_high,
              tile_visibility_address, tile_visibility_low,
-             tile_visibility_high)
+             tile_visibility_high, maximum_number_of_special_tiles)
     
     constants_oph += (
         ".alias char_area                       $%x\n"

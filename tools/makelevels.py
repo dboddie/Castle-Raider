@@ -54,8 +54,6 @@ tile_ref = {".": "images/blank.png",
             "L": "images/key1.png",
             "M": "images/key2.png",
             "N": "images/key3.png",
-            "A": "images/pickaxe.png",
-            "B": "images/shovel.png",
             "C": "images/crown-left.png",
             "D": "images/crown-right.png",
             "E": "images/chest-left.png",
@@ -65,8 +63,7 @@ tile_ref = {".": "images/blank.png",
 
 tile_order = (".", "@", "#", "=", "+", "-", "X", "|",   # regular tiles
               "?", "[", "]", "/", "\\", "{", "I", "%",  #
-              "K", "L", "M", "N", "A", "B", "C", "D",   # collectable tiles
-              "E", "F")
+              "K", "L", "M", "N", "C", "D", "E", "F")   # collectable tiles
 
 flags_values = {"visible": 0x80, "collectable": 0x40, "door": 0x20, "treasure": 0x10}
 
@@ -102,7 +99,7 @@ def load_level(path):
     special = {}
     
     index = 16
-    for line in lines[:32]:
+    for line in lines[:16]:
     
         ch, tile, flags_word = line.split()
         flags = flags_word.split(",")
@@ -111,14 +108,14 @@ def load_level(path):
     
     portals = {}
     index = 128
-    for line in lines[32:48]:
+    for line in lines[16:32]:
     
         src, dest, colour = line.split()
         portals[src] = (index, dest, colour)
         index += 1
     
     levels = []
-    l = 48
+    l = 32
     
     while l < len(lines):
     
@@ -244,7 +241,7 @@ def create_level_data(levels, tiles, special, portals):
     
     return data, monster_data, portal_locations
 
-def create_level(levels_address, level_path, number_of_special_tiles,
+def create_level(levels_address, level_path, maximum_number_of_special_tiles,
                  maximum_number_of_portals):
     
     levels, special, portals = load_level(level_path)
@@ -259,7 +256,8 @@ def create_level(levels_address, level_path, number_of_special_tiles,
         if key not in tiles:
             tiles[key] = 48 + i
     
-    special_tile_numbers_table_size = visibility_table_size = number_of_special_tiles
+    special_tile_numbers_table_size = visibility_table_size = maximum_number_of_special_tiles
+    
     portal_table_size = 3 * maximum_number_of_portals
     row_table_size = (16 * 2)
     
