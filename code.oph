@@ -56,67 +56,23 @@ main:
     ; Initialise the tile visibility values and erase any collected objects in
     ; the panel.
 
-    ldx #31
-
+    ldx #[tile_visibility_length - 1]
     init_tile_visibility_loop:
+
         lda initial_tile_visibility_address,x
         sta tile_visibility_address,x
 
+        and #$40
+        beq init_tile_visibility_next
+
         txa
+        adc #16
         tay
         jsr erase_collected_object
 
+        init_tile_visibility_next:
         dex
         bpl init_tile_visibility_loop
-    clc
-
-    ; Reset breakable tiles in the level.
-
-    ldx #0
-    lda row_table_low,x
-    sta $76
-    lda row_table_high,x
-    sta $77
-
-    ldy #0
-
-    init_reset_tiles_loop:
-
-        lda ($76),y                     ; Load the tile number.
-        cmp #$80                        ; Skip anything higher than the
-        bcs init_reset_tiles_next       ; breakable/broken tiles.
-
-        init_reset_tiles_reset:
-
-            cmp #$40                    ; Is the tile (partially) broken?
-            bcc init_reset_tiles_write
-
-            sbc #$18                    ; Unbreak it.
-            jmp init_reset_tiles_reset
-
-        init_reset_tiles_write:
-
-        sta ($76),y                     ; Refresh/store the unbroken value.
-
-        init_reset_tiles_next:
-        clc
-
-        lda $76
-        adc #2
-        sta $76
-        lda $77
-        adc #0
-        sta $77
-        clc
-
-        cmp #monster_row_address_high   ; At the end of the tile data?
-        bne init_reset_tiles_loop
-
-        lda $76
-        cmp #monster_row_address_low    ; At the end of the tile data?
-        bne init_reset_tiles_loop
-
-    clc ; End breakable tile reset.
 
     ; Determine the left and right monster indices and offsets.
 
@@ -395,104 +351,11 @@ check_beneath:      ; Checks beneath the character for solid tiles.
     jsr player_demise
 
     check_beneath_solid:    ; A solid tile was found.
-    tax
-
-    lda player_falling
-    cmp #0
-    beq check_beneath_exit
-
-    txa
-    cmp #$30                ; Check the tile to see if it is breakable.
-    bcc check_beneath_exit
-
-    clc                     ; Increase the tile number in order to set the top
-    adc #$18                ; bit after two hits. This requires that the
-    sta ($76),y             ; initial tiles have values of 0x31 or higher.
-    sta $78
-
-    ; Use the x coordinate of the following span ($74 from check_tile) and the
-    ; player's y coordinate ($81) to find the screen location of the tile.
-    
-    lda $74                 ; Load the position of the current span.
-    ldy #1
-    adc ($76),y             ; Add the span length (minus the extra unit).
-    clc
-    sta $75
-
-    lda $81
-    sec
-    sbc #8
-    tax                     ; x=row number
-
-    ; Plot the initial merged tile on bank 2.
-
-    lda $76
-    sec     ; C should already be set
-    sbc #2
-    sta $80
-    lda $77
-    sbc #0
-    sta $81
-    clc
-
-    ldy #0
-    lda ($80),y
-    jsr read_right_sprite_address ; $80,$81=address of the right tile piece
-
-    dec $74 ; Plot the right edge of the previous span with the left edge of
-            ; the current one.
-
-    check_beneath_update_tiles:
-
-        lda $74
-        jsr read_screen_address_bank2
-
-        lda $78
-        jsr read_left_sprite_address ; $70,$71=address of the left tile piece
-        jsr plot_merged_tile_bank
-
-        lda $78
-        jsr read_right_sprite_address ; $80,$81=address of the right tile piece
-
-        inc $74 ; Now plot the next tile on bank 1.
-
-        lda $74                         ; A=column number
-        jsr read_screen_address_bank1
-
-        lda $78
-        jsr read_sprite_address     ; Load $70,$71 with the address of the tile.
-        jsr plot_tile_bank
-
-        lda $74
-        cmp $75
-        beq check_beneath_last_tile_bank2
-
-        bne check_beneath_update_tiles
-
-    check_beneath_last_tile_bank2:
-
-    clc
-    lda $76
-    adc #2
-    sta $76
-    lda $77
-    adc #0
-    sta $77
-    clc
-
-    lda $74
-    jsr read_screen_address_bank2
-
-    ldy #0
-    lda ($76),y
-    jsr read_left_sprite_address ; $70,$71=address of the left tile piece
-    jsr plot_merged_tile_bank
-
-    check_beneath_exit:
 
     lda #0
     sta player_falling
 
+    clc
     rts
 
 read_row_address:           ; X=row number
@@ -663,15 +526,12 @@ check_tile_visible:             ; A=tile number
     check_tile_visible_special:
 
     cmp #$50
-    bcc check_tile_visible_not_portal_or_broken
+    bcc check_tile_visible_not_portal
 
-    clc                         ; Portals (> 128) and broken tiles (> 80) are
-    rts                         ; not visible.
+    clc                         ; Portals (> 128) are not visible.
+    rts
 
-    check_tile_visible_not_portal_or_broken:
-
-    cmp #$30
-    bcs check_tile_visible_breakable
+    check_tile_visible_not_portal:
 
     tay                         ; transfer the tile number to Y
     lda ($82),y                 ; load the visibility of the tile
@@ -679,11 +539,6 @@ check_tile_visible:             ; A=tile number
     bcs check_tile_visible_next
 
     rts                         ; Not visible, and C is clear to indicate this.
-
-    check_tile_visible_breakable:
-
-    cmp #$30                    ; Return C set for tiles 49-63; C clear for 48
-    rts
 
     check_tile_visible_next:    ; the tile is visible
     ldx $8a

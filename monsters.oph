@@ -86,6 +86,8 @@ init_monster_positions:
 
     init_monster_positions_create:
 
+        cmp #1
+        bcc init_monster_positions_loop
         cmp #43                         ; Continue until we reach the right
         bcs init_monster_positions_exit ; edge of the screen (including some
                                         ; extra columns to allow for the
@@ -447,28 +449,29 @@ move_monster_vertically:    ; $86,$87=monster table
                             ; Y=offset into monster table (initially 0)
 
     iny                         ; Select the y offset.
-
-    iny                         ; Select the dy value.
     lda ($86),y
-
-    eor #$01                    ; dy = !dy
-    sta $89                     ; Temporarily store dy.
-    sta ($86),y
-
-    dey                         ; Select the y offset.
+    sta $89                     ; Temporarily store the y offset.
 
     lda $8b                     ; Recover the type.
     and #monster_direction_bit
     cmp #$00
-    bne move_monster_down
+    bne move_monster_down_check
 
     ; Upward motion
 
-    lda $89                             ; dy
-    cmp #0                              ; If we have just moved up within
-    beq move_monster_vertically_exit    ; the same cell then exit.
-
+    iny                         ; Select the dy value.
     lda ($86),y
+    cmp #0                      ; If we are aligned with a cell then
+    beq move_monster_up         ; check that we can move.
+
+        lda #0                      ; Otherwise, set dy = 0 and exit.
+        sta ($86),y
+        clc
+        rts
+
+    move_monster_up:
+
+    lda $89                     ; Recover the y offset.
     cmp #0
     beq move_monsters_change_direction
 
@@ -476,38 +479,53 @@ move_monster_vertically:    ; $86,$87=monster table
         sbc #1                  ; y -= 1
         clc
 
+        dey                     ; Select the y offset.
         jsr check_monster_can_move_vertically
         bcs move_monsters_change_direction
 
-        lda $81
+        lda $81                 ; Load the tested y value.
         sta ($86),y             ; Store the new y offset and exit.
+
+        iny                     ; Select the dy offset.
+        lda #1                  ; dy = 1
+        sta ($86),y
+        rts
+
+    move_monster_down_check:
+
+    ; Downward motion
+
+    iny                         ; Select the dy value.
+    lda ($86),y
+    cmp #0                      ; If we are aligned with a cell then
+    beq move_monster_down       ; check that we can move.
+
+        lda #0                      ; Otherwise, set dy = 0.
+        sta ($86),y
+
+        dey                         ; Select the y offset.
+        clc
+        lda $89
+        adc #1                      ; y += 1
+        sta ($86),y                 ; Store the new y offset.
+
         rts
 
     move_monster_down:
 
-    ; Downward motion
-
-    lda $89                         ; dy
-    cmp #0                          ; If we moved within a cell then exit.
-    bne move_monster_vertically_exit
-
-        clc
-        lda ($86),y
-        adc #1                      ; y += 1
-        sta ($86),y                 ; Store the new y offset.
-
-    lda ($86),y
+    lda $89                     ; Recover the y offset.
     cmp #23
     beq move_monsters_change_direction
 
+        dey                     ; Select the y offset.
         adc #1
         jsr check_monster_can_move_vertically
         bcs move_monsters_change_direction
 
-    move_monster_vertically_exit:
-
-    clc
-    rts
+        iny                     ; Select the dy offset.
+        lda #1                  ; dy = 1
+        sta ($86),y
+        rts
 
 move_monsters_change_direction: ; $8b=monster type
 
@@ -615,6 +633,7 @@ move_monster_horizontally:  ; $86,$87=monster table
 check_monster_can_move_vertically:  ; $86,$87=monster entry in table
                                     ; A=y position on screen
                                     ; Y=y offset in monster entry
+                                    ; Updates $80=x,$81=y
 
     sta $81                 ; $81=y position (0-23)
     dey
@@ -643,6 +662,7 @@ check_monster_can_move_horizontally:    ; $86,$87=monster entry in table
                                         ; $80=x position
                                         ; A=x position on screen
                                         ; Y=x offset in monster entry
+                                        ; Updates $81=y
 
     iny
     lda ($86),y
