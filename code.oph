@@ -855,8 +855,6 @@ player_enter:
 
 jump_to_tracking_offset:
 
-    jsr reset_monster_positions
-
     lda scroll_offset_high
     cmp tracking_high
     beq jump_to_tracking_offset_low_check
@@ -900,6 +898,8 @@ jump_to_tracking_offset:
     jmp jump_to_tracking_offset
 
     jump_to_tracking_offset_exit:
+
+    jsr reset_monster_positions
 
     jsr initial_plot_bank1
     jsr init_monster_positions
