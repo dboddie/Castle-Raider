@@ -276,12 +276,16 @@ player_move:
     bne player_move_not_jump
     clc
 
+    jsr player_can_jump
+    bcs player_move_not_jump
+
     jsr plot_player                 ; unplot
 
     jsr player_jump_animation
     jsr player_jump
 
     jsr plot_player                 ; plot
+    rts
 
     player_move_not_jump:
 
@@ -733,6 +737,7 @@ player_move_left:
     clc
     rts
 
+; Define the vertical steps and half steps for each part of a jump.
 jump_steps_y:    .byte 0,1,1,1,1,0,0,0,0
 jump_offsets_ys: .byte 0,0,0,0,1,0,0,0,0
 
@@ -744,35 +749,11 @@ player_jump:
     cmp #0                  ; If there are no rows to move then stop jumping.
         beq player_jump_check_after
 
-    lda player_y
-    sta $81
-
-    dec $81
-    clc
-
-    lda player_x
-    sta $80
-    jsr check_tile
+    jsr player_can_jump
     bcs player_jump_stop_jumping
 
-    inc $80
-
-    jsr check_tile
-    bcs player_jump_stop_jumping
-
-    lda bank_number             ; When half way across a cell, check another
-    cmp #1                      ; cell above the player since they could be
-        bne player_jump_move_up ; under one or more of three tiles.
-
-    inc $80
-
-    jsr check_tile
-    bcs player_jump_stop_jumping
-
-    player_jump_move_up:
-
-        lda $81
-        sta player_y
+    lda $81                         ; The character can move up, so update the
+    sta player_y                    ; position with the temporary y coordinate.
 
     player_jump_check_after:
     clc
@@ -797,6 +778,37 @@ player_jump:
     sta player_ys
 
     jmp check_beneath
+
+player_can_jump:
+
+    lda player_y
+    sta $81
+
+    dec $81
+    clc
+
+    lda player_x
+    sta $80
+    jsr check_tile
+    bcs player_can_jump_stop_jumping
+
+    inc $80
+
+    jsr check_tile
+    bcs player_can_jump_stop_jumping
+
+    lda bank_number             ; When half way across a cell, check another
+    cmp #1                      ; cell above the player since they could be
+    bne player_can_jump_exit    ; under one or more of three tiles.
+
+    inc $80
+
+    jmp check_tile              ; Branch and exit.
+
+    player_can_jump_exit:
+
+    player_can_jump_stop_jumping:
+    rts                         ; The carry flag should already be set.
 
 player_jump_animation:
 
