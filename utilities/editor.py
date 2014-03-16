@@ -317,18 +317,6 @@ class LevelWidget(QWidget):
                     #else:
                     #    tile_image = self.tile_images["."]
                 
-                elif tile in makelevels.breakable_order:
-                    index = makelevels.breakable_order.index(tile)
-                    tile_char = makelevels.tile_order[index]
-                    tile_image = self.tile_images[tile_char]
-                    
-                    painter.drawImage(c * 4 * self.xs, (6 + r) * 8 * self.ys,
-                                      tile_image)
-                    
-                    painter.fillRect(c * 4 * self.xs, (6 + r) * 8 * self.ys,
-                                     tile_image.width(), tile_image.height(),
-                                     QBrush(QColor(0, 0, 0, 80)))
-                
                 elif tile in self.portals:
                     tile_image = self.tile_images["."]
                     
@@ -688,26 +676,6 @@ class EditorWindow(QMainWindow):
             action = self.tilesToolBar.addAction(icon, symbol)
             action.setCheckable(True)
             self.tileGroup.addAction(action)
-        
-        # Add breakable tiles.
-        
-        for i in range(len(makelevels.breakable_order)):
-        
-            symbol = makelevels.breakable_order[i]
-            if symbol:
-            
-                image = QImage(self.tile_images[makelevels.tile_order[i]])
-                image = image.convertToFormat(QImage.Format_ARGB32_Premultiplied,
-                                              standard_palette)
-                painter = QPainter()
-                painter.begin(image)
-                painter.fillRect(image.rect(), QColor(0, 0, 0, 80))
-                painter.end()
-                
-                icon = QIcon(QPixmap.fromImage(image))
-                action = self.tilesToolBar.addAction(icon, symbol)
-                action.setCheckable(True)
-                self.tileGroup.addAction(action)
         
         # Select the first tile in the tiles toolbar.
         self.tileGroup.actions()[0].trigger()

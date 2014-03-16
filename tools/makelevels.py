@@ -40,7 +40,7 @@ tile_ref = {".": "images/blank.png",
             "X": "images/rock.png",
             "|": "images/door.png",
             "?": "images/flag.png",
-            "[": "images/broken-brick.png",
+            "[": "images/exit-gate.png",
             "]": "images/brick-alt2.png",
             "/": "images/window-topleft.png",
             "\\": "images/window-topright.png",
@@ -54,6 +54,7 @@ tile_ref = {".": "images/blank.png",
             "L": "images/key1.png",
             "M": "images/key2.png",
             "N": "images/key3.png",
+            "q": "images/exit-key.png",
             "C": "images/crown-left.png",
             "D": "images/crown-right.png",
             "E": "images/chest-left.png",
@@ -63,7 +64,7 @@ tile_ref = {".": "images/blank.png",
 
 tile_order = (".", "@", "#", "=", "+", "-", "X", "|",   # regular tiles
               "?", "[", "]", "/", "\\", "{", "I", "%",  #
-              "K", "L", "M", "N", "C", "D", "E", "F")   # collectable tiles
+              "K", "L", "M", "N", "q", "C", "D", "E", "F")   # collectable tiles
 
 flags_values = {"visible": 0x80, "collectable": 0x40, "door": 0x20, "treasure": 0x10}
 
@@ -76,9 +77,6 @@ monster_tiles = {"V": 1,    # bat (vertical)
 monster_order = ("V", "^")
 monster_axes = {"V": 1, "^": 1, "<": 0, ">": 0}
 monster_axis_flip = {"V": "<", "^": ">", "<": "V", ">": "^"}
-
-breakable_order = (None, "*", None, None, None, None, None, None,
-                   None, "~", None)
 
 special_order = "abcdefghijklmnopqrstuvwxyz012345"
 portals_order = "ZYWUTSRQPONMLKJH"
@@ -251,11 +249,6 @@ def create_level(levels_address, level_path, maximum_number_of_special_tiles,
         key = tile_order[i]
         tiles[key] = i
     
-    for i in range(len(breakable_order)):
-        key = breakable_order[i]
-        if key not in tiles:
-            tiles[key] = 48 + i
-    
     special_tile_numbers_table_size = visibility_table_size = maximum_number_of_special_tiles
     
     portal_table_size = 3 * maximum_number_of_portals
@@ -278,28 +271,17 @@ def create_level(levels_address, level_path, maximum_number_of_special_tiles,
         
         for tile, number in row:
         
-            if 48 <= tile < 64:
-                # Breakable tiles are encoded as single or double tiles.
-                while number > 0:
-                    if number >= 2:
-                        row_data += chr(tile) + chr(1)
-                        number -= 2
-                    else:
-                        row_data += chr(tile) + chr(0)
-                        break
+            # Split the span into pieces if it is too large to be
+            # represented by a single byte. Each span length is reduced by 1
+            # to enable a larger range of values to be represented. (There
+            # are no zero length spans.)
+            while number > 256:
             
-            else:
-                # Split the span into pieces if it is too large to be
-                # represented by a single byte. Each span length is reduced by 1
-                # to enable a larger range of values to be represented. (There
-                # are no zero length spans.)
-                while number > 256:
-                
-                    row_data += chr(tile) + chr(255)
-                    number -= 256
-                
-                if number > 0:
-                    row_data += chr(tile) + chr(number - 1)
+                row_data += chr(tile) + chr(255)
+                number -= 256
+            
+            if number > 0:
+                row_data += chr(tile) + chr(number - 1)
         
         if len(row_data) >= 512:
             raise LevelError, "Level %i: Row %i too long or too detailed." % (l, r)
