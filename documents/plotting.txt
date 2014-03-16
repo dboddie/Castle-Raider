@@ -361,9 +361,9 @@ started.
 Enemies
 -------
 
-The enemy table is 16 bytes long.
+The enemy table is 20 bytes long.
 
-    [t_dx0 x0 y0 dy0] [t_dx1 x1 y1 dy1] ... [t_dx15 x15 y15 dy15]
+  [t_dx0 x0 y0 dy0 ind0] [t_dx1 x1 y1 dy1 ind1] ... [t_dx15 x15 y15 dy15 ind15]
 
 Type numbers take the form
 

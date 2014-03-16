@@ -17,6 +17,7 @@
 
 .include "constants.oph"
 
+.alias monster_movement_offset          $7e
 .alias scrolled                         $7f
 .alias scroll_offset_low                $8e
 .alias scroll_offset_high               $8f
@@ -50,6 +51,7 @@ main:
     sta player_falling
     sta player_lost
     sta check_monster_tile
+    sta monster_movement_offset
     lda #9
     sta player_lives
 
@@ -75,9 +77,6 @@ main:
         bpl init_tile_visibility_loop
 
     ; Determine the left and right monster indices and offsets.
-
-    lda #0
-    sta monster_movement_counter
 
     jsr clear_banks
     lda #2
@@ -171,11 +170,7 @@ main:
         jsr plot_monsters        ; plot monsters
 
         main_loop_after_monsters:
-        clc
-
-        lda monster_movement_counter
-        adc #4
-        sta monster_movement_counter
+        main_loop_continue:
         clc
 
 ;        ; --- Switch character test code (begin) ---

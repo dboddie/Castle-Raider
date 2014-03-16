@@ -357,16 +357,10 @@ scroll_right_update_monsters:
 
         jsr create_monster_right
 
-        lda visible_monster_right_index     ; Update the visible index to refer
-        adc #4                              ; to the next slot in the monster
-        and #$0c                            ; table after the monster has been
-        sta visible_monster_right_index     ; created.
-        clc
-
     scroll_right_handle_left_edge:
 
     dec monster_left_offset
-    beq scroll_right_update_left_index ; Offset is zero - update on-screen index.
+    beq scroll_right_update_monsters_exit   ; Offset is zero.
     lda monster_left_offset
     cmp #255
     bne scroll_right_update_monsters_exit   ; Offset is > 0, so exit.
@@ -383,15 +377,6 @@ scroll_right_update_monsters:
                                     ; next span.
         clc
         rts
-
-    scroll_right_update_left_index:
-
-        clc
-
-        lda visible_monster_left_index  ; Move the on-screen index back
-        adc #4                          ; to its previous value.
-        and #$0c
-        sta visible_monster_left_index
 
     scroll_right_update_monsters_exit:
     clc
@@ -456,16 +441,7 @@ scroll_left_update_monsters:
     beq scroll_left_reset_right_offset      ; value then reset it.
 
         inc monster_right_offset            ; Otherwise, increase the offset.
-        cmp #0                              ; If it was 0, we update the visible
-        bne scroll_left_handle_left_edge    ; right index.
-
-            sec
-            lda visible_monster_right_index ; Move the on-screen index back
-            sbc #4                          ; to its previous value.
-            and #$0c
-            sta visible_monster_right_index
-            clc
-            jmp scroll_left_handle_left_edge    ; Handle the left edge.
+        jmp scroll_left_handle_left_edge    ; Handle the left edge.
 
     scroll_left_reset_right_offset:
 
@@ -499,8 +475,8 @@ scroll_left_update_monsters:
 
         inc monster_left_offset             ; Otherwise, increase the offset.
         cmp #0                              ; If it was 0, we create a monster.
-        beq scroll_left_create_left_monster
-        rts                                 ; Otherwise, exit.
+        bne scroll_left_update_monsters_exit
+        jmp create_monster_left             ; Branch and exit.
 
     scroll_left_reset_left_offset:
 
@@ -521,16 +497,7 @@ scroll_left_update_monsters:
 
         rts
 
-    scroll_left_create_left_monster:
-
-        lda visible_monster_left_index      ; Update the visible index to refer
-        sec                                 ; to the previous slot in the
-        sbc #4                              ; monster table before creating the
-        and #$0c                            ; monster.
-        sta visible_monster_left_index
-        clc
-
-        jsr create_monster_left
+    scroll_left_update_monsters_exit:
 
     clc
     rts
@@ -581,8 +548,8 @@ scroll_monsters_left:
         clc
 
         lda $88
-        adc #4
-        cmp #$10
+        adc #5
+        cmp #$14
         bne scroll_monsters_left_loop
 
     scroll_monsters_left_exit:
@@ -633,8 +600,8 @@ scroll_monsters_right:
         clc
 
         lda $88
-        adc #4
-        cmp #$10
+        adc #5
+        cmp #$14
         bne scroll_monsters_right_loop
 
     scroll_monsters_right_exit:

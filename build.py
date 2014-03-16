@@ -168,7 +168,7 @@ if __name__ == "__main__":
     monster_positions_address       = data_start
     
     # Working information about tile visibility.
-    tile_visibility_address       = monster_positions_address + 0x10
+    tile_visibility_address       = monster_positions_address + 0x14
     # Low and high bytes are adjusted by 16 bytes so that entries can be
     # addressed directly, starting with an index of 16.
     tile_visibility_low = (tile_visibility_address - 0x10) & 0xff
@@ -193,18 +193,15 @@ if __name__ == "__main__":
     tracking_y                    = player_information + 12
     
     monster_information           = player_information + 0x10
-    monster_movement_counter      = monster_information
-    monster_left_index            = monster_information + 1
-    monster_left_offset           = monster_information + 2
-    monster_left_max_offset       = monster_information + 3
-    monster_right_index           = monster_information + 4
-    monster_right_offset          = monster_information + 5
-    monster_right_max_offset      = monster_information + 6
-    visible_monster_left_index    = monster_information + 7
-    visible_monster_right_index   = monster_information + 8
+    monster_left_index            = monster_information
+    monster_left_offset           = monster_information + 1
+    monster_left_max_offset       = monster_information + 2
+    monster_right_index           = monster_information + 3
+    monster_right_offset          = monster_information + 4
+    monster_right_max_offset      = monster_information + 5
     
     # The tile type occurring at the left edge of the screen.
-    initial_row_tiles             = monster_information + 0x10
+    initial_row_tiles             = monster_information + 8
     # Indices into each row of the level data.
     row_indices                   = initial_row_tiles + 0x10
     # Initial displacements for the rows.
@@ -452,25 +449,19 @@ if __name__ == "__main__":
     
     constants_oph += (
         ".alias monster_row_address             $%x\n"
-        ".alias monster_movement_counter        $%x\n"
         ".alias monster_left_index              $%x\n"
         ".alias monster_left_offset             $%x\n"
         ".alias monster_left_max_offset         $%x\n"
         ".alias monster_right_index             $%x\n"
         ".alias monster_right_offset            $%x\n"
-        ".alias monster_right_max_offset        $%x\n"
-        ".alias visible_monster_left_index      $%x\n"
-        ".alias visible_monster_right_index     $%x\n\n"
+        ".alias monster_right_max_offset        $%x\n\n"
         ) % (monster_row_address,
-             monster_movement_counter,
              monster_left_index,
              monster_left_offset,
              monster_left_max_offset,
              monster_right_index,
              monster_right_offset,
-             monster_right_max_offset,
-             visible_monster_left_index,
-             visible_monster_right_index)
+             monster_right_max_offset)
     
     # Assemble the main game code and loader code.
     
