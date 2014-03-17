@@ -52,8 +52,15 @@ main:
     sta player_lost
     sta check_monster_tile
     sta monster_movement_offset
-    lda #9
-    sta player_lives
+
+    ldx #0
+    init_lives_loop:
+
+        jsr plot_life
+        inc player_lives
+        lda player_lives
+        cmp #10
+        bcc init_lives_loop
 
     ; Initialise the tile visibility values and erase any collected objects in
     ; the panel.
@@ -163,8 +170,7 @@ main:
         cmp #0
         bne main_loop_after_monsters
 
-        lda #19
-        jsr $fff4
+        jsr vsync
         jsr plot_monsters        ; unplot monsters
         jsr move_monsters
         jsr plot_monsters        ; plot monsters
@@ -204,8 +210,7 @@ player_move:
     ; scrolling occurs because the scrolling routine will replot the player.
     ; This needs to be optimised.
 
-    lda #19
-    jsr $fff4
+    jsr vsync
 
     jsr plot_player                 ; unplot
     jsr player_jump
@@ -347,7 +352,7 @@ check_beneath:      ; Checks beneath the character for solid tiles.
 
     check_beneath_demise_exit:
 
-    jsr player_demise
+    jmp player_demise       ; Decrease the number of lives and exit.
 
     check_beneath_solid:    ; A solid tile was found.
 
@@ -499,6 +504,7 @@ check_tile:         ; $80=x position (-16 to 56) (-16 is represented as 240)
         jmp check_tile_spans_loop
 
     check_tile_spans_endloop:
+    check_tile_common_clear_exit:
     clc                         ; In theory, we should never reach here.
 
     check_tile_exit:
@@ -525,19 +531,14 @@ check_tile_visible:             ; A=tile number
     check_tile_visible_special:
 
     cmp #$50
-    bcc check_tile_visible_not_portal
-
-    clc                         ; Portals (> 128) are not visible.
-    rts
+    bcs check_tile_common_clear_exit    ; Portals (> 128) are not visible.
 
     check_tile_visible_not_portal:
 
     tay                         ; transfer the tile number to Y
     lda ($82),y                 ; load the visibility of the tile
     cmp #$80
-    bcs check_tile_visible_next
-
-    rts                         ; Not visible, and C is clear to indicate this.
+    bcc check_tile_exit         ; Not visible, and C is clear to indicate this.
 
     check_tile_visible_next:    ; the tile is visible
     ldx $8a
@@ -609,14 +610,8 @@ make_tile_invisible:    ; Y=special tile number
 check_move_right:
 
     lda bank_number
-    cmp #1
-    bne check_move_right_continue
-
-    clc             ; If bank 2 is showing, we can move right without checking.
-    rts
-
-    check_move_right_continue:
-    clc
+    cmp #1                      ; If bank 2 is showing, we can move right
+    beq player_move_common_exit ; without checking.
 
     lda player_x
     adc #2
@@ -638,19 +633,16 @@ player_move_right:
 
     lda #0                      ; stop the player's motion
     sta player_moving
-    clc
+
+player_move_common_exit:
+    clc             
     rts
 
 check_move_left:
 
     lda bank_number
-    cmp #1
-    bne check_move_left_continue
-
-    clc             ; If bank 2 is showing, we can move left without checking.
-    rts
-
-    check_move_left_continue:
+    cmp #1                      ; If bank 2 is showing, we can move left
+    beq player_move_common_exit ; without checking.
 
     lda player_x
     sec
@@ -697,7 +689,7 @@ check_move:
 
     lda $7d                 ; If all tiles are empty then allow the move.
     cmp #0
-    beq check_move_exit_ok
+    beq player_move_common_exit
 
     lda player_falling      ; If some tiles are not empty while falling then
     cmp #0                  ; stop moving.
@@ -713,11 +705,8 @@ check_move:
 
     jsr plot_player         ; Move the player up by one tile.
     dec player_y            ; We should really check to make sure that there
-    jsr plot_player         ; is space above the player to do this.
-
-    check_move_exit_ok:
-    clc
-    rts
+    jmp plot_player         ; is space above the player to do this.
+                            ; Branch and return.
 
     check_move_exit_not_ok:
     sec
@@ -951,8 +940,7 @@ player_fall:        ; sets C if the player is moving horizontally
     cmp #0
     bne player_fall_plot
 
-    lda #19
-    jsr $fff4
+    jsr vsync
 
     player_fall_plot:
     jsr plot_player
@@ -982,16 +970,26 @@ player_drop:
 
 player_demise:
 
+    lda player_lost         ; Don't allow the routine to be entered if it has
+    cmp #0                  ; just been called.
+    bne player_demise_exit
+
     jsr plot_char       ; Unplot the character.
 
     lda #1
     sta player_lost
+    tax                 ; X=1
+
     dec player_lives
+    lda player_lives
+    jsr plot_life
 
     lda #0
     sta player_jumping
     sta player_falling
 
+    player_demise_exit:
+    sec
     rts
 
 ;track_position: ; Scroll back to the last stored position.

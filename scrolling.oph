@@ -104,10 +104,7 @@ scroll_right_update:
     bne scroll_right_update_ok_to_scroll
     lda scroll_offset_high
     cmp #level_extent_high
-    bne scroll_right_update_ok_to_scroll
-
-    clc
-    rts
+    beq scroll_right_update_common_exit
 
     scroll_right_update_ok_to_scroll:
     clc
@@ -116,8 +113,7 @@ scroll_right_update:
     sta scrolled
 
     jsr plot_bank2r
-    lda #19
-    jsr $fff4
+    jsr vsync
     jsr show_bank2
 
     jsr scroll_update_bank1_bank2
@@ -130,6 +126,7 @@ scroll_right_update:
     jsr scroll_monsters_right
     jsr plot_monsters_bank2     ; plot the monsters, too
 
+    scroll_right_update_common_exit:
     clc
     rts
 
@@ -150,8 +147,7 @@ scroll_right_update:
     jsr scroll_right
 
     jsr plot_bank1r
-    lda #19
-    jsr $fff4
+    jsr vsync
     jsr show_bank1
 
     jsr scroll_update_bank2_bank1
@@ -180,10 +176,7 @@ scroll_left_update:
     bne scroll_left_update_ok_to_scroll
     lda scroll_offset_high
     cmp #0
-    bne scroll_left_update_ok_to_scroll
-
-    clc
-    rts
+    beq scroll_left_update_common_exit
 
     scroll_left_update_ok_to_scroll:
     clc
@@ -194,8 +187,7 @@ scroll_left_update:
     jsr scroll_left
 
     jsr plot_bank2l
-    lda #19
-    jsr $fff4
+    jsr vsync
     jsr show_bank2
 
     jsr scroll_update_bank1_bank2
@@ -217,8 +209,8 @@ scroll_left_update:
     lda scroll_offset_high
     sbc #0
     sta scroll_offset_high
-    clc
 
+    scroll_left_update_common_exit:
     clc
     rts
 
@@ -229,8 +221,7 @@ scroll_left_update:
     sta scrolled
 
     jsr plot_bank1l
-    lda #19
-    jsr $fff4
+    jsr vsync
     jsr show_bank1
 
     jsr scroll_update_bank2_bank1
@@ -241,10 +232,7 @@ scroll_left_update:
 
     jsr plot_char_bank1         ; plot the player on bank 1
     jsr scroll_monsters_left
-    jsr plot_monsters_bank1     ; plot the monsters, too
-
-    clc
-    rts
+    jmp plot_monsters_bank1     ; plot the monsters, too
 
 scroll_update_bank2_bank1:
 
@@ -256,19 +244,19 @@ scroll_update_bank2_bank1:
     beq scroll_update_plot_bank1
 
     jsr player_drop
-    jmp scroll_update_animation_next
+    jmp scroll_update_common_exit
 
     scroll_update_plot_bank1:
 
     lda player_jumping
     cmp #0
-    bne scroll_update_animation_next
+    bne scroll_update_common_exit
 
     lda player_animation
     eor #1
     sta player_animation
 
-    scroll_update_animation_next:
+scroll_update_common_exit:
     clc
     rts
 
@@ -279,13 +267,9 @@ scroll_update_bank1_bank2:
 
     lda player_falling
     cmp #0
-    beq scroll_update_plot_bank2
+    beq scroll_update_common_exit
 
-    jsr player_drop
-
-    scroll_update_plot_bank2:
-    clc
-    rts
+    jmp player_drop
 
 scroll_right:   ; Scroll the screen right by decreasing the initial row offsets
                 ; until a new span needs to be shown. When this occurs, increase
@@ -379,8 +363,6 @@ scroll_right_update_monsters:
 
         inc monster_left_index      ; Increment the left index to refer to the
                                     ; next span.
-        clc
-        rts
 
     scroll_right_update_monsters_exit:
     clc

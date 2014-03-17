@@ -126,6 +126,8 @@ char_sprites = ["images/g-left1.png", "images/g-left2.png",
 monster_sprites = ["images/bat1.png", "images/bat2.png",
                  "images/spider1.png", "images/spider2.png"]
 
+life_sprites = ["images/life1.png", "images/life2.png"]
+
 
 if __name__ == "__main__":
 
@@ -149,7 +151,7 @@ if __name__ == "__main__":
     # Memory map
     memory_map = {
         "code start": 0x0e00,
-        "data start": 0x2100,
+        "data start": 0x210c,
         "tile sprites": 0x2aa0 + 0xc0,
         "character and object sprites": 0x2de0 + 0xc0,
         "bank 1 (panel)": 0x3000,
@@ -192,7 +194,7 @@ if __name__ == "__main__":
     tracking_high                 = player_information + 11
     tracking_y                    = player_information + 12
     
-    monster_information           = player_information + 0x10
+    monster_information           = player_information + 13
     monster_left_index            = monster_information
     monster_left_offset           = monster_information + 1
     monster_left_max_offset       = monster_information + 2
@@ -201,7 +203,7 @@ if __name__ == "__main__":
     monster_right_max_offset      = monster_information + 5
     
     # The tile type occurring at the left edge of the screen.
-    initial_row_tiles             = monster_information + 8
+    initial_row_tiles             = monster_information + 6
     # Indices into each row of the level data.
     row_indices                   = initial_row_tiles + 0x10
     # Initial displacements for the rows.
@@ -271,6 +273,11 @@ if __name__ == "__main__":
         makesprites.read_shifted_sprites(monster_sprites, monster_sprites_shifted_address)
     char_data += monster_sprites_data
     
+    life_sprites_address = char_area_address + len(char_data)
+    life_sprites_data, life_sprites_addresses = \
+        makesprites.read_sprites(life_sprites, life_sprites_address)
+    char_data += life_sprites_data
+    
     player_data, player_sprite_offsets = \
         makesprites.read_sprites(char_sprites, char_area_address + len(char_data))
     char_data += player_data
@@ -284,6 +291,13 @@ if __name__ == "__main__":
     top_panel_objects_bank2 = 0x59e0
     top_panel_objects_bank2_low = top_panel_objects_bank2 & 0xff
     top_panel_objects_bank2_high = top_panel_objects_bank2 >> 8
+    
+    top_panel_lives_bank1 = 0x3000 + (0x140 + 0x20)
+    top_panel_lives_bank1_low = top_panel_lives_bank1 & 0xff
+    top_panel_lives_bank1_high = top_panel_lives_bank1 >> 8
+    top_panel_lives_bank2 = 0x5800 + (0x140 + 0x20)
+    top_panel_lives_bank2_low = top_panel_lives_bank2 & 0xff
+    top_panel_lives_bank2_high = top_panel_lives_bank2 >> 8
     
     title_data = makesprites.read_title("images/title.png")
     
@@ -348,6 +362,22 @@ if __name__ == "__main__":
         ) % (left_sprites_low, left_sprites_high,
          rotated_sprites_low, rotated_sprites_high,
          right_sprites_low, right_sprites_high)
+    
+    constants_oph += (
+        ".alias life_sprite1                    $%x\n"
+        ".alias life_sprite2                    $%x\n"
+        ".alias top_panel_lives_bank1           $%04x\n"
+        ".alias top_panel_lives_bank1_low       $%02x\n"
+        ".alias top_panel_lives_bank1_high      $%02x\n"
+        ".alias top_panel_lives_bank2           $%04x\n"
+        ".alias top_panel_lives_bank2_low       $%02x\n"
+        ".alias top_panel_lives_bank2_high      $%02x\n"
+        "\n"
+        ) % (life_sprites_address, life_sprites_address + 0x10,
+             top_panel_lives_bank1,
+             top_panel_lives_bank1_low, top_panel_lives_bank1_high,
+             top_panel_lives_bank2,
+             top_panel_lives_bank2_low, top_panel_lives_bank2_high)
     
     constants_oph += (
         ".alias levels_address_low              $%02x\n"

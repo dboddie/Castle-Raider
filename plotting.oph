@@ -1473,3 +1473,73 @@ erase_collected_object:  ; Y=special tile number
 
     lda $8d
     jmp plot_collected_object_bank2
+
+life_sprites_low:  .byte <life_sprite1, <life_sprite2
+life_sprites_high: .byte >life_sprite1, >life_sprite2
+
+plot_life:              ; A=number, X=add/remove (0=add, 1=remove)
+
+    asl
+    asl
+    asl
+    asl
+    sta $8c
+    tay
+    lda #$00
+    sta $8d
+    tya
+
+    cmp #$50
+    bcc plot_life_after_row_check
+
+    clc
+    adc #$f0                    ; Add five characters less than a row to the
+    sta $8c                     ; screen address.
+    lda #$00
+    adc #0
+    sta $8d
+    clc
+
+    plot_life_after_row_check:
+
+    lda life_sprites_low,x        ; Determine the appropriate sprite address.
+    sta $70
+    lda life_sprites_high,x
+    sta $71
+
+    lda $8c
+    adc #top_panel_lives_bank1_low
+    sta $72
+    lda $8d
+    adc #top_panel_lives_bank1_high
+    sta $73
+    clc
+
+    jsr plot_life_sprite
+
+    lda $8c
+    adc #top_panel_lives_bank2_low
+    sta $72
+    lda $8d
+    adc #top_panel_lives_bank2_high
+    sta $73
+    clc
+
+    ; Fall through into the plotting routine.
+
+plot_life_sprite:
+
+    ldy #15
+    plot_life_sprite_loop:
+
+        lda ($70),y
+        sta ($72),y
+        dey
+        bpl plot_life_sprite_loop
+
+    clc
+    rts
+
+vsync:
+    lda #19
+    jmp $fff4
