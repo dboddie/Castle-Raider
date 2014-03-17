@@ -583,8 +583,8 @@ move_monster_horizontally:  ; $86,$87=monster table
 
         lda ($86),y
         sta $80                             ; Store the x position.
-        cmp #0                              ; If at the edge of the screen then
-        beq move_monsters_change_direction  ; move right next time.
+        cmp #left_limit                     ; If at the edge of the allowed
+        beq move_monsters_change_direction  ; range then move right next time.
 
         lda bank_number
         cmp #0
@@ -629,8 +629,8 @@ move_monster_horizontally:  ; $86,$87=monster table
 
         lda ($86),y
         sta $80
-        cmp #38                             ; If at the edge of the screen then
-        beq move_monsters_change_direction  ; move left next time.
+        cmp #[right_limit-2]                ; If at the edge of the allowed
+        beq move_monsters_change_direction  ; range move left next time.
 
         clc
         adc #2                      ; The monster is two cells wide.

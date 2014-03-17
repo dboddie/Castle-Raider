@@ -376,7 +376,7 @@ read_row_address:           ; X=row number
 
     rts
 
-check_tile:         ; $80=x position (-20 to 60) (-20 is represented as 236)
+check_tile:         ; $80=x position (-16 to 56) (-16 is represented as 240)
                     ; $81=y position (0-23) (measured from the top of the
                     ;           playing area, not the top row of the scenery)
                     ; $8a=0 (player's character) or $8a=1 (monsters)

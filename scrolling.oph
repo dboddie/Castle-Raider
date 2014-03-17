@@ -13,6 +13,10 @@
 ; You should have received a copy of the GNU General Public License
 ; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+; Define some limits for "visible" monster movement.
+.alias left_limit 240
+.alias right_limit 56
+
 init_scrolling:
 
     ldx #15
@@ -526,9 +530,9 @@ scroll_monsters_left:
         clc
         iny
         lda ($86),y                 ; x offset
-        cmp #60
+        cmp #right_limit
         bcc scroll_monsters_left_loop_move_monster
-        cmp #236
+        cmp #left_limit
         bcs scroll_monsters_left_loop_move_monster
 
         lda #0                      ; Clear the type in the monster table.
@@ -578,9 +582,9 @@ scroll_monsters_right:
 
         iny
         lda ($86),y                 ; x offset
-        cmp #60
+        cmp #right_limit
         bcc scroll_monsters_right_loop_move_monster
-        cmp #236
+        cmp #left_limit
         bcs scroll_monsters_right_loop_move_monster
 
         lda #0
