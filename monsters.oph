@@ -441,13 +441,11 @@ move_monster:                   ; Move just one monster, if present.
     bne move_monsters_horizontally
 
         jsr move_monster_vertically
-        jsr check_monster_player
         jmp move_monsters_loop_update_type
 
     move_monsters_horizontally:
 
         jsr move_monster_horizontally
-        jsr check_monster_player
 
     move_monsters_loop_update_type:
 
@@ -722,9 +720,6 @@ check_monster_can_move:     ; $80=x position
     rts
 
 check_monster_player:
-
-    ldy $88
-check_monster_player1:
     iny
     lda ($86),y                     ; Load monster x offset.
 
@@ -741,7 +736,7 @@ check_monster_player1:
     beq check_monster_common_exit   ; bank 2 is showing.
 
     check_monster_player_vertical:
-    clc
+
     iny
     lda ($86),y                     ; Load monster y offset.
     cmp player_y
@@ -769,7 +764,7 @@ check_player_monsters:
         cmp #0
         beq check_player_monsters_next
 
-        jsr check_monster_player1
+        jsr check_monster_player
         bcs check_monster_common_exit
 
         check_player_monsters_next:
