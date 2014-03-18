@@ -208,7 +208,6 @@ player_move:
 
     ; Whether moving or not, the player needs to be replotted before any
     ; scrolling occurs because the scrolling routine will replot the player.
-    ; This needs to be optimised.
 
     jsr vsync
 
@@ -224,10 +223,8 @@ player_move:
 
     player_move_not_moving_left:
     cmp #2
-    beq player_move_moving_right
-    rts
+    bne player_move_exit
 
-    player_move_moving_right:
     jmp player_move_right           ; jsr then rts
 
     player_move_check_fall:
@@ -236,6 +233,7 @@ player_move:
     cmp #0
     beq player_move_check_keys
 
+    player_move_exit:
     rts
 
     player_move_check_keys:
@@ -289,19 +287,15 @@ player_move:
     jsr player_jump_animation
     jsr player_jump
 
-    jsr plot_player                 ; plot
-    rts
+    jmp plot_player                 ; plot then exit
 
     player_move_not_jump:
 
     ldx #151        ; (/)
     jsr check_key
-    bne player_move_not_enter
+    bne player_move_exit
 
-    jmp player_enter
-
-    player_move_not_enter:
-    rts
+    jmp player_enter                ; Branch then exit.
 
 check_key:      ; x=key code
     lda #129    ; returns y=255 or 0
@@ -343,12 +337,8 @@ check_beneath:      ; Checks beneath the character for solid tiles.
     cmp #0
         bne check_beneath_fall_exit
 
-    lda #1
-    sta player_falling
-
-    check_beneath_fall_exit:
-    clc
-    rts
+    lda #1                      ; (Clears the Z flag.)
+    bne check_beneath_fall_exit
 
     check_beneath_demise_exit:
 
@@ -357,8 +347,9 @@ check_beneath:      ; Checks beneath the character for solid tiles.
     check_beneath_solid:    ; A solid tile was found.
 
     lda #0
-    sta player_falling
 
+    check_beneath_fall_exit:
+    sta player_falling
     clc
     rts
 
@@ -620,7 +611,7 @@ check_move_right:
     sta $81
     clc
 
-    jmp check_move  ; branch then exit
+    bcc check_move  ; branch then exit
 
 player_move_right:
 
@@ -882,7 +873,7 @@ jump_to_tracking_offset:
 
     jsr scroll_left_update_monsters
     jsr scroll_left
-    jmp jump_to_tracking_offset
+    bcc jump_to_tracking_offset         ; C should be clear.
 
     jump_to_tracking_offset_right:
 
@@ -896,7 +887,7 @@ jump_to_tracking_offset:
 
     jsr scroll_right_update_monsters
     jsr scroll_right
-    jmp jump_to_tracking_offset
+    bcc jump_to_tracking_offset         ; C should be clear.
 
     jump_to_tracking_offset_exit:
 

@@ -232,9 +232,9 @@ plot_monster:   ; $7a,$7b=sprite plotting routing for a given bank
         lda #0                  ; Only plot from the left hand edge.
         sta $8b
 
-        lda #8
+        lda #8                  ; (Clears the Z flag.)
         sta $8c
-        jmp plot_monster_plot
+        bne plot_monster_plot
 
     plot_monster_not_left:
 
@@ -248,9 +248,9 @@ plot_monster:   ; $7a,$7b=sprite plotting routing for a given bank
 
     plot_monster_x_plus_one:    ; x = 38
 
-        lda #15
+        lda #15                 ; (Clears the Z flag.)
         sta $8d
-        jmp plot_monster_plot
+        bne plot_monster_plot
 
     plot_monster_x_plus_two:    ; x = 39
 
@@ -297,8 +297,8 @@ create_monster_left:
     jsr create_monster
     bcs create_monster_common_exit
 
-    lda #254
-    jmp create_monster_store_x_pos
+    lda #254                        ; (Clears the Z flag.)
+    bne create_monster_store_x_pos
 
 create_monster_right:
 
