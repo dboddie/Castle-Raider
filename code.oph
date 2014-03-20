@@ -412,15 +412,15 @@ check_tile:         ; $80=x position (-16 to 56) (-16 is represented as 240)
     ; negative then decrement the span address and read the span before the
     ; previous span, and so on.
     
-    sec
+                                ; The carry flag is already set.
     sbc $74                     ; Subtract the initial row offset from x.
     sta $74                     ; Record the result.
-    clc
+                                ; Leave the carry flag set.
 
     check_tile_negative_loop:
 
         lda $76                 ; Refer to the previous span, p'.
-        sec
+                                ; The carry flag is already set.
         sbc #2
         sta $76
         lda $77
@@ -451,7 +451,6 @@ check_tile:         ; $80=x position (-16 to 56) (-16 is represented as 240)
     beq check_tile_spans_loop ; examining spans until we find one to the right
     bcc check_tile_spans_loop ; of the x coordinate.
 
-    ;clc
     lda initial_row_tiles,x
     jmp check_tile_visible  ; Check whether the tile is visible and return.
 
@@ -471,7 +470,6 @@ check_tile:         ; $80=x position (-16 to 56) (-16 is represented as 240)
 
         check_tile_spans_loop_found:
 
-        ;clc
         ldy #0
         lda ($76),y             ; Load the type number, t,
         jmp check_tile_visible  ; Check whether the tile is visible and return,
@@ -765,7 +763,6 @@ player_can_jump:
     sta $81
 
     dec $81
-    clc
 
     lda player_x
     sta $80

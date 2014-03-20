@@ -123,6 +123,7 @@ read_sprite_address:        ; $76,$77=span address
                                 ; (it represents a special tile)
 
     and #$1f
+
     read_sprite_address_next:   ; a regular tile
     clc
 
@@ -214,13 +215,11 @@ read_right_sprite_address:      ; A=tile number
     rts
 
 read_visible_sprite:    ; read the regular tile number for a special tile
+                        ; sets C if the tile is visible
 
     cmp #$50                        ; tiles with values of 80 and higher are
     bcs read_visible_sprite_exit    ; portals or broken tiles, both of which
                                     ; are invisible
-
-    cmp #$30
-    bcs read_visible_sprite_breakable
 
     tay
     lda ($82),y                 ; load the visibility of the tile
@@ -233,10 +232,6 @@ read_visible_sprite:    ; read the regular tile number for a special tile
 
     read_visible_sprite_visible:
     lda ($84),y                 ; load the tile number from a table
-    rts
-    
-    read_visible_sprite_breakable:
-    and #$0f
     rts
 
 plot_bank1r:
@@ -311,14 +306,14 @@ plot_bank1r:
             sta $77
             clc
 
-            jmp plot_bank1r_offset_loop
+            bcc plot_bank1r_offset_loop
 
         plot_bank1r_offset_endloop:
         clc
 
         dex
         bmi plot_bank1r_row_endloop
-        jmp plot_bank1r_row_loop
+        bpl plot_bank1r_row_loop
 
     plot_bank1r_row_endloop:
     clc
@@ -437,7 +432,7 @@ plot_bank1l:
             sta $77
             clc
 
-            jmp plot_bank1l_offset_loop
+            bcc plot_bank1l_offset_loop
 
         plot_bank1l_offset_endloop:
         clc
@@ -606,7 +601,7 @@ plot_bank2r:
             cmp #40
             bcs plot_bank2r_offset_endloop   ; break if the screen edge is reached
 
-            jmp plot_bank2r_offset_loop
+            bcc plot_bank2r_offset_loop
 
         plot_bank2r_offset_endloop:
         clc
@@ -685,7 +680,7 @@ plot_bank2l:
                 sta $73
                 clc
 
-                jmp plot_bank2l_offset_loop ; Jump to the loop so that the span
+                bcc plot_bank2l_offset_loop ; Jump to the loop so that the span
                                             ; can be plotted.
         plot_bank2l_skip_leading_tile:
 
@@ -702,7 +697,7 @@ plot_bank2l:
 
             inc $74
 
-            jmp plot_bank2l_offset_loop     ; Jump to the loop so that the span
+            bcc plot_bank2l_offset_loop     ; Jump to the loop so that the span
                                             ; can be plotted.
 
         plot_bank2l_skip_leading_merged_tile:
@@ -727,7 +722,7 @@ plot_bank2l:
 
             inc $74
 
-            jmp plot_bank2l_offset_loop_span
+            bcc plot_bank2l_offset_loop_span
 
         plot_bank2l_offset_loop:
 
@@ -745,7 +740,7 @@ plot_bank2l:
             cmp #41
             bcs plot_bank2l_offset_endloop   ; break if the screen edge is reached
 
-            jmp plot_bank2l_offset_loop_span_continue
+            bcc plot_bank2l_offset_loop_span_continue
 
             plot_bank2l_offset_loop_span:
 
@@ -921,7 +916,7 @@ initial_plot_bank1:
             sta $77
             clc
 
-            jmp initial_plot_bank1_span_loop
+            bcc initial_plot_bank1_span_loop
 
         initial_plot_bank1_span_endloop:
 
@@ -1015,13 +1010,13 @@ initial_plot_bank2:
             sta $77
             clc
 
-            jmp initial_plot_bank2_span_loop
+            bcc initial_plot_bank2_span_loop
 
         initial_plot_bank2_span_endloop:
 
         dex
         bmi initial_plot_bank2_row_endloop
-        jmp initial_plot_bank2_row_loop
+        bpl initial_plot_bank2_row_loop
 
     initial_plot_bank2_row_endloop:
     clc
@@ -1162,7 +1157,7 @@ plot_monster_bank1:       ; X=monster y offset,Y=offset of monster y offset
     adc bank1_char_rows_high,x  ; y position (high)
     sta $73
     clc
-    jmp plot_monster_both_banks
+    bcc plot_monster_both_banks
 
 plot_monster_bank2:       ; X=monster y offset,Y=offset of monster y offset
 
@@ -1205,10 +1200,6 @@ plot8x8_x0_y0:          ; $70,$71=source address
         beq plot8x8_x0_y0_exit
         dey
         jmp plot8x8_x0_y0_loop
-
-    plot8x8_x0_y0_exit:
-    clc
-    rts
 
 plot8x8_x0_y1:          ; $70,$71=source address
                         ; $72,$73=destination address
@@ -1269,9 +1260,6 @@ plot8x8_x0_y1:          ; $70,$71=source address
         tay
         jmp plot8x8_x0_y1_outer_loop
 
-    plot8x8_x0_y1_exit:
-    clc
-    rts
 
 ; Sprite data stored in memory: 00 04 08 0c 10 14 18 1c 20 24 28 2c
 
@@ -1310,9 +1298,12 @@ plot8x24_y0:            ; $70,$71=source address
         sta $71
         clc
 
-        jmp plot8x24_y0_loop
+        bcc plot8x24_y0_loop
 
-    plot8x24_y0_exit:
+plot8x8_x0_y0_exit:
+plot8x8_x0_y1_exit:
+plot8x24_y0_exit:
+plot8x24_y1_exit:
     clc
     rts
 
@@ -1400,11 +1391,7 @@ plot8x24_y1:            ; $70,$71=source address
         sta $73
         clc
 
-        jmp plot8x24_y1_loop
-
-    plot8x24_y1_exit:
-    clc
-    rts
+        bcc plot8x24_y1_loop
 
 plot_collected_object:  ; Y=special tile number
 
