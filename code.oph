@@ -40,6 +40,7 @@ main:
 
     lda #19
     sta player_x
+    lda #18
     sta player_y
     sta tracking_y      ; Set the vertical tracking position of the character.
     lda #2
@@ -306,9 +307,13 @@ check_key:      ; x=key code
 
 check_beneath:      ; Checks beneath the character for solid tiles.
                     ; Sets player_falling if none exist.
+    lda player_ys
+    cmp #0
+    bne check_beneath_fall
+    
     lda player_y
-    cmp #21
-    bcs check_beneath_demise_exit
+    cmp #20                         ; The last visible row is 22 and the top of
+    bcs check_beneath_demise_exit   ; the character is two rows above that.
 
     adc #3
     sta $81
@@ -373,16 +378,16 @@ read_row_address:           ; X=row number
     rts
 
 check_tile:         ; $80=x position (-16 to 56) (-16 is represented as 240)
-                    ; $81=y position (0-23) (measured from the top of the
+                    ; $81=y position (0-22) (measured from the top of the
                     ;           playing area, not the top row of the scenery)
                     ; $8a=0 (player's character) or $8a=1 (monsters)
                     ; returns C set if tile found or C clear if not
 
-    lda $81         ; For y positions less than 8 do not check the corresponding
-    cmp #8          ; row since there are no level spans in these rows.
+    lda $81         ; For y positions less than 7 do not check the corresponding
+    cmp #7          ; row since there are no level spans in these rows.
     bcc check_tile_exit
 
-    sbc #8
+    sbc #7
     clc
 
     tax                       ; Transfer the y coordinate to the X register.
@@ -826,8 +831,8 @@ player_enter:
     lda portal_table_address,x      ; high x
     sta tracking_high
     inx
-    lda portal_table_address,x      ; y + 8 blank rows at the top - 2 from the
-    adc #6                          ; foot to the head = 6
+    lda portal_table_address,x      ; y + 7 blank rows at the top - 2 from the
+    adc #5                          ; foot to the head = 5
     sta player_y
     sta tracking_y
 

@@ -493,8 +493,8 @@ if __name__ == "__main__":
              monster_right_offset,
              monster_right_max_offset)
     
-    char_rows = range(5, 13)
-    rows = range(13, 29)
+    char_rows = range(5, 12)
+    rows = range(12, 28)
     banks_char_rows_low = map(lambda x: (0x3000 + (x * 0x140)) & 0xff, char_rows)
     bank1_char_rows_high = map(lambda x: (0x3000 + (x * 0x140)) >> 8, char_rows)
     bank2_char_rows_high = map(lambda x: (0x5800 + (x * 0x140)) >> 8, char_rows)
