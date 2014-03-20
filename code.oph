@@ -1017,6 +1017,7 @@ player_demise:
 ;    clc
 ;    rts
 
+.include "screen.oph"
 .include "plotting.oph"
 .include "scrolling.oph"
 .include "bank_routines.oph"

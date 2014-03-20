@@ -493,9 +493,33 @@ if __name__ == "__main__":
              monster_right_offset,
              monster_right_max_offset)
     
+    char_rows = range(5, 13)
+    rows = range(13, 29)
+    banks_char_rows_low = map(lambda x: (0x3000 + (x * 0x140)) & 0xff, char_rows)
+    bank1_char_rows_high = map(lambda x: (0x3000 + (x * 0x140)) >> 8, char_rows)
+    bank2_char_rows_high = map(lambda x: (0x5800 + (x * 0x140)) >> 8, char_rows)
+    banks_rows_low = map(lambda x: (0x3000 + (x * 0x140)) & 0xff, rows)
+    bank1_rows_high = map(lambda x: (0x3000 + (x * 0x140)) >> 8, rows)
+    bank2_rows_high = map(lambda x: (0x5800 + (x * 0x140)) >> 8, rows)
+    
+    screen_oph = (
+        "banks_char_rows_low:  .byte %s\n"
+        "banks_rows_low:       .byte %s\n"
+        "bank1_char_rows_high: .byte %s\n"
+        "bank1_rows_high:      .byte %s\n"
+        "bank2_char_rows_high: .byte %s\n"
+        "bank2_rows_high:      .byte %s\n\n"
+        ) % (",".join(map(lambda x: "$%02x" % x, banks_char_rows_low)),
+             ",".join(map(lambda x: "$%02x" % x, banks_rows_low)),
+             ",".join(map(lambda x: "$%02x" % x, bank1_char_rows_high)),
+             ",".join(map(lambda x: "$%02x" % x, bank1_rows_high)),
+             ",".join(map(lambda x: "$%02x" % x, bank2_char_rows_high)),
+             ",".join(map(lambda x: "$%02x" % x, bank2_rows_high)))
+    
     # Assemble the main game code and loader code.
     
     open("constants.oph", "w").write(constants_oph)
+    open("screen.oph", "w").write(screen_oph)
     
     if machine_type == "-e":
         shutil.copy2("electron.oph", "bank_routines.oph")

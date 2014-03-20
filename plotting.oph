@@ -60,15 +60,6 @@ clear_bank:
     clc
     rts
 
-bank1_char_rows_low:  .byte $40,$80,$c0,$00,$40,$80,$c0,$00
-bank1_rows_low:  .byte  $40,$80,$c0,$00,$40,$80,$c0,$00,$40,$80,$c0,$00,$40,$80,$c0,$00
-bank1_char_rows_high: .byte $36,$37,$38,$3a,$3b,$3c,$3d,$3f
-bank1_rows_high: .byte  $40,$41,$42,$44,$45,$46,$47,$49,$4a,$4b,$4c,$4e,$4f,$50,$51,$53
-bank2_char_rows_low:  .byte $40,$80,$c0,$00,$40,$80,$c0,$00
-bank2_rows_low:  .byte  $40,$80,$c0,$00,$40,$80,$c0,$00,$40,$80,$c0,$00,$40,$80,$c0,$00
-bank2_char_rows_high: .byte $5e,$5f,$60,$62,$63,$64,$65,$67
-bank2_rows_high: .byte  $68,$69,$6a,$6c,$6d,$6e,$6f,$71,$72,$73,$74,$76,$77,$78,$79,$7b
-
 read_screen_address_bank1:  ; X=row, A=column offset
                             ; sets $72,$73
 
@@ -82,7 +73,7 @@ read_screen_address_bank1:  ; X=row, A=column offset
     clc
 
     lda $72
-    adc bank1_rows_low,x    ; Add to the screen start address for the
+    adc banks_rows_low,x    ; Add to the screen start address for the
     sta $72                 ; row, R, to get x.
     lda $73
     adc bank1_rows_high,x
@@ -104,7 +95,7 @@ read_screen_address_bank2:  ; X=row, A=column offset
     clc
 
     lda $72
-    adc bank2_rows_low,x    ; Add to the screen start address for the
+    adc banks_rows_low,x    ; Add to the screen start address for the
     sta $72                 ; row, R, to get x.
     lda $73
     adc bank2_rows_high,x
@@ -364,7 +355,7 @@ plot_bank1l:
         plot_bank1l_skip_leading_tile:
         clc
 
-            lda bank1_rows_low,x    ; Use the screen start address for the
+            lda banks_rows_low,x    ; Use the screen start address for the
             sta $72                 ; row, R, to get x.
             lda bank1_rows_high,x
             sta $73                 ; x ($72,$73)
@@ -689,7 +680,7 @@ plot_bank2l:
 
             clc                     ; Only the merged tile can be plotted.
 
-            lda bank2_rows_low,x    ; Use the screen start address for the
+            lda banks_rows_low,x    ; Use the screen start address for the
             sta $72                 ; row, R, to get x.
             lda bank2_rows_high,x
             sta $73                 ; x ($72,$73)
@@ -705,7 +696,7 @@ plot_bank2l:
         clc ; The initial offset is 0, meaning that neither the trailing tile
             ; nor the merged tile can be plotted.
 
-            lda bank2_rows_low,x    ; Use the screen start address for the
+            lda banks_rows_low,x    ; Use the screen start address for the
             sta $72                 ; row, R, to get x.
             lda bank2_rows_high,x
             sta $73                 ; x ($72,$73)
@@ -868,7 +859,7 @@ initial_plot_bank1:
         clc
         jsr read_row_address    ; sets $76,$77
 
-        lda bank1_rows_low,x
+        lda banks_rows_low,x
         sta $72
         lda bank1_rows_high,x
         sta $73                 ; x ($72,$73)
@@ -937,7 +928,7 @@ initial_plot_bank2:
         clc
         jsr read_row_address
 
-        lda bank2_rows_low,x
+        lda banks_rows_low,x
         sta $72
         lda bank2_rows_high,x
         sta $73                 ; x ($72,$73)
@@ -1096,7 +1087,7 @@ plot_char_bank1:
     asl
     asl
     asl
-    adc bank1_char_rows_low,x
+    adc banks_char_rows_low,x
     sta $72
     lda bank1_char_rows_high,x
     adc #0
@@ -1112,7 +1103,7 @@ plot_char_bank2:
     asl
     asl
     asl
-    adc bank2_char_rows_low,x
+    adc banks_char_rows_low,x
     sta $72
     lda bank2_char_rows_high,x
     adc #0
@@ -1150,7 +1141,7 @@ plot_char_bank:
 
 plot_monster_bank1:       ; X=monster y offset,Y=offset of monster y offset
 
-    lda bank1_char_rows_low,x   ; y position (low)
+    lda banks_char_rows_low,x   ; y position (low)
     adc $72
     sta $72
     lda $73
@@ -1161,7 +1152,7 @@ plot_monster_bank1:       ; X=monster y offset,Y=offset of monster y offset
 
 plot_monster_bank2:       ; X=monster y offset,Y=offset of monster y offset
 
-    lda bank2_char_rows_low,x   ; y position (low)
+    lda banks_char_rows_low,x   ; y position (low)
     adc $72
     sta $72
     lda $73
