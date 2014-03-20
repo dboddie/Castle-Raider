@@ -75,7 +75,7 @@ init_scrolling:
         adc #0
         sta $77
         clc
-        jmp init_scrolling_monster_loop
+        bcc init_scrolling_monster_loop
 
     init_scrolling_monster_next:
     clc
@@ -521,7 +521,7 @@ scroll_monsters_left:
         ldy $88
         sta ($86),y
 
-        jmp scroll_monsters_left_loop_next
+        bcc scroll_monsters_left_loop_next  ; (C should be clear.)
 
         scroll_monsters_left_loop_move_monster:
         clc
@@ -573,7 +573,7 @@ scroll_monsters_right:
         ldy $88                     ; Clear the type in the monster table.
         sta ($86),y
 
-        jmp scroll_monsters_right_loop_next
+        bcc scroll_monsters_right_loop_next ; (C should be clear.)
 
         scroll_monsters_right_loop_move_monster:
         sec

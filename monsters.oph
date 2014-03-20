@@ -54,7 +54,7 @@ init_monster_positions:
     sta $7d                         ; to find the location of the first visible
                                     ; span.
 
-    jmp init_monster_positions_create   ; Jump into the loop to skip the span
+    bcc init_monster_positions_create   ; Jump into the loop to skip the span
                                         ; length addition.
 
     init_monster_positions_loop:
@@ -287,7 +287,7 @@ create_initial_monster:             ; A=index
     sec                             ; a screen column number.
     sbc #2
     clc
-    jmp create_monster_store_x_pos
+    bcc create_monster_store_x_pos
 
 create_monster_left:
 
@@ -676,7 +676,7 @@ check_monster_can_move_vertically:  ; $86,$87=monster entry in table
     bcs check_monster_can_move_vertically_exit
     
     inc $80
-    jmp check_monster_can_move  ; Check the right tile.
+    bcc check_monster_can_move  ; Check the right tile. (C should be clear.)
 
     check_monster_can_move_vertically_exit:
     rts
