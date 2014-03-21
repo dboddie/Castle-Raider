@@ -21,6 +21,20 @@
 
 main:
 
+    jsr clear_banks
+    lda #2
+    jsr change_palette
+
+    jsr show_bank2          ; Show bank 2 since this is where the output of OS
+                            ; calls will appear.
+    ldx #0
+    title_text_loop:
+        lda title_text,x
+        jsr $ffee
+        inx
+        cpx #[title_text_end - title_text]
+        bne title_text_loop
+
     ; Wait for the SPACE key or fire button to be pressed.
     main_start_wait_loop:
 
@@ -99,7 +113,6 @@ main:
 
     jsr init_scrolling
 
-    jsr show_bank2          ; Hide the bank being plotted.
     jsr initial_plot_bank1
     jsr plot_char_bank1
 
@@ -1054,6 +1067,10 @@ player_demise:
 ;    track_position_exit:
 ;    clc
 ;    rts
+
+title_text: .byte 26, 31, 2, 20, 17, 2, "Press ", 17, 3, "SPACE/FIRE"
+            .byte     31, 6, 21, 17, 2, "to play"
+title_text_end:
 
 .include "screen.oph"
 .include "plotting.oph"
