@@ -515,6 +515,12 @@ if __name__ == "__main__":
              monster_right_offset,
              monster_right_max_offset)
     
+    scenery_rows = 16
+    extra_rows = 7
+    top_char_row, top_monster_row, top_row = 0, 0, 0
+    bottom_char_row = scenery_rows + extra_rows - 3
+    bottom_monster_row = bottom_row = scenery_rows + extra_rows - 1
+    
     char_rows = range(6, 13)
     rows = range(13, 29)
     banks_char_rows_low = map(lambda x: (0x3000 + (x * 0x140)) & 0xff, char_rows)
@@ -537,6 +543,20 @@ if __name__ == "__main__":
              ",".join(map(lambda x: "$%02x" % x, bank1_rows_high)),
              ",".join(map(lambda x: "$%02x" % x, bank2_char_rows_high)),
              ",".join(map(lambda x: "$%02x" % x, bank2_rows_high)))
+    
+    screen_oph += (
+        "; Define the vertical extent of the player area in terms of rows.\n"
+        ".alias scenery_rows %i\n"
+        ".alias extra_rows %i\n"
+        ".alias top_char_row %i\n"
+        ".alias top_monster_row %i\n"
+        ".alias top_row %i\n"
+        ".alias bottom_char_row %i\n"
+        ".alias bottom_monster_row %i\n"
+        ".alias bottom_row %i\n\n"
+        ) % (scenery_rows, extra_rows,
+             top_char_row, top_monster_row, top_row,
+             bottom_char_row, bottom_monster_row, bottom_row)
     
     # Assemble the main game code and loader code.
     

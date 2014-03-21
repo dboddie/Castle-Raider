@@ -537,7 +537,7 @@ move_monster_vertically:    ; $86,$87=monster table
     move_monster_down:
 
     lda $89                     ; Recover the y offset.
-    cmp #23
+    cmp #bottom_monster_row
     beq move_monsters_change_direction
 
         dey                     ; Select the y offset.

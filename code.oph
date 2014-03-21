@@ -339,7 +339,7 @@ check_beneath:      ; Checks beneath the character for solid tiles.
     bne check_beneath_fall
     
     lda player_y
-    cmp #20                         ; The last visible row is 22 and the top of
+    cmp #bottom_char_row            ; The last visible row is 22 and the top of
     bcs check_beneath_demise_exit   ; the character is two rows above that.
 
     adc #3
@@ -411,10 +411,10 @@ check_tile:         ; $80=x position (-16 to 56) (-16 is represented as 240)
                     ; returns C set if tile found or C clear if not
 
     lda $81         ; For y positions less than 7 do not check the corresponding
-    cmp #7          ; row since there are no level spans in these rows.
+    cmp #extra_rows ; row since there are no level spans in these rows.
     bcc check_tile_exit
 
-    sbc #7
+    sbc #extra_rows
     clc
 
     tax                       ; Transfer the y coordinate to the X register.
