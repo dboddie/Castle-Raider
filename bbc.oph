@@ -15,6 +15,9 @@
 
 show_bank1:
 
+    lda #19
+    jsr $fff4
+
     lda #12
     sta $fe00
     lda #$06
@@ -30,6 +33,9 @@ show_bank1:
     rts
 
 show_bank2:
+
+    lda #19
+    jsr $fff4
 
     lda #12
     sta $fe00

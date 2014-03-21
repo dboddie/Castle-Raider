@@ -179,7 +179,7 @@ if __name__ == "__main__":
     # The furthest that spans can be displaced to the right.
     max_row_offsets               = tile_visibility_address + maximum_number_of_special_tiles
     
-    player_information            = max_row_offsets + 0x10
+    player_information            = 0x90
     player_x                      = player_information + 0
     player_y                      = player_information + 1
     bank_number                   = player_information + 2
@@ -194,7 +194,7 @@ if __name__ == "__main__":
     tracking_high                 = player_information + 11
     tracking_y                    = player_information + 12
     
-    monster_information           = player_information + 13
+    monster_information           = 0xb0
     monster_left_index            = monster_information
     monster_left_offset           = monster_information + 1
     monster_left_max_offset       = monster_information + 2
@@ -203,7 +203,7 @@ if __name__ == "__main__":
     monster_right_max_offset      = monster_information + 5
     
     # The tile type occurring at the left edge of the screen.
-    initial_row_tiles             = monster_information + 6
+    initial_row_tiles             = max_row_offsets + 0x10
     # Indices into each row of the level data.
     row_indices                   = initial_row_tiles + 0x10
     # Initial displacements for the rows.
