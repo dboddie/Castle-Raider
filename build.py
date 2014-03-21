@@ -324,7 +324,6 @@ if __name__ == "__main__":
         )
 
     constants_oph += (
-        ".alias max_row_offsets                 $%x\n"
         ".alias player_x                        $%x\n"
         ".alias player_y                        $%x\n"
         ".alias bank_number                     $%x\n"
@@ -339,12 +338,13 @@ if __name__ == "__main__":
         ".alias tracking_high                   $%x\n"
         ".alias tracking_y                      $%x\n"
         "\n"
-        ) % (max_row_offsets, player_x, player_y, bank_number,
+        ) % (player_x, player_y, bank_number,
              player_animation, player_jumping, player_moving,
              player_falling, player_ys, player_lives, player_lost,
              tracking_low, tracking_high, tracking_y)
     
     constants_oph += (
+        ".alias max_row_offsets                 $%x\n"
         ".alias initial_row_tiles               $%x\n"
         ".alias row_indices                     $%x\n"
         ".alias initial_row_offsets             $%x\n"
@@ -356,7 +356,7 @@ if __name__ == "__main__":
         ".alias level_data_low                  $%02x\n"
         ".alias level_data_high                 $%02x\n"
         "\n"
-        ) % (initial_row_tiles, row_indices, initial_row_offsets,
+        ) % (max_row_offsets, initial_row_tiles, row_indices, initial_row_offsets,
              special_tile_numbers_address, initial_tile_visibility_address,
              portal_table_address,
              row_table_low, row_table_high, level_data_low, level_data_high)
@@ -572,6 +572,7 @@ if __name__ == "__main__":
     markers = chr(n) + markers
     
     extras_oph = constants_oph + (
+        "; Additional definitions for the loader\n\n"
         ".alias code_start_address              $%02x\n"
         ".alias code_start_low                  $%02x\n"
         ".alias code_start_high                 $%02x\n"
