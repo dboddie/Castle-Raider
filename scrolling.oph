@@ -113,7 +113,6 @@ scroll_right_update:
     sta scrolled
 
     jsr plot_bank2r
-    jsr vsync
     jsr show_bank2
 
     jsr scroll_update_bank1_bank2
@@ -147,7 +146,6 @@ scroll_right_update:
     jsr scroll_right
 
     jsr plot_bank1r
-    jsr vsync
     jsr show_bank1
 
     jsr scroll_update_bank2_bank1
@@ -187,7 +185,6 @@ scroll_left_update:
     jsr scroll_left
 
     jsr plot_bank2l
-    jsr vsync
     jsr show_bank2
 
     jsr scroll_update_bank1_bank2
@@ -221,7 +218,6 @@ scroll_left_update:
     sta scrolled
 
     jsr plot_bank1l
-    jsr vsync
     jsr show_bank1
 
     jsr scroll_update_bank2_bank1

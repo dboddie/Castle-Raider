@@ -304,6 +304,24 @@ if __name__ == "__main__":
     # Create the contents of a file containing constant values.
     
     constants_oph = (
+        ".alias monster_movement_offset         $7e\n"
+        ".alias scrolled                        $7f\n"
+        ".alias scroll_offset_low               $8e\n"
+        ".alias scroll_offset_high              $8f\n"
+        "\n"
+        "; Declare these here to make it easy to see that they are being used.\n"
+        ".alias tile_visibility_table_low       $82\n"
+        ".alias tile_visibility_table_high      $83\n"
+        ".alias special_tile_numbers_table_low  $84\n"
+        ".alias special_tile_numbers_table_high $85\n"
+        ".alias monster_positions_table_low     $86\n"
+        ".alias monster_positions_table_high    $87\n"
+        "\n"
+        ".alias check_monster_tile              $8a\n"
+        "\n"
+        )
+
+    constants_oph += (
         ".alias max_row_offsets                 $%x\n"
         ".alias player_x                        $%x\n"
         ".alias player_y                        $%x\n"

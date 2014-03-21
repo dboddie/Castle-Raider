@@ -17,21 +17,6 @@
 
 .include "constants.oph"
 
-.alias monster_movement_offset          $7e
-.alias scrolled                         $7f
-.alias scroll_offset_low                $8e
-.alias scroll_offset_high               $8f
-
-; Declare these here to make it easy to see that they are being used.
-.alias tile_visibility_table_low        $82
-.alias tile_visibility_table_high       $83
-.alias special_tile_numbers_table_low   $84
-.alias special_tile_numbers_table_high  $85
-.alias monster_positions_table_low      $86
-.alias monster_positions_table_high     $87
-
-.alias check_monster_tile               $8a
-
 ; See the end of the file for included routines.
 
 main:
