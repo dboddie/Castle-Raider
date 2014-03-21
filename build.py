@@ -179,6 +179,7 @@ if __name__ == "__main__":
     # The furthest that spans can be displaced to the right.
     max_row_offsets               = tile_visibility_address + maximum_number_of_special_tiles
     
+    # Use the Econet workspace for the player variables.
     player_information            = 0x90
     player_x                      = player_information + 0
     player_y                      = player_information + 1
@@ -194,6 +195,7 @@ if __name__ == "__main__":
     tracking_high                 = player_information + 11
     tracking_y                    = player_information + 12
     
+    # Use the filing system scratch space for the monster variables.
     monster_information           = 0xb0
     monster_left_index            = monster_information
     monster_left_offset           = monster_information + 1
@@ -511,8 +513,8 @@ if __name__ == "__main__":
              monster_right_offset,
              monster_right_max_offset)
     
-    char_rows = range(5, 12)
-    rows = range(12, 28)
+    char_rows = range(6, 13)
+    rows = range(13, 29)
     banks_char_rows_low = map(lambda x: (0x3000 + (x * 0x140)) & 0xff, char_rows)
     bank1_char_rows_high = map(lambda x: (0x3000 + (x * 0x140)) >> 8, char_rows)
     bank2_char_rows_high = map(lambda x: (0x5800 + (x * 0x140)) >> 8, char_rows)
