@@ -1,0 +1,44 @@
+; Copyright (C) 2014 David Boddie <david@boddie.org.uk>
+;
+; This program is free software: you can redistribute it and/or modify
+; it under the terms of the GNU General Public License as published by
+; the Free Software Foundation, either version 3 of the License, or
+; (at your option) any later version.
+;
+; This program is distributed in the hope that it will be useful,
+; but WITHOUT ANY WARRANTY; without even the implied warranty of
+; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+; GNU General Public License for more details.
+;
+; You should have received a copy of the GNU General Public License
+; along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+read_joystick_axis:     ; X=axis (1=horizontal, 2=vertical)
+                        ; Returns 0=left/up or 1=right/down with carry set if
+                        ; valid input is present; otherwise carry is clear.
+    lda #128
+    jsr $fff4
+    cpy #160
+    bcs read_joystick_positive
+    cpy #97
+    bcc read_joystick_negative
+
+    clc                 ; Return with carry clear to indicate no input.
+    rts
+
+    read_joystick_positive:
+    lda #1
+    rts
+
+    read_joystick_negative:
+    lda #0
+    sec
+    rts
+
+read_joystick_fire:     ; Returns with carry set if a button is pressed;
+                        ; otherwise returns with carry clear.
+    lda #128
+    ldx #0
+    jsr $fff4
+    cpx #$01            ; If X>=1 then set the carry flag.
+    rts

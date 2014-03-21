@@ -21,6 +21,28 @@
 
 main:
 
+    ; Wait for the SPACE key or fire button to be pressed.
+    main_start_wait_loop:
+
+        jsr read_joystick_fire
+        bcc main_start_wait_loop_key_check
+
+        lda #1
+        sta using_joystick
+        clc
+        bcc main_init
+
+        main_start_wait_loop_key_check:
+
+        ldx #157            ; (SPACE)
+        jsr check_key
+        bne main_start_wait_loop
+
+    lda #0
+    sta using_joystick
+
+    main_init:
+
     ; Set character's initial position and status.
 
     lda #19
@@ -165,19 +187,6 @@ main:
         main_loop_continue:
         clc
 
-;        ; --- Switch character test code (begin) ---
-;        ldx #157            ; (SPACE)
-;        jsr check_key
-;        bne not_space
-;
-;        clc
-;        jsr plot_char
-;        jsr switch_characters
-;        jsr plot_char
-;
-;        not_space:
-        ; --- Switch character test code (end) ---
-
         ldx #143            ; (Escape)
         jsr check_key
         bne main_loop
@@ -217,25 +226,47 @@ player_move:
 
     lda player_falling
     cmp #0
-    beq player_move_check_keys
+    beq player_move_check_input
 
     player_move_exit:
     rts
 
-    player_move_check_keys:
+    player_move_check_input:
 
-    lda #0
+    lda #0                          ; Reset the movement flag.
     sta player_moving
+
+    lda using_joystick
+    cmp #0
+    beq player_move_check_keys
+
+    ldx #1
+    jsr read_joystick_axis
+    bcc player_move_check_joystick_vertical
+
+    cmp #1
+    beq player_move_checked_left
+    bne player_move_checked_right
+
+    player_move_check_joystick_vertical:
+
+    ldx #2
+    jsr read_joystick_axis
+    bcc player_move_check_jump
+
+    cmp #1
+    beq player_move_checked_jump
+    jmp player_enter
+
+    player_move_check_keys:
 
     ldx #158        ; (Z)
     jsr check_key
     bne player_move_not_left
 
+    player_move_checked_left:
+
     jsr player_move_left   ; allow the player to jump while moving
-
-    lda #1                  ; 1=moving left
-    sta player_moving
-
     jmp player_move_check_jump
 
     player_move_not_left:
@@ -245,10 +276,9 @@ player_move:
     bne player_move_not_right
     clc
 
-    jsr player_move_right   ; allow the player to jump while moving
+    player_move_checked_right:
 
-    lda #2                  ; 2=moving right
-    sta player_moving
+    jsr player_move_right   ; allow the player to jump while moving
 
     ; jmp player_move_check_jump (fall through)
 
@@ -260,10 +290,22 @@ player_move:
     cmp #0
     bne player_move_not_jump
 
+    lda using_joystick
+    cmp #0
+    beq player_move_check_jump_key
+    
+    jsr read_joystick_fire
+    bcc player_move_exit
+    bcs player_move_checked_jump
+
+    player_move_check_jump_key:
+
     ldx #182        ; (Return)
     jsr check_key
     bne player_move_not_jump
     clc
+
+    player_move_checked_jump:
 
     jsr player_can_jump
     bcs player_move_not_jump
@@ -606,6 +648,9 @@ player_move_right:
     jsr check_move_right
     bcs player_move_right_cannot_move
 
+    lda #2                      ; 2=moving right
+    sta player_moving
+
     jmp scroll_right_update     ; branch then exit
 
     player_move_right_cannot_move:
@@ -696,7 +741,10 @@ player_move_left:
     jsr check_move_left
     bcs player_move_left_cannot_move
 
-    jmp scroll_left_update     ; branch then exit
+    lda #1                      ; 1=moving left
+    sta player_moving
+
+    jmp scroll_left_update      ; branch then exit
 
     player_move_left_cannot_move:
 
@@ -1012,3 +1060,4 @@ player_demise:
 .include "scrolling.oph"
 .include "bank_routines.oph"
 .include "monsters.oph"
+.include "joystick.oph"

@@ -194,6 +194,7 @@ if __name__ == "__main__":
     tracking_low                  = player_information + 10
     tracking_high                 = player_information + 11
     tracking_y                    = player_information + 12
+    using_joystick                = player_information + 13
     
     # Use the filing system scratch space for the monster variables.
     monster_information           = 0xb0
@@ -337,11 +338,12 @@ if __name__ == "__main__":
         ".alias tracking_low                    $%x\n"
         ".alias tracking_high                   $%x\n"
         ".alias tracking_y                      $%x\n"
+        ".alias using_joystick                  $%x\n"
         "\n"
         ) % (player_x, player_y, bank_number,
              player_animation, player_jumping, player_moving,
              player_falling, player_ys, player_lives, player_lost,
-             tracking_low, tracking_high, tracking_y)
+             tracking_low, tracking_high, tracking_y, using_joystick)
     
     constants_oph += (
         ".alias max_row_offsets                 $%x\n"
