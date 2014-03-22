@@ -502,8 +502,7 @@ draw_title:
             clc
 
             lda $83                         ; if we encounter a 0xff padding byte
-            cmp #0                          ; then increment X to skip past it
-            beq draw_title_loop_no_increment
+            beq draw_title_loop_no_increment; then increment X to skip past it
 
             inx
 
@@ -672,8 +671,7 @@ update_column:      ; $72,$73=address of column top
     sta ($72),y
 
     lda $8f                 ; if not running as an interrupt, jump straight
-    cmp #0                  ; into the column loop
-    beq update_column_loop
+    beq update_column_loop  ; into the column loop
 
     lda #<update_column_loop
     sta $7a
@@ -740,7 +738,6 @@ update_column_loop:
         sta $81
 
         lda $8f
-        cmp #0
         beq update_column_loop
 
         rts                 ; keep $7a,$7b the same (loop)
@@ -769,8 +766,7 @@ update_column_loop:
     sta ($76),y
 
     lda $8f                 ; if not running as an interrupt, jump straight
-    cmp #0                  ; into the next part of the routine
-    beq update_title3
+    beq update_title3       ; into the next part of the routine
 
     lda #<update_title3
     sta $7a
@@ -791,9 +787,8 @@ update_title3:
     sta $73
     clc
 
-    lda $83                         ; if we encounter a 0xff padding byte
-    cmp #0                          ; then increment X to skip past it
-    beq update_title_loop_no_increment
+    lda $83                             ; if we encounter a 0xff padding byte
+    beq update_title_loop_no_increment  ; then increment X to skip past it
 
     inc $75
 
@@ -814,7 +809,6 @@ update_title3:
     inc $84
 
     lda $8f
-    cmp #0
     bne update_title3_break
 
     jmp update_title2

@@ -127,7 +127,6 @@ read_monster_row_address:   ; A=index
 plot_monsters:
 
     lda bank_number
-    cmp #0
     bne plot_monsters_bank2
     beq plot_monsters_bank1
 
@@ -167,7 +166,6 @@ plot_monsters_pre_loop:
 
         tay
         lda ($86),y                 ; type, animation and dx
-        cmp #0
         beq plot_monsters_loop_next
 
         jsr plot_monster
@@ -326,8 +324,8 @@ create_monster:                     ; A=index
     jsr read_monster_row_address
     ldy #0
     lda ($76),y                     ; Read the monster type.
-    cmp #0                          ; If no monster is defined then exit;
-    beq create_monster_no_monster   ; otherwise create the monster.
+    beq create_monster_no_monster   ; If no monster is defined then exit;
+                                    ; otherwise create the monster.
 
     tay                             ; Temporarily store the type.
 
@@ -338,7 +336,6 @@ create_monster:                     ; A=index
     create_monster_index_loop:
 
         lda monster_positions_address,x ; Look for an empty slot.
-        cmp #0
         bne create_monster_index_loop_not_empty
 
         stx $7c                         ; Temporarily store any unused slots.
@@ -391,7 +388,6 @@ create_monster:                     ; A=index
 
     tya                             ; Recover the type.
     and #monster_data_axis_bit
-    cmp #0
     beq create_monster_store_type
 
     lda #$40                        ; Set the axis bit (vertical motion).
@@ -429,8 +425,8 @@ move_monster:                   ; Move just one monster, if present.
     ldy monster_movement_offset
 
     lda ($86),y                 ; Load the type, animation flag and dx.
-    cmp #0                      ; If the slot is empty then this is zero,
-    beq move_monsters_next      ; so we move to the next monster and exit.
+    beq move_monsters_next      ; If the slot is empty then this is zero,
+                                ; so we move to the next monster and exit.
 
     eor #monster_animation_bit  ; Flip the animation bit.
     sta $8b                     ; Temporarily store the type/dx byte.
@@ -477,16 +473,14 @@ move_monster_vertically:    ; $86,$87=monster table
 
     lda $8b                     ; Recover the type.
     and #monster_direction_bit
-    cmp #$00
-    bne move_monster_down_check
+    bne move_monster_down_check ; If not zero then the monster is moving down.
 
     ; Upward motion
 
     iny                         ; Select the dy value.
     lda ($86),y
-    cmp #0                      ; If we are aligned with a cell then
-    beq move_monster_up         ; check that we can move.
-
+    beq move_monster_up         ; If we are aligned with a cell then
+                                ; check that we can move.
         lda #0                      ; Otherwise, set dy = 0 and exit.
         sta ($86),y
         clc
@@ -495,7 +489,6 @@ move_monster_vertically:    ; $86,$87=monster table
     move_monster_up:
 
     lda $89                     ; Recover the y offset.
-    cmp #0
     beq move_monsters_change_direction
 
         sec
@@ -519,8 +512,7 @@ move_monster_vertically:    ; $86,$87=monster table
     ; Downward motion
 
     iny                         ; Select the dy value.
-    lda ($86),y
-    cmp #0                      ; If we are aligned with a cell then
+    lda ($86),y                 ; If we are aligned with a cell then
     beq move_monster_down       ; check that we can move.
 
         lda #0                      ; Otherwise, set dy = 0.
@@ -581,7 +573,6 @@ move_monster_horizontally:  ; $86,$87=monster table
         beq move_monsters_change_direction  ; range then move right next time.
 
         lda bank_number
-        cmp #0
         bne move_monster_horizontally_check_left
 
         clc
@@ -599,7 +590,6 @@ move_monster_horizontally:  ; $86,$87=monster table
     sta $8b
 
     and #monster_dx_bit
-    cmp #0
     beq move_monster_horizontally_exit
 
     lda ($86),y
@@ -640,7 +630,6 @@ move_monster_horizontally:  ; $86,$87=monster table
     sta $8b
 
     and #monster_dx_bit
-    cmp #0
     bne move_monster_horizontally_exit
 
     clc
@@ -731,8 +720,7 @@ check_monster_player:
     bcs check_monster_common_exit
 
     check_monster_player_bank2:
-    lda bank_number
-    cmp #0                          ; x = 17,20 is only a potential hit if
+    lda bank_number                 ; x = 17,20 is only a potential hit if
     beq check_monster_common_exit   ; bank 2 is showing.
 
     check_monster_player_vertical:
@@ -761,7 +749,6 @@ check_player_monsters:
 
         sty $88
         lda ($86),y
-        cmp #0
         beq check_player_monsters_next
 
         jsr check_monster_player

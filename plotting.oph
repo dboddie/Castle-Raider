@@ -463,7 +463,6 @@ plot_bank2r:
         sta $78
 
         lda $74
-        cmp #0
         beq plot_bank2r_row_loop_skip_leading
         cmp #41
         bcc plot_bank2r_row_loop_plot_leading
@@ -522,9 +521,9 @@ plot_bank2r:
             ldy #1
             lda ($76),y                 ; Load the number of tiles minus 1, n - 1.
             sta $79                     ; temp (n - 1)
-            cmp #0                      ; If there is only one tile in the
-            beq plot_bank2r_offset_next  ; span, move to the next span,
-                                        ; otherwise plot a continuation tile.
+            beq plot_bank2r_offset_next ; If there is only one tile in the span,
+                                        ; move to the next span, otherwise plot a
+                                        ; continuation tile.
 
             lda $78
             jsr read_rotated_sprite_address
@@ -744,8 +743,8 @@ plot_bank2l:
             ldy #1
             lda ($76),y                 ; Load the number of tiles minus 1, n - 1.
             sta $79                     ; temp (n - 1)
-            cmp #0                      ; If there is only one tile in the
-            beq plot_bank2l_offset_next ; span, move to the next span,
+            beq plot_bank2l_offset_next ; If there is only one tile in the
+                                        ; span, move to the next span,
                                         ; otherwise plot a trailing tile.
             clc
             lda $74
@@ -868,7 +867,6 @@ initial_plot_bank1:
         sta $74
 
         lda initial_row_offsets,x
-        cmp #0
         beq initial_plot_bank1_span_loop
         sta $78
         dec $78
@@ -937,8 +935,7 @@ initial_plot_bank2:
         sta $74
         sta $79
 
-        lda initial_row_offsets,x
-        cmp #0                              ; If at the start of a span, just
+        lda initial_row_offsets,x           ; If at the start of a span, just
         beq initial_plot_bank2_span_loop    ; go straight into the loop.
         sta $78                             ; Otherwise, store a decremented
         dec $78                             ; span length.
@@ -1021,7 +1018,6 @@ initial_plot_bank2_tile_loop:   ; $74=column
     cmp #40
     beq initial_plot_bank2_span_endloop
     lda $78
-    cmp #0
     beq initial_plot_bank_tile_endloop
     ; fall through
 
@@ -1050,7 +1046,6 @@ initial_plot_bank_tile_loop:
     cmp #40
     beq initial_plot_bank_tile_loop_span_endloop1
     lda $78
-    cmp #0
     beq initial_plot_bank_tile_endloop
 
     dec $78         ; one tile less to plot
@@ -1076,7 +1071,6 @@ plot_char:
 plot_player:
 
     lda bank_number
-    cmp #0
     beq plot_char_bank1
     bne plot_char_bank2
 
@@ -1115,7 +1109,6 @@ plot_char_bank2:
 plot_char_bank:
 
     lda player_lost
-    cmp #0
     beq plot_char_bank_plot
     rts
 
@@ -1173,7 +1166,6 @@ plot_monster_bank2:       ; X=monster y offset,Y=offset of monster y offset
 
     iny
     lda ($86),y                 ; dy offset
-    cmp #0
     bne plot8x8_x0_y1
     ; fall through
 

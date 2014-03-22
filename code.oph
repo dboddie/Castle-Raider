@@ -139,11 +139,9 @@ main:
         main_loop_check_lost:
 
         lda player_lost
-        cmp #0
         beq main_loop_check_jump
 
             lda player_lives
-            cmp #0
             beq main_loop_endloop
 
             jsr clear_banks             ; Clear both banks and show the first.
@@ -162,15 +160,13 @@ main:
         main_loop_check_jump:
 
         lda player_jumping          ; Is the character jumping?
-        cmp #0                      ; If so then check for input, which might.
-        bne main_loop_allow_movement ; be ignored.
-
+        bne main_loop_allow_movement ; If so then check for input, which might
+                                     ; be ignored.
             jsr check_beneath       ; If not, then check below the character.
 
         main_loop_check_fall:
 
         lda player_falling          ; Is the character falling?
-        cmp #0
         beq main_loop_allow_movement    ; No, so allow movement.
 
             jsr player_fall             ; Yes, so move them downwards.
@@ -188,7 +184,6 @@ main:
         main_loop_next:
 
         lda scrolled
-        cmp #0
         bne main_loop_after_monsters
 
         jsr vsync
@@ -211,7 +206,6 @@ main:
 player_move:
 
     lda player_jumping
-    cmp #0
     beq player_move_check_fall
 
     ; Whether moving or not, the player needs to be replotted before any
@@ -238,7 +232,6 @@ player_move:
     player_move_check_fall:
 
     lda player_falling
-    cmp #0
     beq player_move_check_input
 
     player_move_exit:
@@ -250,7 +243,6 @@ player_move:
     sta player_moving
 
     lda using_joystick
-    cmp #0
     beq player_move_check_keys
 
     ldx #1
@@ -300,11 +292,9 @@ player_move:
     player_move_check_jump:
 
     lda player_jumping
-    cmp #0
     bne player_move_not_jump
 
     lda using_joystick
-    cmp #0
     beq player_move_check_jump_key
     
     jsr read_joystick_fire
@@ -348,7 +338,6 @@ check_key:      ; x=key code
 check_beneath:      ; Checks beneath the character for solid tiles.
                     ; Sets player_falling if none exist.
     lda player_ys
-    cmp #0
     bne check_beneath_fall
     
     lda player_y
@@ -368,9 +357,8 @@ check_beneath:      ; Checks beneath the character for solid tiles.
     bcs check_beneath_solid
 
     lda bank_number         ; When half way across a cell, check another cell
-    cmp #1                  ; beneath the player since they could be standing
-    bne check_beneath_fall  ; on one or more of three tiles.
-
+    beq check_beneath_fall  ; beneath the player since they could be standing
+                            ; on one or more of three tiles.
     clc
     inc $80
     jsr check_tile
@@ -379,8 +367,7 @@ check_beneath:      ; Checks beneath the character for solid tiles.
     check_beneath_fall:
 
     lda player_falling
-    cmp #0
-        bne check_beneath_fall_exit
+    bne check_beneath_fall_exit
 
     lda #1                      ; (Clears the Z flag.)
     bne check_beneath_fall_exit
@@ -600,7 +587,6 @@ check_tile_visible:             ; A=tile number
     eor #$01                    ; check the corresponding collectable tile
     tay                         ; (00DtnnnN)
     lda ($82),y
-    cmp #0
     bne check_tile_visible_exit ; if visible (i.e. not collected) then exit
 
     ldy $8c                     ; restore the special tile number (00Dtnnnn)
@@ -700,7 +686,6 @@ check_move:
     sta $7d         ; the player's top row, the order of bits is 0000tmb[f] for
                     ; top, middle, bottom and an optional falling bit.
     lda player_falling
-    cmp #0
     beq check_move_loop
 
     inc $7c         ; If the player is falling then we need to check an
@@ -725,15 +710,12 @@ check_move:
         bpl check_move_loop
 
     lda $7d                 ; If all tiles are empty then allow the move.
-    cmp #0
     beq player_move_common_exit
 
     lda player_falling      ; If some tiles are not empty while falling then
-    cmp #0                  ; stop moving.
     bne check_move_exit_not_ok
 
     lda player_jumping      ; If some tiles are not empty while jumping then
-    cmp #0                  ; stop moving.
     bne check_move_exit_not_ok
 
     lda $7d                 ; If more than the lowest tile is blocked then
@@ -775,8 +757,8 @@ player_jump:
     ldx player_jumping      ; Load the number of rows to move.
     lda jump_steps_y,x
 
-    cmp #0                  ; If there are no rows to move then stop jumping.
-        beq player_jump_check_after
+    beq player_jump_check_after     ; If there are no rows to move then stop
+                                    ; jumping.
 
     jsr player_can_jump
     bcs player_jump_stop_jumping
@@ -826,9 +808,8 @@ player_can_jump:
     bcs player_can_jump_stop_jumping
 
     lda bank_number             ; When half way across a cell, check another
-    cmp #1                      ; cell above the player since they could be
-    bne player_can_jump_exit    ; under one or more of three tiles.
-
+    beq player_can_jump_exit    ; cell above the player since they could be
+                                ; under one or more of three tiles.
     inc $80
 
     jmp check_tile              ; Branch and exit.
@@ -976,7 +957,6 @@ player_fall:        ; sets C if the player is moving horizontally
     ; replotted because redrawing because scrolling does not occur.
 
     lda scrolled
-    cmp #0
     bne player_fall_plot
 
     jsr vsync
@@ -1010,8 +990,7 @@ player_drop:
 player_demise:
 
     lda player_lost         ; Don't allow the routine to be entered if it has
-    cmp #0                  ; just been called.
-    bne player_demise_exit
+    bne player_demise_exit  ; just been called.
 
     jsr plot_char       ; Unplot the character.
 

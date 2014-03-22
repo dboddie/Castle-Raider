@@ -95,9 +95,8 @@ init_scrolling:
 
 scroll_right_update:
 
-    lda bank_number
-    cmp #1              ; showing the second bank?
-    beq scroll_right_update_show_bank1
+    lda bank_number                 ; showing the second bank?
+    bne scroll_right_update_show_bank1
 
     lda scroll_offset_low
     cmp #level_extent_low
@@ -165,15 +164,12 @@ scroll_right_update:
 
 scroll_left_update:
 
-    lda bank_number
-    cmp #1              ; showing the second bank?
-    beq scroll_left_update_show_bank1
+    lda bank_number                     ; showing the second bank?
+    bne scroll_left_update_show_bank1
 
     lda scroll_offset_low
-    cmp #0
     bne scroll_left_update_ok_to_scroll
     lda scroll_offset_high
-    cmp #0
     beq scroll_left_update_common_exit
 
     scroll_left_update_ok_to_scroll:
@@ -236,7 +232,6 @@ scroll_update_bank2_bank1:
     jsr plot_monsters_bank2     ; unplot the monsters, too
 
     lda player_falling
-    cmp #0
     beq scroll_update_plot_bank1
 
     jsr player_drop
@@ -245,7 +240,6 @@ scroll_update_bank2_bank1:
     scroll_update_plot_bank1:
 
     lda player_jumping
-    cmp #0
     bne scroll_update_common_exit
 
     lda player_animation
@@ -262,7 +256,6 @@ scroll_update_bank1_bank2:
     jsr plot_monsters_bank1     ; unplot the monsters, too
 
     lda player_falling
-    cmp #0
     beq scroll_update_common_exit
 
     jmp player_drop
@@ -276,8 +269,8 @@ scroll_right:   ; Scroll the screen right by decreasing the initial row offsets
     scroll_right_loop:
 
         lda initial_row_offsets,x
-        cmp #0                              ; Is the current offset zero?
-        beq scroll_right_loop_next_offset   ; If so, update the current span.
+        beq scroll_right_loop_next_offset   ; Is the current offset zero?
+                                            ; If so, update the current span.
 
         dec initial_row_offsets,x   ; Otherwise, decrease the offset.
         dex
@@ -456,8 +449,8 @@ scroll_left_update_monsters:
     beq scroll_left_reset_left_offset   ; then reset it.
 
         inc monster_left_offset             ; Otherwise, increase the offset.
-        cmp #0                              ; If it was 0, we create a monster.
-        bne scroll_left_update_monsters_exit
+        cmp #0
+        bne scroll_left_update_monsters_exit; If it was 0, we create a monster.
         jmp create_monster_left             ; Branch and exit.
 
     scroll_left_reset_left_offset:
@@ -494,7 +487,6 @@ scroll_monsters_left:
 
         tay
         lda ($86),y                 ; type, animation flag and dx
-        cmp #0
         beq scroll_monsters_left_loop_next
 
         ; Move the monster right on screen.
@@ -547,7 +539,6 @@ scroll_monsters_right:
 
         tay
         lda ($86),y                 ; type, animation flag and dx
-        cmp #0
         beq scroll_monsters_right_loop_next
 
         ; Move the monster left on screen.
