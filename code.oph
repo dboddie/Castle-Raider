@@ -72,6 +72,7 @@ main:
     sta player_moving
     sta player_falling
     sta player_lost
+    sta player_lives
     sta check_monster_tile
     sta monster_movement_offset
 
@@ -180,8 +181,6 @@ main:
 
         main_loop_check_monsters:
         jsr check_player_monsters
-
-        main_loop_next:
 
         lda scrolled
         bne main_loop_after_monsters

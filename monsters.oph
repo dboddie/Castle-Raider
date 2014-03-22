@@ -721,17 +721,34 @@ check_monster_player:
 
     check_monster_player_bank2:
     lda bank_number                 ; x = 17,20 is only a potential hit if
+    cmp #1
     beq check_monster_common_exit   ; bank 2 is showing.
 
     check_monster_player_vertical:
 
+    lda player_y                    ; Check for the top of the character.
+    asl
+    adc player_ys                   ; Store the y position in terms of half
+    sta $81                         ; rows.
+
     iny
     lda ($86),y                     ; Load monster y offset.
-    cmp player_y
-    bcc check_monster_common_exit
-    sbc #3
+    asl                             ; Convert it to half rows.
+    iny
+    adc ($86),y                     ; Add it to the monster's ys value.
+
+    adc #1                          ; Add haly the monster's height to the
+                                    ; offset to help with comparison using
+                                    ; its bottom edge.
+
+    cmp $81                         ; Compare to the character's top edge.
+    bcc check_monster_common_exit   ; Exit if above the character. This means
+                                    ; that the bottom edge could be aligned
+                                    ; with the character's top edge.
+
+    sbc #8                          ; Check for the character's bottom edge.
     clc
-    cmp player_y
+    cmp $81
     bcs check_monster_common_exit
 
     jmp player_demise               ; Decrease the number of lives and exit.
