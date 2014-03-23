@@ -709,22 +709,21 @@ check_monster_can_move:     ; $80=x position
     rts
 
 check_monster_player:
+
+    lda ($86),y                     ; Load monster type and dx value.
+    and #monster_dx_bit
+    lsr
+    sta $80
+
     iny
     lda ($86),y                     ; Load monster x offset.
+    asl                             ; Convert to half columns.
+    adc $80                         ; Add dx to x.
 
-    cmp #17
-    bcc check_monster_common_exit
-    beq check_monster_player_bank2
-    cmp #21
-    bcc check_monster_player_vertical
-    bcs check_monster_common_exit
-
-    check_monster_player_bank2:
-    lda bank_number                 ; x = 17,20 is only a potential hit if
-    cmp #1
-    beq check_monster_common_exit   ; bank 2 is showing.
-
-    check_monster_player_vertical:
+    cmp #35                         ; Compare the right edge to the character's
+    bcc check_monster_common_exit   ; left edge and exit if too far left.
+    cmp #42                         ; Compare the left edge to the character's
+    bcs check_monster_common_exit   ; right edge and exit if too far right.
 
     lda player_y                    ; Check for the top of the character.
     asl
