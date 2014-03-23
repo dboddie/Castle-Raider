@@ -736,7 +736,7 @@ check_monster_player:
     iny
     adc ($86),y                     ; Add it to the monster's ys value.
 
-    adc #1                          ; Add haly the monster's height to the
+    adc #1                          ; Add half the monster's height to the
                                     ; offset to help with comparison using
                                     ; its bottom edge.
 
@@ -745,9 +745,9 @@ check_monster_player:
                                     ; that the bottom edge could be aligned
                                     ; with the character's top edge.
 
-    sbc #8                          ; Check for the character's bottom edge.
-    clc
-    cmp $81
+    sbc #7                          ; Check for the character's bottom edge
+    clc                             ; (six half rows plus the half row already
+    cmp $81                         ; added above).
     bcs check_monster_common_exit
 
     jmp player_demise               ; Decrease the number of lives and exit.
