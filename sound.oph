@@ -1,0 +1,47 @@
+; Copyright (C) 2014 David Boddie <david@boddie.org.uk>
+;
+; This program is free software: you can redistribute it and/or modify
+; it under the terms of the GNU General Public License as published by
+; the Free Software Foundation, either version 3 of the License, or
+; (at your option) any later version.
+;
+; This program is distributed in the hope that it will be useful,
+; but WITHOUT ANY WARRANTY; without even the implied warranty of
+; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+; GNU General Public License for more details.
+;
+; You should have received a copy of the GNU General Public License
+; along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+sounds_low:  .byte <demise_sound, <item_sound, <jump_sound, <step_sound
+sounds_high: .byte >demise_sound, >item_sound, >jump_sound, >step_sound
+
+demise_sound:   .byte 1,0, 1,0, 160,0, 6,0
+item_sound:     .byte $13,0, 2,0, 160,0, 4,0
+jump_sound:     .byte $13,0, 3,0, 50,0, 2,0
+step_sound:     .byte $01,0, 241,0
+  step_pitch:   .byte               0,0
+  step_duration:.byte                   1,0
+
+play_step_sound:    ; A=row number
+
+    asl
+    sta $80
+    lda #40
+    sec
+    sbc $80
+    sta step_pitch
+    clc
+
+    ldx #3          ; Drop through into the next routine.
+
+play_sound:     ; X=sound number
+
+    lda sounds_high,x
+    tay
+    lda sounds_low,x
+    tax
+    lda #7
+    jsr $fff1
+
+    rts

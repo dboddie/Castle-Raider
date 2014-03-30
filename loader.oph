@@ -1,4 +1,4 @@
-; Copyright (C) 2011 David Boddie <david@boddie.org.uk>
+; Copyright (C) 2014 David Boddie <david@boddie.org.uk>
 ;
 ; This program is free software: you can redistribute it and/or modify
 ; it under the terms of the GNU General Public License as published by
@@ -121,6 +121,24 @@ main:
         inx
         cpx #[title_text_end - title_text]
         bne title_text_loop
+
+    ; Define ENVELOPEs.
+    lda #0
+    sta $70
+    define_envelopes_loop:
+
+        ldx $70
+        lda envelopes_high,x
+        tay
+        lda envelopes_low,x
+        tax
+        lda #8
+        jsr $fff1
+
+        inc $70
+        lda $70
+        cmp #4
+        bne define_envelopes_loop
 
     ; Configure the interrupt routine.
 
@@ -399,9 +417,6 @@ switch_characters:
     clc
     rts
 
-
-
-
 tiles_block: .byte <tiles_file_name, >tiles_file_name
              .byte sprite_area_low, sprite_area_high, 0, 0
              .byte sprite_area_low, sprite_area_high, 0, 0
@@ -444,6 +459,13 @@ code_file_name: .byte "CODE", 13
 
 message_text: .byte 10, 10, " Choose a character"
 message_text_end:
+
+envelopes_low:  .byte <demise_envelope, <item_envelope, <jump_envelope
+envelopes_high: .byte >demise_envelope, >item_envelope, >jump_envelope
+
+demise_envelope:    .byte 1,2,252,250,0,15,15,0,126,0,0,130,126,126
+item_envelope:      .byte 2,2,10,254,2,6,2,2,126,0,0,130,126,126
+jump_envelope:      .byte 3,1,20,10,5,2,4,4,126,0,0,130,126,126
 
 init_load_window_vdu_bytes: .byte 28,0,30,19,26,12
 

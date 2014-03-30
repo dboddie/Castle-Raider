@@ -312,6 +312,9 @@ player_move:
     jsr player_can_jump
     bcs player_move_not_jump
 
+    ldx #2                          ; jump sound
+    jsr play_sound
+
     jsr plot_player                 ; unplot
 
     jsr player_jump_animation
@@ -377,7 +380,13 @@ check_beneath:      ; Checks beneath the character for solid tiles.
 
     check_beneath_solid:    ; A solid tile was found.
 
-    lda #0
+    lda player_falling          ; If the character is not falling then exit.
+    beq check_beneath_fall_exit
+
+    lda player_y                ; Play the step sound.
+    jsr play_step_sound
+
+    lda #0                      ; Reset the falling flag.
 
     check_beneath_fall_exit:
     sta player_falling
@@ -612,7 +621,10 @@ check_tile_collect_treasure:
     check_tile_collect_object:
 
     jsr plot_collected_object       ; show the item of treasure in the header
-    jmp make_tile_invisible         ; make all tiles of this type invisible
+    jsr make_tile_invisible         ; make all tiles of this type invisible
+
+    ldx #1                          ; item sound
+    jmp play_sound
 
 check_tile_visible_exit:
 
@@ -723,8 +735,10 @@ check_move:
 
     jsr plot_player         ; Move the player up by one tile.
     dec player_y            ; We should really check to make sure that there
-    jmp plot_player         ; is space above the player to do this.
-                            ; Branch and return.
+    jsr plot_player         ; is space above the player to do this.
+
+    lda player_y            ; Play the step sound.
+    jmp play_step_sound     ; Branch and return.
 
     check_move_exit_not_ok:
     sec
@@ -1005,6 +1019,9 @@ player_demise:
     sta player_jumping
     sta player_falling
 
+    ldx #0                          ; demise sound
+    jsr play_sound
+
     player_demise_exit:
     sec
     rts
@@ -1056,3 +1073,4 @@ title_text_end:
 .include "bank_routines.oph"
 .include "monsters.oph"
 .include "joystick.oph"
+.include "sound.oph"
