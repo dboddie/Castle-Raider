@@ -203,13 +203,31 @@ main:
 
         ldx #200            ; (P)
         jsr check_key
-        bne main_loop_check_escape
+        bne main_loop_no_pause
 
         main_loop_pause_loop:
         
             ldx #201        ; (O)
             jsr check_key
             bne main_loop_pause_loop
+
+        main_loop_no_pause:
+
+        ldx #174            ; (S)
+        jsr check_key
+        bne main_loop_check_quiet
+
+        ldx #0              ; Enable sound (X=0).
+        jsr disable_sound
+
+        main_loop_check_quiet:
+
+        ldx #239            ; (Q)
+        jsr check_key
+        bne main_loop_check_escape
+
+        ldx #1              ; Disable sound (X=1).
+        jsr disable_sound
 
         main_loop_check_escape:
         ldx #143            ; (Escape)

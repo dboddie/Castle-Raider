@@ -35,3 +35,9 @@ play_sound:     ; X=sound number
     jsr $fff1
 
     rts
+
+disable_sound:  ; X=1 (disable); X=0 (enable)
+
+    lda #210
+    ldy #0
+    jmp $fff4   ; optimise away the rts
