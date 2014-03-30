@@ -14,26 +14,16 @@
 ; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 sounds_low:  .byte <demise_sound, <item_sound, <jump_sound, <step_sound
+             .byte <door_sound, <portal_sound
 sounds_high: .byte >demise_sound, >item_sound, >jump_sound, >step_sound
+             .byte >door_sound, >portal_sound
 
-demise_sound:   .byte 1,0, 1,0, 160,0, 6,0
-item_sound:     .byte $13,0, 2,0, 160,0, 4,0
-jump_sound:     .byte $13,0, 3,0, 50,0, 2,0
-step_sound:     .byte $01,0, 241,0
-  step_pitch:   .byte               0,0
-  step_duration:.byte                   1,0
-
-play_step_sound:    ; A=row number
-
-    asl
-    sta $80
-    lda #40
-    sec
-    sbc $80
-    sta step_pitch
-    clc
-
-    ldx #3          ; Drop through into the next routine.
+demise_sound:   .byte 1,0, 1,0, 160,0, 6,0      ; 6 * 50ms
+item_sound:     .byte $13,0, 2,0, 160,0, 4,0    ; 4 * 50ms
+jump_sound:     .byte $13,0, 3,0, 50,0, 2,0     ; 2 * 50ms
+step_sound:     .byte $01,0, 241,0, 0,0, 1,0    ; 50ms
+door_sound:     .byte $11,0, 4,0, 0,0, 4,0      ; 200ms
+portal_sound:   .byte $11,0, 5,0, 10,0, 2,0     ; 100ms
 
 play_sound:     ; X=sound number
 

@@ -142,6 +142,13 @@ main:
         lda player_lost
         beq main_loop_check_jump
 
+            lda #25                     ; Wait for half a second.
+            sta $80
+            main_loop_lost_loop:
+                jsr vsync
+                dec $80
+                bpl main_loop_lost_loop
+
             lda player_lives
             beq main_loop_endloop
 
@@ -194,6 +201,17 @@ main:
         main_loop_continue:
         clc
 
+        ldx #200            ; (P)
+        jsr check_key
+        bne main_loop_check_escape
+
+        main_loop_pause_loop:
+        
+            ldx #201        ; (O)
+            jsr check_key
+            bne main_loop_pause_loop
+
+        main_loop_check_escape:
         ldx #143            ; (Escape)
         jsr check_key
         bne main_loop
@@ -383,8 +401,8 @@ check_beneath:      ; Checks beneath the character for solid tiles.
     lda player_falling          ; If the character is not falling then exit.
     beq check_beneath_fall_exit
 
-    lda player_y                ; Play the step sound.
-    jsr play_step_sound
+    ldx #3                      ; Play the step sound.
+    jsr play_sound
 
     lda #0                      ; Reset the falling flag.
 
@@ -597,6 +615,9 @@ check_tile_visible:             ; A=tile number
     lda ($82),y
     bne check_tile_visible_exit ; if visible (i.e. not collected) then exit
 
+    ldx #4                      ; door sound
+    jsr play_sound
+
     ldy $8c                     ; restore the special tile number (00Dtnnnn)
     jmp make_tile_invisible     ; make all tiles of that type invisible and exit
 
@@ -735,10 +756,8 @@ check_move:
 
     jsr plot_player         ; Move the player up by one tile.
     dec player_y            ; We should really check to make sure that there
-    jsr plot_player         ; is space above the player to do this.
-
-    lda player_y            ; Play the step sound.
-    jmp play_step_sound     ; Branch and return.
+    jmp plot_player         ; is space above the player to do this.
+                            ; Branch and return.
 
     check_move_exit_not_ok:
     sec
@@ -887,6 +906,11 @@ player_enter:
     jsr change_palette              ; Change the palette using the value stored
                                     ; in $70.
 
+    ldx #5
+    jsr play_sound                  ; Play the portal sound.
+
+                                    ; Fall through to the following routine.
+
 jump_to_tracking_offset:
 
     lda scroll_offset_high
@@ -1004,8 +1028,6 @@ player_demise:
 
     lda player_lost         ; Don't allow the routine to be entered if it has
     bne player_demise_exit  ; just been called.
-
-    jsr plot_char       ; Unplot the character.
 
     lda #1
     sta player_lost

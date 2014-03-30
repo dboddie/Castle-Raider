@@ -1108,8 +1108,8 @@ plot_char_bank2:
 
 plot_char_bank:
 
-    lda player_lost
-    beq plot_char_bank_plot
+    lda player_lost             ; Don't plot the character if the player has
+    beq plot_char_bank_plot     ; just lost a life.
     rts
 
     plot_char_bank_plot:
