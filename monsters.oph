@@ -708,55 +708,6 @@ check_monster_can_move:     ; $80=x position
     ldy $8d
     rts
 
-check_monster_player:
-
-    lda ($86),y                     ; Load monster type and dx value.
-    and #monster_dx_bit
-    lsr
-    sta $80
-
-    iny
-    lda ($86),y                     ; Load monster x offset.
-    asl                             ; Convert to half columns.
-    adc $80                         ; Add dx to x.
-
-    cmp #35                         ; Compare the right edge to the character's
-    bcc check_monster_common_exit   ; left edge and exit if too far left.
-    cmp #42                         ; Compare the left edge to the character's
-    bcs check_monster_common_exit   ; right edge and exit if too far right.
-
-    lda player_y                    ; Check for the top of the character.
-    asl
-    adc player_ys                   ; Store the y position in terms of half
-    sta $81                         ; rows.
-
-    iny
-    lda ($86),y                     ; Load monster y offset.
-    asl                             ; Convert it to half rows.
-    iny
-    adc ($86),y                     ; Add it to the monster's ys value.
-
-    adc #1                          ; Add half the monster's height to the
-                                    ; offset to help with comparison using
-                                    ; its bottom edge.
-
-    cmp $81                         ; Compare to the character's top edge.
-    bcc check_monster_common_exit   ; Exit if above the character. This means
-                                    ; that the bottom edge could be aligned
-                                    ; with the character's top edge.
-
-    sbc #7                          ; Check for the character's bottom edge
-    clc                             ; (six half rows plus the half row already
-    cmp $81                         ; added above).
-    bcs check_monster_common_exit
-
-    jmp player_demise               ; Decrease the number of lives and exit.
-
-check_monster_common_exit:
-
-    clc
-    rts
-
 check_player_monsters:
 
     ldy #0
@@ -764,11 +715,49 @@ check_player_monsters:
     check_player_monsters_loop:
 
         sty $88
-        lda ($86),y
-        beq check_player_monsters_next
+        lda ($86),y                     ; Load monster type and dx value.
+        beq check_player_monsters_next  ; If none present, check the next one.
 
-        jsr check_monster_player
-        bcs check_monster_common_exit
+            and #monster_dx_bit
+            lsr
+            sta $80
+
+            iny
+            lda ($86),y                     ; Load monster x offset.
+            asl                             ; Convert to half columns.
+            adc $80                         ; Add dx to x.
+
+            cmp #35                         ; Compare the right edge to the character's
+            bcc check_player_monsters_next  ; left edge and exit if too far left.
+            cmp #42                         ; Compare the left edge to the character's
+            bcs check_player_monsters_next  ; right edge and exit if too far right.
+
+            lda player_y                    ; Check for the top of the character.
+            asl
+            adc player_ys                   ; Store the y position in terms of half
+            sta $81                         ; rows.
+
+            iny
+            lda ($86),y                     ; Load monster y offset.
+            asl                             ; Convert it to half rows.
+            iny
+            adc ($86),y                     ; Add it to the monster's ys value.
+
+            adc #1                          ; Add half the monster's height to the
+                                            ; offset to help with comparison using
+                                            ; its bottom edge.
+
+            cmp $81                         ; Compare to the character's top edge.
+            bcc check_player_monsters_next  ; Exit if above the character. This means
+                                            ; that the bottom edge could be aligned
+                                            ; with the character's top edge.
+
+            sbc #7                          ; Check for the character's bottom edge
+            clc                             ; (six half rows plus the half row already
+            cmp $81                         ; added above).
+            bcs check_player_monsters_next
+
+            jmp player_demise               ; Decrease the number of lives and exit.
 
         check_player_monsters_next:
         clc
@@ -779,3 +768,8 @@ check_player_monsters:
         beq check_monster_common_exit
         tay
         bne check_player_monsters_loop
+
+check_monster_common_exit:
+
+    clc
+    rts
