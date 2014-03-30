@@ -1,0 +1,29 @@
+Sound
+-----
+
+According to the Electron Advanced User Guide (page 212), the counter at 0xfe06
+can be used to generate sounds when bit 1 of 0xfe07 is set. The formula for
+calculating the frequency using the counter value, v, is as follows:
+
+    frequency = 1000000 / (16 * (v + 1)) Hz
+
+If we know the frequency we want, the value required can be determined using
+the formula:
+
+    v = 1000000 / (16 * frequency) - 1
+
+According to Wikipedia [1], the first A above middle C is 440 Hz, so the value
+required to generate this note is
+
+    v = 1000000 / (16 * 440) - 1
+    v = 141
+
+We can generate values for many of the standard notes using another formula [2]
+from Wikipedia:
+
+    f(n) = 2**((n - 49)/12) * 440 Hz
+
+where n = 49 is the first A above middle C, which is itself n = 40.
+
+[1] https://en.wikipedia.org/wiki/Scientific_pitch_notation
+[2] https://en.wikipedia.org/wiki/Piano_key_frequencies
