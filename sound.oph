@@ -13,11 +13,7 @@
 ; You should have received a copy of the GNU General Public License
 ; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-sounds_low:  .byte <demise_sound, <item_sound, <jump_sound, <step_sound
-             .byte <door_sound, <portal_sound
-sounds_high: .byte >demise_sound, >item_sound, >jump_sound, >step_sound
-             .byte >door_sound, >portal_sound
-
+sounds:
 demise_sound:   .byte 1,0, 1,0, 160,0, 6,0      ; 6 * 50ms
 item_sound:     .byte $13,0, 2,0, 160,0, 4,0    ; 4 * 50ms
 jump_sound:     .byte $13,0, 3,0, 50,0, 2,0     ; 2 * 50ms
@@ -27,10 +23,16 @@ portal_sound:   .byte $11,0, 5,0, 10,0, 2,0     ; 100ms
 
 play_sound:     ; X=sound number
 
-    lda sounds_high,x
-    tay
-    lda sounds_low,x
+    txa
+    asl
+    asl
+    asl
+    adc #<sounds
     tax
+    lda #0
+    adc #>sounds
+    tay
+    clc
     lda #7
     jsr $fff1
 

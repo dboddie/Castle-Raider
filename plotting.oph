@@ -63,14 +63,7 @@ clear_bank:
 read_screen_address_bank1:  ; X=row, A=column offset
                             ; sets $72,$73
 
-    asl                     ; Multiply o by 8
-    asl
-    asl
-    sta $72
-    lda #0
-    adc #0
-    sta $73
-    clc
+    jsr read_screen_address_low
 
     lda $72
     adc banks_rows_low,x    ; Add to the screen start address for the
@@ -82,8 +75,7 @@ read_screen_address_bank1:  ; X=row, A=column offset
 
     rts
 
-read_screen_address_bank2:  ; X=row, A=column offset
-                            ; sets $72,$73=screen address
+read_screen_address_low:
 
     asl                     ; Multiply o by 8
     asl
@@ -93,6 +85,12 @@ read_screen_address_bank2:  ; X=row, A=column offset
     adc #0
     sta $73
     clc
+    rts
+
+read_screen_address_bank2:  ; X=row, A=column offset
+                            ; sets $72,$73=screen address
+
+    jsr read_screen_address_low
 
     lda $72
     adc banks_rows_low,x    ; Add to the screen start address for the
@@ -110,13 +108,9 @@ read_sprite_address:        ; $76,$77=span address
     cmp #$10
     bcc read_sprite_address_next
 
-    jsr read_visible_sprite     ; check whether the sprite is visible
-                                ; (it represents a special tile)
-
-    and #$1f
+    jsr read_and_mask_visible_sprite
 
     read_sprite_address_next:   ; a regular tile
-    clc
 
     asl
     asl
@@ -130,18 +124,23 @@ read_sprite_address:        ; $76,$77=span address
     clc
     rts
 
+read_and_mask_visible_sprite:
+
+    jsr read_visible_sprite     ; check whether the sprite is visible
+                                ; (it represents a special tile)
+    and #$1f
+    clc
+    rts
+
 read_left_sprite_address:       ; A=tile number
                                 ; sets $70,$71=sprite address
 
     cmp #$10
     bcc read_left_sprite_address_next
 
-    jsr read_visible_sprite     ; check whether the sprite is visible
-                                ; (it represents a special tile)
-    and #$1f
+    jsr read_and_mask_visible_sprite
 
     read_left_sprite_address_next:  ; a regular tile
-    clc
 
     asl
     asl
@@ -161,12 +160,9 @@ read_rotated_sprite_address:    ; A=tile number
     cmp #$10
     bcc read_rotated_sprite_address_next
 
-    jsr read_visible_sprite     ; check whether the sprite is visible
-                                ; (it represents a special tile)
-    and #$1f
+    jsr read_and_mask_visible_sprite
 
     read_rotated_sprite_address_next:   ; a regular tile
-    clc
 
     asl
     asl
@@ -186,12 +182,9 @@ read_right_sprite_address:      ; A=tile number
     cmp #$10
     bcc read_right_sprite_address_next
 
-    jsr read_visible_sprite     ; check whether the sprite is visible
-                                ; (it represents a special tile)
-    and #$1f
+    jsr read_and_mask_visible_sprite
 
     read_right_sprite_address_next: ; a regular tile
-    clc
 
     asl
     asl
