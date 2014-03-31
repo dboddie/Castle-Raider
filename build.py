@@ -151,7 +151,7 @@ if __name__ == "__main__":
     # Memory map
     memory_map = {
         "code start": 0x0e00,
-        "data start": 0x210c,
+        "data start": 0x2140,
         "tile sprites": 0x2aa0 + 0xc0,
         "character and object sprites": 0x2de0 + 0xc0,
         "bank 1 (panel)": 0x3000,
@@ -166,18 +166,7 @@ if __name__ == "__main__":
     
     data_start = memory_map["data start"]
     
-    # Monster positions
-    monster_positions_address       = data_start
-    
-    # Working information about tile visibility.
-    tile_visibility_address       = monster_positions_address + 0x14
-    # Low and high bytes are adjusted by 16 bytes so that entries can be
-    # addressed directly, starting with an index of 16.
-    tile_visibility_low = (tile_visibility_address - 0x10) & 0xff
-    tile_visibility_high = (tile_visibility_address - 0x10) >> 8
-    
-    # The furthest that spans can be displaced to the right.
-    max_row_offsets               = tile_visibility_address + maximum_number_of_special_tiles
+    # Global variables
     
     # Use the Econet workspace for the player variables.
     player_information            = 0x90
@@ -205,6 +194,22 @@ if __name__ == "__main__":
     monster_right_offset          = monster_information + 4
     monster_right_max_offset      = monster_information + 5
     
+    # Working data
+    # Place working data in page C (the user defined characters buffer).
+    
+    # Monster positions
+    monster_positions_address       = 0xc00
+    
+    # Working information about tile visibility.
+    tile_visibility_address       = monster_positions_address + 0x14
+    # Low and high bytes are adjusted by 16 bytes so that entries can be
+    # addressed directly, starting with an index of 16.
+    tile_visibility_low = (tile_visibility_address - 0x10) & 0xff
+    tile_visibility_high = (tile_visibility_address - 0x10) >> 8
+    
+    # The furthest that spans can be displaced to the right.
+    max_row_offsets               = tile_visibility_address + maximum_number_of_special_tiles
+    
     # The tile type occurring at the left edge of the screen.
     initial_row_tiles             = max_row_offsets + 0x10
     # Indices into each row of the level data.
@@ -213,7 +218,7 @@ if __name__ == "__main__":
     initial_row_offsets           = row_indices + 0x10
     
     # Level data
-    level_data_start = initial_row_offsets + 0x10
+    level_data_start = data_start
     
     # Visibility flags for special tiles
     special_tile_numbers_address  = level_data_start
