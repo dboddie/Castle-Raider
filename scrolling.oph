@@ -103,7 +103,15 @@ scroll_right_update:
     bne scroll_right_update_ok_to_scroll
     lda scroll_offset_high
     cmp #level_extent_high
+    bne scroll_right_update_ok_to_scroll
+
+    lda player_falling
     beq scroll_right_update_common_exit
+
+    jmp player_fall_plot        ; If the character is falling then call the
+                                ; appropriate routine. This is normally assumed
+                                ; to have been done in the scrolling routing.
+                                ; Branch then exit.
 
     scroll_right_update_ok_to_scroll:
     clc
@@ -234,8 +242,7 @@ scroll_update_bank2_bank1:
     lda player_falling
     beq scroll_update_plot_bank1
 
-    jsr player_drop
-    jmp scroll_update_common_exit
+    jmp player_drop
 
     scroll_update_plot_bank1:
 
