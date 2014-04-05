@@ -128,33 +128,22 @@ plot_monsters:
 
     lda bank_number
     bne plot_monsters_bank2
-    beq plot_monsters_bank1
 
 plot_monsters_bank1:            ; Entry point for plotting monsters on bank 1.
 
-    jsr set_monsters_bank1
+    lda #<plot_monster_bank1
+    sta $7a
+    lda #>plot_monster_bank1
+    sta $7b
     jmp plot_monsters_pre_loop
 
 plot_monsters_bank2:            ; Entry point for plotting monsters on bank 2.
 
-    jsr set_monsters_bank2
-    jmp plot_monsters_pre_loop
-
-set_monsters_bank1:             ; General routine for setting the monster
-                                ; plotting routine. Could be moved into
-    lda #<plot_monster_bank1    ; plot_monsters_bank1 later.
-    sta $7a
-    lda #>plot_monster_bank1
-    sta $7b
-    rts
-
-set_monsters_bank2:             ; General routine for setting the monster
-                                ; plotting routine. Could be moved into
-    lda #<plot_monster_bank2    ; plot_monsters_bank2 later.
+    lda #<plot_monster_bank2
     sta $7a
     lda #>plot_monster_bank2
     sta $7b
-    rts
+    jmp plot_monsters_pre_loop
 
 plot_monsters_pre_loop:
 
@@ -182,7 +171,7 @@ plot_monsters_pre_loop:
     clc
     rts
 
-plot_monster:   ; $7a,$7b=sprite plotting routing for a given bank
+plot_monster:   ; $7a,$7b=sprite plotting routine for a given bank
                 ; (set up in set_monsters_bank1 or set_monsters_bank2)
                 ; A=monster type
                 ; Y=offset into monster table (0, 5, 10, 15)

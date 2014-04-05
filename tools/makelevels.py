@@ -62,7 +62,7 @@ tile_ref = {".": "images/blank.png",
 
 # Collectable items after the first 16 tiles are ignored by the editor.
 
-tile_order = (".", "@", "#", "=", "+", "-", "X", "|",   # regular tiles
+tile_order = (".", "@", "#", "+", "=", "-", "X", "|",   # regular tiles
               "?", "[", "]", "/", "\\", "{", "I", "%",  #
               "K", "L", "M", "N", "q", "C", "D", "E", "F")   # collectable tiles
 

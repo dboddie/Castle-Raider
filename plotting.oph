@@ -1506,3 +1506,64 @@ plot_life_sprite:
 vsync:
     lda #19
     jmp $fff4
+
+plot_title:
+
+    lda #0
+    sta $80                 ; Set the row number.
+    sta $81                 ; Set the data offset.
+
+    plot_title_row_loop:
+
+        lda #0                              ; Initialise the column number.
+        sta $7a
+
+        plot_title_column_loop:
+
+            ldx $81
+            lda title_data_address,x        ; Load the current byte.
+            sta $7b
+
+            plot_title_byte_loop:
+
+                lda $7b
+                and #$03
+                jsr read_sprite_address_next    ; Use an internal label to look
+                                                ; up the sprite address.
+
+                lda $7a                         ; Load the column number.
+                ldx $80                         ; Load the row number.
+                jsr read_screen_address_bank2   ; Sets $72,$73 from A and X.
+
+                lda $73
+                sec
+                sbc #$05
+                sta $73
+                clc
+
+                jsr plot_tile_bank
+
+                lda $7b
+                ror
+                ror
+                clc
+                sta $7b
+
+                inc $7a                         ; Increment the column number.
+                lda $7a
+                and #$03
+                bne plot_title_byte_loop        ; Loop if column % 4 != 0.
+
+            inc $81                     ; Move to the next byte in the data.
+
+            lda $7a
+            cmp #40                     ; Continue plotting until the end of
+            bne plot_title_column_loop  ; the row.
+
+        inc $80
+        lda $80
+        cmp #title_rows
+        bne plot_title_row_loop ; Continue plotting until the end of the title.
+
+    clc
+    rts

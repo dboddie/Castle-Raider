@@ -15,9 +15,11 @@
 
 .org $3500
 
-.include "constants.oph"
+.include "loader-constants.oph"
 
 main:
+    jsr move_title_data     ; Move the title data into the temporary data area.
+
     lda #22         ; MODE 5
     jsr $ffee
     lda #5
@@ -478,6 +480,50 @@ title_text: .byte " Copyright (C) 2014", 13, 10
             .byte " for Retro Software", 13, 10
             .byte "GNU GPL v.3 or later"
 title_text_end:
+
+; In-game title data handling routines and data.
+
+move_title_data:
+
+    ldx #0
+    ldy #0
+
+    lda #<title_data
+    sta $70
+    lda #>title_data
+    sta $71
+
+    lda #<title_data_address
+    sta $72
+    lda #>title_data_address
+    sta $73
+
+    move_title_data_loop:
+
+        clc
+        lda ($70),y
+        sta ($72),y
+
+        lda $70
+        adc #1
+        sta $70
+        lda $71
+        adc #0
+        sta $71
+        clc
+
+        inc $72 ; The destination address falls within a page, so we only need
+                ; to update the lower byte of the address.
+        inx
+        cpx #title_length
+        bne move_title_data_loop
+
+    clc
+    rts
+
+.include "title-data.oph"
+
+; Flag drawing routines
 
 .alias title_start_address $5e48
 .alias title_upper_address $5e4c

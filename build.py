@@ -217,6 +217,12 @@ if __name__ == "__main__":
     # Initial displacements for the rows.
     initial_row_offsets           = row_indices + 0x10
     
+    # Store the in-game title data above the working data - this is done in the
+    # loader.
+    title_data_address = initial_row_offsets + 0x10
+    
+    # Permanent data
+    
     # Level data
     level_data_start = data_start
     
@@ -308,6 +314,34 @@ if __name__ == "__main__":
     top_panel_lives_bank2_high = top_panel_lives_bank2 >> 8
     
     title_data = makesprites.read_title("images/title.png")
+    
+    # Encode the in-game title data.
+    title_data_oph = "title_data:\n"
+    
+    title_rows = 0
+    for line in open("title.txt").readlines():
+    
+        line = line.rstrip("\n")
+        title_data_oph += ".byte "
+        
+        for i in range(0, 40, 4):
+        
+            byte = 0
+            shift = 0
+            for char in line[i:i + 4]:
+                byte = byte | (".@#+".index(char) << shift)
+                shift += 2
+            
+            title_data_oph += "$%02x" % byte
+            if i < 36:
+                title_data_oph += ", "
+        
+        title_data_oph += "\n"
+        title_rows += 1
+    
+    title_data_oph += "\ntitle_end:\n.alias title_length [title_end - title_data]\n"
+    
+    open("title-data.oph", "w").write(title_data_oph)
     
     # Create the contents of a file containing constant values.
     
@@ -520,6 +554,12 @@ if __name__ == "__main__":
              monster_right_offset,
              monster_right_max_offset)
     
+    constants_oph += (
+        ".alias title_data_address              $%x\n"
+        ".alias title_rows                      %i\n"
+        "\n"
+        ) % (title_data_address, title_rows)
+    
     scenery_rows = 16
     extra_rows = 7
     top_char_row, top_monster_row, top_row = 0, 0, 0
@@ -613,7 +653,7 @@ if __name__ == "__main__":
         ) % ((code_start,) + address_length_end(code_start, code) + \
              (len(markers),))
     
-    open("constants.oph", "w").write(extras_oph)
+    open("loader-constants.oph", "w").write(extras_oph)
     
     system("ophis loader.oph -o LOADER")
     loader_code = open("LOADER").read() + markers + title_data
