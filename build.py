@@ -208,6 +208,7 @@ if __name__ == "__main__":
     
     # Memory map
     memory_map = {
+        "working area": 0xb00,
         "code start": 0x0e00,
         "data start": 0x2140,
         "tile sprites": 0x2aa0 + 0xc0,
@@ -257,7 +258,7 @@ if __name__ == "__main__":
     # defined characters buffer).
     
     # Monster positions
-    monster_positions_address       = 0xb00
+    monster_positions_address     = memory_map["working area"]
     
     # Working information about tile visibility.
     tile_visibility_address       = monster_positions_address + 0x14
@@ -281,6 +282,8 @@ if __name__ == "__main__":
     title_data_address = initial_row_offsets + 0x10
     
     in_game_title_text_address = title_data_address + (title_rows * 10)
+    
+    working_end = in_game_title_text_address + in_game_title_text_length
     
     # Permanent data
     
@@ -715,10 +718,19 @@ if __name__ == "__main__":
     #    print info[0], len(data), len(compressed), data == uncompressed
     
     loader_size = os.stat("LOADER")[stat.ST_SIZE]
+    print
     print "%i bytes (%04x) of loader code" % (loader_size, loader_size)
     
     code_size = os.stat("CODE")[stat.ST_SIZE]
     print "%i bytes (%04x) of code" % (code_size, code_size)
+    print
+    
+    # Calculate the amount of working space used.
+    
+    print "Working data area runs from 0b00 to %04x (%i bytes free)" % (working_end, 0xd00 - working_end)
+    print
+    
+    # Calculate the amount of memory used for each file.
     
     code_finish = code_start + code_size
     print "CODE    runs from %04x to %04x" % (code_start, code_finish),
@@ -728,8 +740,6 @@ if __name__ == "__main__":
         sys.exit(1)
     else:
         print " (%i bytes free)" % (data_start - code_finish)
-    
-    print "data    runs from %04x to %04x" % (data_start, level_data_start)
     
     levels_finish = levels_address + len(level_data)
     print "LEVELS  runs from %04x to %04x" % (levels_address, levels_finish),

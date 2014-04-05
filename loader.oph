@@ -475,13 +475,13 @@ portal_envelope:    .byte 5,1,4,0,252,1,1,1,126,0,0,130,126,126
 
 init_load_window_vdu_bytes: .byte 28,0,30,19,26,12
 
-title_text: .byte 17, 1
+title_text: .byte 17, 3
             .byte " Copyright (C) 2014", 13, 10
             .byte 17, 2
             .byte "    David Boddie", 13, 10
-            .byte 17, 3
-            .byte " for Retro Software", 13, 10
             .byte 17, 2
+            .byte " for Retro Software", 13, 10
+            .byte 17, 1
             .byte "GNU GPL v.3 or later"
 title_text_end:
 
