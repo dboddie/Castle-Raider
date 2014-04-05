@@ -1535,9 +1535,12 @@ plot_title:
                 ldx $80                         ; Load the row number.
                 jsr read_screen_address_bank2   ; Sets $72,$73 from A and X.
 
-                lda $73
+                lda $72
                 sec
-                sbc #$05
+                sbc #$80
+                sta $72
+                lda $73
+                sbc #$02
                 sta $73
                 clc
 

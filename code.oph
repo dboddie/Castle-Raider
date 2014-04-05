@@ -32,10 +32,10 @@ main:
 
     ldx #0
     title_text_loop:
-        lda title_text,x
+        lda in_game_title_text_address,x
         jsr $ffee
         inx
-        cpx #[title_text_end - title_text]
+        cpx #in_game_title_text_length
         bne title_text_loop
 
     ; Wait for the SPACE key or fire button to be pressed.
@@ -1105,10 +1105,6 @@ player_demise:
 ;    track_position_exit:
 ;    clc
 ;    rts
-
-title_text: .byte 26, 31, 2, 26, 17, 2, "Press ", 17, 3, "SPACE/FIRE"
-            .byte     31, 6, 28, 17, 2, "to play"
-title_text_end:
 
 .include "screen.oph"
 .include "plotting.oph"

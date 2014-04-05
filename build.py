@@ -148,6 +148,64 @@ if __name__ == "__main__":
     else:
         level_file = sys.argv[3]
     
+    # Encode the in-game title data.
+    title_data_oph = "title_data:\n"
+    
+    title_rows = 0
+    for line in open("title.txt").readlines():
+    
+        line = line.rstrip("\n")
+        title_data_oph += ".byte "
+        
+        for i in range(0, 40, 4):
+        
+            byte = 0
+            shift = 0
+            for char in line[i:i + 4]:
+                byte = byte | (".@#+".index(char) << shift)
+                shift += 2
+            
+            title_data_oph += "$%02x" % byte
+            if i < 36:
+                title_data_oph += ", "
+        
+        title_data_oph += "\n"
+        title_rows += 1
+    
+    title_data_oph += (
+        "\n"
+        "title_end:\n"
+        ".alias title_length [title_end - title_data]\n"
+        "\n"
+        )
+    
+    title_text = [(26, 31, 3, 6, 17, 3, "Retro Software"),
+                      (31, 6, 8, "presents"),
+                      (31, 2, 27, 17, 2, "Press ", 17, 3, "SPACE/FIRE"),
+                      (31, 6, 29, 17, 2, "to play")]
+    
+    title_data_oph += 'game_title_text:\n'
+    in_game_title_text_length = 0
+    
+    for line in title_text:
+    
+        in_game_title_text_values = []
+        
+        for piece in line:
+        
+            if type(piece) == int:
+                in_game_title_text_length += 1
+                in_game_title_text_values.append(str(piece))
+            else:
+                in_game_title_text_length += len(piece)
+                in_game_title_text_values.append('"' + piece + '"')
+        
+        title_data_oph += ".byte " + ", ".join(in_game_title_text_values) + "\n"
+    
+    title_data_oph += 'game_title_text_end:\n'
+    
+    open("title-data.oph", "w").write(title_data_oph)
+    
     # Memory map
     memory_map = {
         "code start": 0x0e00,
@@ -195,10 +253,11 @@ if __name__ == "__main__":
     monster_right_max_offset      = monster_information + 5
     
     # Working data
-    # Place working data in page C (the user defined characters buffer).
+    # Place working data in pages B (the soft key buffer) and C (the user
+    # defined characters buffer).
     
     # Monster positions
-    monster_positions_address       = 0xc00
+    monster_positions_address       = 0xb00
     
     # Working information about tile visibility.
     tile_visibility_address       = monster_positions_address + 0x14
@@ -220,6 +279,8 @@ if __name__ == "__main__":
     # Store the in-game title data above the working data - this is done in the
     # loader.
     title_data_address = initial_row_offsets + 0x10
+    
+    in_game_title_text_address = title_data_address + (title_rows * 10)
     
     # Permanent data
     
@@ -314,34 +375,6 @@ if __name__ == "__main__":
     top_panel_lives_bank2_high = top_panel_lives_bank2 >> 8
     
     title_data = makesprites.read_title("images/title.png")
-    
-    # Encode the in-game title data.
-    title_data_oph = "title_data:\n"
-    
-    title_rows = 0
-    for line in open("title.txt").readlines():
-    
-        line = line.rstrip("\n")
-        title_data_oph += ".byte "
-        
-        for i in range(0, 40, 4):
-        
-            byte = 0
-            shift = 0
-            for char in line[i:i + 4]:
-                byte = byte | (".@#+".index(char) << shift)
-                shift += 2
-            
-            title_data_oph += "$%02x" % byte
-            if i < 36:
-                title_data_oph += ", "
-        
-        title_data_oph += "\n"
-        title_rows += 1
-    
-    title_data_oph += "\ntitle_end:\n.alias title_length [title_end - title_data]\n"
-    
-    open("title-data.oph", "w").write(title_data_oph)
     
     # Create the contents of a file containing constant values.
     
@@ -557,8 +590,11 @@ if __name__ == "__main__":
     constants_oph += (
         ".alias title_data_address              $%x\n"
         ".alias title_rows                      %i\n"
+        ".alias in_game_title_text_address      $%x\n"
+        ".alias in_game_title_text_length       %i\n"
         "\n"
-        ) % (title_data_address, title_rows)
+        ) % (title_data_address, title_rows, in_game_title_text_address,
+             in_game_title_text_length)
     
     scenery_rows = 16
     extra_rows = 7

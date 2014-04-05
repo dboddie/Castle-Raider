@@ -475,9 +475,13 @@ portal_envelope:    .byte 5,1,4,0,252,1,1,1,126,0,0,130,126,126
 
 init_load_window_vdu_bytes: .byte 28,0,30,19,26,12
 
-title_text: .byte " Copyright (C) 2014", 13, 10
+title_text: .byte 17, 1
+            .byte " Copyright (C) 2014", 13, 10
+            .byte 17, 2
             .byte "    David Boddie", 13, 10
+            .byte 17, 3
             .byte " for Retro Software", 13, 10
+            .byte 17, 2
             .byte "GNU GPL v.3 or later"
 title_text_end:
 
@@ -512,10 +516,16 @@ move_title_data:
         sta $71
         clc
 
-        inc $72 ; The destination address falls within a page, so we only need
-                ; to update the lower byte of the address.
+        lda $72
+        adc #1
+        sta $72
+        lda $73
+        adc #0
+        sta $73
+        clc
+
         inx
-        cpx #title_length
+        cpx #[title_length + in_game_title_text_length]
         bne move_title_data_loop
 
     clc
