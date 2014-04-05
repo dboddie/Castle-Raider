@@ -670,7 +670,7 @@ class EditorWindow(QMainWindow):
         self.tileGroup = QActionGroup(self)
         self.tileGroup.triggered.connect(self.setCurrentTile)
         
-        for symbol in makelevels.tile_order[:16]:
+        for symbol in makelevels.tile_order[:makelevels.normal_tiles]:
         
             icon = QIcon(QPixmap.fromImage(self.tile_images[symbol]))
             action = self.tilesToolBar.addAction(icon, symbol)

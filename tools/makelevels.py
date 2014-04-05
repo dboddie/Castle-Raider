@@ -46,7 +46,6 @@ tile_ref = {".": "images/blank.png",
             "\\": "images/window-topright.png",
             "{": "images/stalactite.png",
             "I": "images/gate.png",
-            "%": "images/brick-alt3.png",
             # End of scenery tile sprites
             
             # Start of collectable item sprites
@@ -63,8 +62,11 @@ tile_ref = {".": "images/blank.png",
 # Collectable items after the first 16 tiles are ignored by the editor.
 
 tile_order = (".", "@", "#", "+", "=", "-", "X", "|",   # regular tiles
-              "?", "[", "]", "/", "\\", "{", "I", "%",  #
+              "?", "[", "]", "/", "\\", "{", "I",
               "K", "L", "M", "N", "q", "C", "D", "E", "F")   # collectable tiles
+
+# The index of the first special tile is also the number of normal tiles.
+normal_tiles = tile_order.index("K")
 
 flags_values = {"visible": 0x80, "collectable": 0x40, "door": 0x20, "treasure": 0x10}
 
