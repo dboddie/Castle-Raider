@@ -56,8 +56,8 @@ line, obtaining the full development history of the game:
 
   hg clone http://www.retrosoftware.co.uk/hg/castleraider
 
-You need Python, the Python Imaging Library and the Ophis 6502 assembler to
-build the game.
+You need Python, the Python Imaging Library, the UEFfile module and the Ophis
+6502 assembler to build the game.
 
 Run the build.py script at the command line, passing the name of the UEF file
 to create. If the file was created, load it into an Electron emulator or create
