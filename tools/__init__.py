@@ -1,1 +1,1 @@
-__all__ = ["compress", "makelevels", "makesprites"]
+__all__ = ["compress", "makeadf", "makelevels", "makesprites"]
