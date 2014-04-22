@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import os, shutil, stat, struct, sys
 import UEFfile
 
-from tools import makelevels, makesprites
+from tools import makeadf, makedfs, makelevels, makesprites
 
 version = "0.1"
 
@@ -133,7 +133,7 @@ if __name__ == "__main__":
 
     if not 3 <= len(sys.argv) <= 4:
     
-        sys.stderr.write("Usage: %s -e|-b <new UEF file> [level file]\n" % sys.argv[0])
+        sys.stderr.write("Usage: %s -e|-b -t|-a|-d <new UEF or ADF file> [level file]\n" % sys.argv[0])
         sys.exit(1)
     
     machine_type = sys.argv[1]
@@ -141,12 +141,15 @@ if __name__ == "__main__":
         sys.stderr.write("Please specify a valid machine type.\n")
         sys.exit(1)
     
-    out_uef_file = sys.argv[2]
+    make_tape_image = sys.argv[2] == "-t"
+    make_adfs_image = sys.argv[2] == "-a"
+    make_dfs_image = sys.argv[2] == "-d"
+    out_file = sys.argv[3]
     
-    if len(sys.argv) == 3:
+    if len(sys.argv) == 4:
         level_file = "levels/default.txt"
     else:
-        level_file = sys.argv[3]
+        level_file = sys.argv[4]
     
     # Encode the in-game title data.
     title_data_oph = "title_data:\n"
@@ -765,34 +768,72 @@ if __name__ == "__main__":
     #    sys.stderr.write("SPRITES overruns following data by %i bytes.\n" % (char_area_finish - panel_address))
     #    sys.exit(1)
     
-    u = UEFfile.UEFfile(creator = 'build.py '+version)
-    u.minor = 6
-    u.target_machine = "Electron"
+    if make_tape_image:
     
-    u.import_files(0, files)
+        u = UEFfile.UEFfile(creator = 'build.py '+version)
+        u.minor = 6
+        u.target_machine = "Electron"
+        
+        u.import_files(0, files)
+        
+        # Insert a gap before each file.
+        offset = 0
+        for f in u.contents:
+        
+            # Insert a gap and some padding before the file.
+            gap_padding = [(0x112, "\xdc\x05"), (0x110, "\xdc\x05"), (0x100, "\xdc")]
+            u.chunks = u.chunks[:f["position"] + offset] + \
+                       gap_padding + u.chunks[f["position"] + offset:]
     
-    # Insert a gap before each file.
-    offset = 0
-    for f in u.contents:
+            # Each time we insert a gap, the position of the file changes, so we
+            # need to update its position and last position. This isn't really
+            # necessary because we won't read the contents list again.
+            offset += len(gap_padding)
+            f["position"] += offset
+            f["last position"] += offset
+        
+        # Write the new UEF file.
+        try:
+            u.write(out_file, write_emulator_info = False)
+        except UEFfile.UEFfile_error:
+            sys.stderr.write("Couldn't write the new executable to %s.\n" % out_file)
+            sys.exit(1)
     
-        # Insert a gap and some padding before the file.
-        gap_padding = [(0x112, "\xdc\x05"), (0x110, "\xdc\x05"), (0x100, "\xdc")]
-        u.chunks = u.chunks[:f["position"] + offset] + \
-                   gap_padding + u.chunks[f["position"] + offset:]
-
-        # Each time we insert a gap, the position of the file changes, so we
-        # need to update its position and last position. This isn't really
-        # necessary because we won't read the contents list again.
-        offset += len(gap_padding)
-        f["position"] += offset
-        f["last position"] += offset
+    elif make_adfs_image:
     
-    # Write the new UEF file.
-    try:
-        u.write(out_uef_file, write_emulator_info = False)
-    except UEFfile.UEFfile_error:
-        sys.stderr.write("Couldn't write the new executable to %s.\n" % out_uef_file)
-        sys.exit(1)
-
+        disk = makeadf.Disk("M")
+        disk.new()
+        
+        catalogue = disk.catalogue()
+        
+        disk_files = []
+        for name, load, exec_, data in files:
+            disk_files.append(makeadf.File(name, data, load, exec_, len(data)))
+        
+        dir_address = catalogue.sector_size * 2
+        catalogue.write("$", "Castle Raider", disk_files, dir_address, dir_address)
+        catalogue.write_free_space()
+        
+        disk.file.seek(0, 0)
+        disk_data = disk.file.read()
+        open(out_file, "w").write(disk_data)
+    
+    elif make_dfs_image:
+    
+        disk = makedfs.Disk()
+        disk.new()
+        
+        catalogue = disk.catalogue()
+        
+        disk_files = []
+        for name, load, exec_, data in files:
+            disk_files.append(makedfs.File("$." + name, data, load, exec_, len(data)))
+        
+        catalogue.write("Castle Raider", disk_files)
+        
+        disk.file.seek(0, 0)
+        disk_data = disk.file.read()
+        open(out_file, "w").write(disk_data)
+    
     # Exit
     sys.exit()

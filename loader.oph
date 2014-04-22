@@ -182,6 +182,7 @@ main:
 
     lda #140
     jsr $fff4   ; *TAPE (reclaim any workspace used on high PAGE systems)
+    clc         ; This is apparently needed if we switch from DFS to tape.
 
     ; Copy the panel onto bank 2.
     jsr copy_panel

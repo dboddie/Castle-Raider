@@ -20,172 +20,8 @@ __date__ = "2014-04-06"
 __version__ = "0.1"
 __license__ = "GNU General Public License (version 3 or later)"
 
-import StringIO, struct, time
-
-class DiskError(Exception):
-    pass
-
-
-class Utilities:
-
-    # Little endian reading
-    
-    def _read_signed_word(self, s):
-    
-        return struct.unpack("<i", s)[0]
-    
-    def _read_unsigned_word(self, s):
-    
-        return struct.unpack("<I", s)[0]
-    
-    def _read_signed_byte(self, s):
-    
-        return struct.unpack("<b", s)[0]
-    
-    def _read_unsigned_byte(self, s):
-    
-        return struct.unpack("<B", s)[0]
-    
-    def _read_unsigned_half_word(self, s):
-    
-        return struct.unpack("<H", s)[0]
-    
-    def _read_signed_half_word(self, s):
-    
-        return struct.unpack("<h", s)[0]
-    
-    def _read(self, offset, length = 1):
-    
-        self.file.seek(offset, 0)
-        return self.file.read(length)
-    
-    def _write(self, offset, data):
-    
-        self.file.seek(offset, 0)
-        self.file.write(data)
-    
-    def _str2num(self, s):
-    
-        i = 0
-        n = 0
-        while i < len(s):
-        
-            n = n | (ord(s[i]) << (i*8))
-            i = i + 1
-        
-        return n
-    
-    def _binary(self, size, n):
-    
-        new = ""
-        while (n != 0) & (size > 0):
-        
-            if (n & 1)==1:
-                new = "1" + new
-            else:
-                new = "0" + new
-            
-            n = n >> 1
-            size = size - 1
-        
-        if size > 0:
-            new = ("0"*size) + new
-        
-        return new
-    
-    def _safe(self, s, with_space = 0):
-    
-        new = ""
-        if with_space == 1:
-            lower = 31
-        else:
-            lower = 32
-        
-        for c in s:
-        
-            if ord(c) >= 128:
-                i = ord(c) ^ 128
-                c = chr(i)
-            
-            if ord(c) <= lower:
-                break
-            
-            new = new + c
-        
-        return new
-
-
-class Directory:
-
-    """directory = Directory(name, address)
-    
-    The directory created contains name and files attributes containing the
-    directory name and the objects it contains.
-    """
-    
-    def __init__(self, name, files):
-    
-        self.name = name
-        self.files = files
-    
-    def __repr__(self):
-    
-        return '<%s instance, "%s", at %x>' % (self.__class__, self.name, id(self))
-
-
-class File:
-
-    """file = File(name, data, load_address, execution_address, length)
-    """
-    
-    def __init__(self, name, data, load_address, execution_address, length):
-    
-        self.name = name
-        self.data = data
-        self.load_address = load_address
-        self.execution_address = execution_address
-        self.length = length
-    
-    def __repr__(self):
-    
-        return '<%s instance, "%s", at %x>' % (self.__class__, self.name, id(self))
-    
-    def has_filetype(self):
-    
-        """Returns True if the file's meta-data contains filetype information."""
-        return self.load_address & 0xfff00000 == 0xfff00000
-    
-    def filetype(self):
-    
-        """Returns the meta-data containing the filetype information.
-        
-        Note that a filetype can be obtained for all files, though it may not
-        necessarily be valid. Use has_filetype() to determine whether the file
-        is likely to have a valid filetype."""
-        
-        return "%03x" % ((self.load_address >> 8) & 0xfff)
-    
-    def time_stamp(self):
-    
-        """Returns the time stamp for the file as a tuple of values containing
-        the local time, or an empty tuple if the file does not have a time stamp."""
-        
-        # RISC OS time is given as a five byte block containing the
-        # number of centiseconds since 1900 (presumably 1st January 1900).
-        
-        # Convert the time to the time elapsed since the Epoch (assuming
-        # 1970 for this value).
-        date_num = struct.unpack("<Q",
-            struct.pack("<IBxxx", self.execution_address, self.load_address & 0xff))[0]
-        
-        centiseconds = date_num - between_epochs
-        
-        # Convert this to a value in seconds and return a time tuple.
-        try:
-            return time.localtime(centiseconds / 100.0)
-        except ValueError:
-            return ()
-
+import StringIO
+from diskutils import Directory, DiskError, File, Utilities
 
 class Catalogue(Utilities):
 
@@ -195,42 +31,97 @@ class Catalogue(Utilities):
     
         self.file = file
         self.sector_size = 256
+        
+        # The free space map initially contains all the space after the map
+        # itself and the first directory catalogue.
+        self.free_space = [(7, 1273)]
+        self.level3_sector = 0
+        self.disc_size = 1280
+        self.disc_id = 0
+        self.boot_option = 0
     
     def read_free_space(self):
     
-        # Currently unused
+        # Using notes from http://mdfs.net/Docs/Comp/Disk/Format/ADFS
         
+        self.free_space = []
         base = 0
-        free_space = []
         p = 0
         while self._read(base + p) != chr(0):
         
-            free_space.append(self._str2num(self._read(base + p, 3)))
+            self.free_space.append([self._str2num(self._read(base + p, 3))])
             p += 3
         
-        name = self._read(self.sector_size - 9, 5)
+        # Level 3 partition sector
+        level3_sector = self._read(self.sector_size - 10, 2)
         
-        disc_size = self._str2num(self._read(self.sector_size - 4, 3))
+        self.disc_size = self._str2num(self._read(self.sector_size - 4, 3))
         
-        checksum0 = self._read_unsigned_byte(self._read(self.sector_size-1))
+        self.checksum0 = self._read_unsigned_byte(self._read(self.sector_size - 1))
         
         base = self.sector_size
         
         p = 0
+        i = 0
         while self._read(base + p) != chr(0):
         
-            free_space.append(self._str2num(self._read(base + p, 3)))
+            self.free_space[i].append(self._str2num(self._read(base + p, 3)))
+            p += 3
+            i += 1
+        
+        self.disc_id = self._str2num(self._read(base + self.sector_size - 5, 2))
+        
+        self.boot_option = self._read_unsigned_byte(self._read(base + self.sector_size - 3))
+        
+        self.checksum1 = self._read_unsigned_byte(self._read(base + self.sector_size - 1))
+    
+    def write_free_space(self):
+    
+        base = 0
+        
+        p = 0
+        for sector, length in self.free_space:
+        
+            if p == 0xf6:
+                raise DiskError, "Too many free space entries."
+            
+            self._write(base + p, self._num2str(3, sector))
             p += 3
         
-        name = name + self._read(base + self.sector_size - 10, 5)
+        while p < 0xf6:
+            self._write(base + p, self._num2str(3, 0))
+            p += 3
         
-        disc_id = self._str2num(self._read(base + self.sector_size - 5, 2))
+        # Level 3 partition sector
+        self._write(self.sector_size - 10, self._num2str(2, self.level3_sector))
         
-        boot = self._read_unsigned_byte(self._read(base + self.sector_size - 3))
+        self._write(self.sector_size - 4, self._num2str(3, self.disc_size))
         
-        checksum1 = self._read_unsigned_byte(self._read(base + self.sector_size - 1))
+        self.checksum0 = self._checksum(0)
+        self._write(self.sector_size - 1, chr(self.checksum0))
         
-        return free_space
+        base = self.sector_size
+        
+        p = 0
+        for sector, length in self.free_space:
+        
+            self._write(base + p, self._num2str(3, length))
+            p += 3
+        
+        while p < 0xf6:
+            self._write(base + p, self._num2str(3, 0))
+            p += 3
+        
+        self._write(base + self.sector_size - 5, self._num2str(2, self.disc_id))
+        
+        # Boot option
+        self._write(base + self.sector_size - 3, chr(self.boot_option))
+        
+        # Length of free space list
+        self._write(base + self.sector_size - 2, chr(3 * len(self.free_space)))
+        
+        self.checksum1 = self._checksum(1)
+        self._write(base + self.sector_size - 1, chr(self.checksum0))
     
     def read(self, offset = 512):
     
@@ -257,24 +148,22 @@ class Catalogue(Utilities):
             
             inddiscadd = self.sector_size * self._str2num(self._read(head + p + 22, 3))
             
-            print hex(head + p), name, map(hex, (load, exe, length, inddiscadd))
-            
             olddirobseq = self._read_unsigned_byte(self._read(head + p + 25))
             
             # [Needs more accurate check for directories.]
-            if length == (self.sector_size * 5):
+            if load == exe == 0 and length == (self.sector_size * 5):
             
                 # A directory has been found.
                 lower_dir_name, lower_files = self.read(inddiscadd)
-                print "Entering", lower_dir_name
                 
                 files.append(Directory(name, lower_files))
             
             else:
             
-                # A file has been found.
+                # A file has been found. Treat it as unlocked for now.
                 data = self._read(inddiscadd, length)
-                files.append(File(name, data, load, exe, length))
+                files.append(File(name, data, load, exe, length, False,
+                                  inddiscadd))
             
             p = p + 26
         
@@ -303,8 +192,11 @@ class Catalogue(Utilities):
         
         return dir_name, files
     
-    def write(self, files, offset = 512):
+    def write(self, dir_name, dir_title, files, offset, parent_address):
     
+        if len(files) > 47:
+            raise DiskError, "Too many entries to write."
+        
         head = offset
         p = 0
         
@@ -318,46 +210,36 @@ class Catalogue(Utilities):
             self._write(head + p + 1, dir_start)
         
         p = p + 5
+        i = 1
         
-        files = []
+        for file in files:
         
-        while ord(self._read(head + p)) != 0:
-        
-            old_name = self.data[head+p:head+p+10]
-            top_set = 0
-            counter = 1
-            for i in old_name:
-                if (ord(i) & 128) != 0:
-                    top_set = counter
-                counter = counter + 1
+            name = self._pad(file.name, 10, " ")
+            self._write(head + p, name)
             
-            name = self._safe(self.data[head+p:head+p+10])
-            
-            load = self._read_unsigned_word(self.data[head+p+10:head+p+14])
-            exe = self._read_unsigned_word(self.data[head+p+14:head+p+18])
-            length = self._read_unsigned_word(self.data[head+p+18:head+p+22])
-            
-            inddiscadd = self.sector_size * self._str2num(
-                3, self.data[head+p+22:head+p+25]
-                )
-            
-            olddirobseq = self._read_unsigned_byte(self.data[head+p+25])
-            
-            # [Needs more accurate check for directories.]
-            if (load == 0 and exe == 0 and top_set > 2) or \
-                (top_set > 0 and length == (self.sector_size * 5)):
-            
-                # A directory has been found.
-                lower_dir_name, lower_files = \
-                    self._read_old_catalogue(inddiscadd)
-                
-                files.append(Directory(name, lower_files))
-            
+            if isinstance(file, File):
+                load = file.load_address
+                exe = file.execution_address
+                length = file.length
             else:
+                load = exe = 0
+                length = 5 * self.sector_size
             
-                # A file has been found.
-                data = self.data[inddiscadd:inddiscadd+length]
-                files.append(File(name, data, load, exe, length))
+            self._write(head + p + 10, self._write_unsigned_word(load))
+            self._write(head + p + 14, self._write_unsigned_word(exe))
+            self._write(head + p + 18, self._write_unsigned_word(length))
+            
+            disc_address = self._find_space(file)
+            inddiscadd = disc_address / self.sector_size
+            self._write(head + p + 22, self._num2str(3, inddiscadd))
+            
+            self._write(disc_address, file.data)
+            
+            olddirobseq = i
+            self._write(head + p + 25, chr(olddirobseq))
+            
+            if isinstance(file, Directory):
+                self.write(file.files, disc_address)
             
             p = p + 26
         
@@ -365,32 +247,60 @@ class Catalogue(Utilities):
         
         tail = head + (self.sector_size*4)
         
-        dir_end = self.data[tail+self.sector_size-5:tail+self.sector_size-1]
+        dir_end = self._read(tail + self.sector_size - 5, 4)
         
         if dir_end not in self.DirMarkers:
-            raise DiskError, 'Discrepancy in directory structure: [%x, %x]' % (head, tail)
+            dir_end = "Hugo"
+            self._write(tail + self.sector_size - 5, dir_end)
         
-        # Read the directory name, its parent and any title given.
+        # Write the directory name, its parent and any title given.
         
-        dir_name = self._safe(
-            self.data[tail+self.sector_size-52:tail+self.sector_size-42]
-            )
+        dir_name = self._pad(self._safe(dir_name), 10, " ")
+        self._write(tail + self.sector_size - 52, dir_name)
         
-        parent = self.sector_size*self._str2num(
-            3,
-            self.data[tail+self.sector_size-42:tail+self.sector_size-39]
-            )
+        self._write(tail + self.sector_size - 42,
+                    self._num2str(3, parent_address / self.sector_size))
         
-        dir_title = self._safe(
-            self.data[tail+self.sector_size-39:tail+self.sector_size-20]
-            )
+        dir_title = self._pad(self._safe(dir_title), 19, " ")
+        self._write(tail + self.sector_size - 39, dir_title)
         
-        endseq = self.data[tail+self.sector_size-6]
+        endseq = dir_seq
+        self._write(tail + self.sector_size - 6, chr(endseq))
+    
+    def _find_space(self, file):
+    
+        for i in range(len(self.free_space)):
         
-        if endseq != dir_seq:
-            raise DiskError, 'Broken directory: %s at [%x, %x]' % (dir_title, head, tail)
+            sector, length = self.free_space[i]
+            file_length = file.length/self.sector_size
+            
+            if file.length % self.sector_size != 0:
+                file_length += 1
+            
+            if length >= file_length:
+            
+                if length > file_length:
+                    # Update the free space entry to contain the remaining space.
+                    self.free_space[i] = (sector + file_length, length - file_length)
+                else:
+                    # Remove the free space entry.
+                    del self.free_space[i]
+                
+                return sector * self.sector_size
         
-        return dir_name, files
+        raise DiskError, "Failed to find space for file: %s" % file.name
+    
+    def _checksum(self, sector):
+    
+        v = 255
+        i = 254
+        while i >= 0:
+            if v > 255:
+                v = (v + 1) % 255
+            v += ord(self._read((sector * self.sector_size) + i))
+            i -= 1
+        
+        return v % 255
 
 
 class Disk:
@@ -406,7 +316,7 @@ class Disk:
     def new(self):
     
         self.size = self.DiskSizes[self.format]
-        self.data = "\x00" * size
+        self.data = "\x00" * self.size
         self.file = StringIO.StringIO(self.data)
     
     def open(self, file_object):
@@ -414,8 +324,7 @@ class Disk:
         self.size = self.DiskSizes[self.format]
         self.file = file_object
     
-    def read_catalogue(self):
+    def catalogue(self):
     
         sector_size = self.SectorSizes[self.format]
-        catalogue = self.Catalogues[self.format](self.file)
-        return catalogue.read()
+        return self.Catalogues[self.format](self.file)
