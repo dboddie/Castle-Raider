@@ -824,8 +824,9 @@ if __name__ == "__main__":
         disk.new()
         
         catalogue = disk.catalogue()
+        catalogue.boot_option = 3
         
-        disk_files = []
+        disk_files = [makedfs.File("$.!BOOT", 'CHAIN "CASTLE"\r', 0, 0, 15)]
         for name, load, exec_, data in files:
             disk_files.append(makedfs.File("$." + name, data, load, exec_, len(data)))
         
