@@ -824,13 +824,17 @@ if __name__ == "__main__":
         disk.new()
         
         catalogue = disk.catalogue()
-        catalogue.boot_option = 3
+        catalogue.boot_option = 2
         
-        disk_files = [makedfs.File("$.!BOOT", 'CHAIN "CASTLE"\r', 0, 0, 15)]
+        disk_files = []
         for name, load, exec_, data in files:
+            if name == "LOADER":
+                name = "!BOOT"
+            elif name == "CASTLE":
+                continue
             disk_files.append(makedfs.File("$." + name, data, load, exec_, len(data)))
         
-        catalogue.write("Castle Raider", disk_files)
+        catalogue.write("CastleRaider", disk_files)
         
         disk.file.seek(0, 0)
         disk_data = disk.file.read()
