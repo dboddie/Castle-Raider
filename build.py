@@ -366,17 +366,17 @@ if __name__ == "__main__":
     panel_address = 0x3000
     panel, offsets = makesprites.read_sprites(["images/panel.png"], panel_address)
     
-    top_panel_objects_bank1 = 0x31e0
+    top_panel_objects_bank1 = 0x31d8
     top_panel_objects_bank1_low = top_panel_objects_bank1 & 0xff
     top_panel_objects_bank1_high = top_panel_objects_bank1 >> 8
-    top_panel_objects_bank2 = 0x59e0
+    top_panel_objects_bank2 = 0x59d8
     top_panel_objects_bank2_low = top_panel_objects_bank2 & 0xff
     top_panel_objects_bank2_high = top_panel_objects_bank2 >> 8
     
-    top_panel_lives_bank1 = 0x3000 + (0x140 + 0x20)
+    top_panel_lives_bank1 = 0x3000 + (0x140 + 0x28)
     top_panel_lives_bank1_low = top_panel_lives_bank1 & 0xff
     top_panel_lives_bank1_high = top_panel_lives_bank1 >> 8
-    top_panel_lives_bank2 = 0x5800 + (0x140 + 0x20)
+    top_panel_lives_bank2 = 0x5800 + (0x140 + 0x28)
     top_panel_lives_bank2_low = top_panel_lives_bank2 & 0xff
     top_panel_lives_bank2_high = top_panel_lives_bank2 >> 8
     
@@ -824,13 +824,17 @@ if __name__ == "__main__":
         disk.new()
         
         catalogue = disk.catalogue()
-        catalogue.boot_option = 3
+        catalogue.boot_option = 2
         
-        disk_files = [makedfs.File("$.!BOOT", 'CHAIN "CASTLE"\r', 0, 0, 15)]
+        disk_files = []
         for name, load, exec_, data in files:
+            if name == "LOADER":
+                name = "!BOOT"
+            elif name == "CASTLE":
+                continue
             disk_files.append(makedfs.File("$." + name, data, load, exec_, len(data)))
         
-        catalogue.write("Castle Raider", disk_files)
+        catalogue.write("CastleRaider", disk_files)
         
         disk.file.seek(0, 0)
         disk_data = disk.file.read()
