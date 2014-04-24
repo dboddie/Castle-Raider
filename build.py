@@ -366,17 +366,17 @@ if __name__ == "__main__":
     panel_address = 0x3000
     panel, offsets = makesprites.read_sprites(["images/panel.png"], panel_address)
     
-    top_panel_objects_bank1 = 0x31e0
+    top_panel_objects_bank1 = 0x31d8
     top_panel_objects_bank1_low = top_panel_objects_bank1 & 0xff
     top_panel_objects_bank1_high = top_panel_objects_bank1 >> 8
-    top_panel_objects_bank2 = 0x59e0
+    top_panel_objects_bank2 = 0x59d8
     top_panel_objects_bank2_low = top_panel_objects_bank2 & 0xff
     top_panel_objects_bank2_high = top_panel_objects_bank2 >> 8
     
-    top_panel_lives_bank1 = 0x3000 + (0x140 + 0x20)
+    top_panel_lives_bank1 = 0x3000 + (0x140 + 0x28)
     top_panel_lives_bank1_low = top_panel_lives_bank1 & 0xff
     top_panel_lives_bank1_high = top_panel_lives_bank1 >> 8
-    top_panel_lives_bank2 = 0x5800 + (0x140 + 0x20)
+    top_panel_lives_bank2 = 0x5800 + (0x140 + 0x28)
     top_panel_lives_bank2_low = top_panel_lives_bank2 & 0xff
     top_panel_lives_bank2_high = top_panel_lives_bank2 >> 8
     
