@@ -15,8 +15,7 @@
 
 show_bank1:
 
-    lda #19
-    jsr $fff4
+    jsr vsync
 
     lda #12
     sta $fe00
@@ -34,8 +33,7 @@ show_bank1:
 
 show_bank2:
 
-    lda #19
-    jsr $fff4
+    jsr vsync
 
     lda #12
     sta $fe00
