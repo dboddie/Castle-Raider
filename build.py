@@ -798,6 +798,9 @@ if __name__ == "__main__":
         except UEFfile.UEFfile_error:
             sys.stderr.write("Couldn't write the new executable to %s.\n" % out_file)
             sys.exit(1)
+        
+        print
+        print "Written", out_file
     
     elif make_adfs_image:
     
@@ -817,6 +820,9 @@ if __name__ == "__main__":
         disk.file.seek(0, 0)
         disk_data = disk.file.read()
         open(out_file, "w").write(disk_data)
+        
+        print
+        print "Written", out_file
     
     elif make_dfs_image:
     
@@ -839,6 +845,9 @@ if __name__ == "__main__":
         disk.file.seek(0, 0)
         disk_data = disk.file.read()
         open(out_file, "w").write(disk_data)
+        
+        print
+        print "Written", out_file
     
     # Exit
     sys.exit()

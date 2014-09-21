@@ -13,12 +13,10 @@ the force stationed here will be no threat tonight, they gave them a wide
 berth during their march here. The people in the nearby villages can sleep
 soundly for a change.
 
-One of the members of the watch begins to slowly climb the stairs to the top
-of the wall; the others crowd together by the guard house, conducting some kind
-of business with a few of the new arrivals. Taking your chance, you slip
-through the open gate and take refuge in the long shadows fleeing the sunset.
-The few eyes looking in your direction are hardly able to make out your form
-as you wait for the approaching nightfall.
+As the members of the night watch slowly start the climb up onto the ramparts
+you take your chance and slip through the open gate, taking refuge in the long
+shadows fleeing the sunset. The few eyes looking in your direction are hardly
+able to make out your form as you wait for the approaching nightfall.
 
 You recall the stories told when you were young. When the town itself was old,
 the last of the elders told of a time when it was still a village, not much

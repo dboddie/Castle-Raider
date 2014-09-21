@@ -863,7 +863,7 @@ class UEFfile:
 
     def export_files(self, file_positions):
         """
-        Given a file's location of the list of contents, returns its name,
+        Given a file's location in the list of contents, returns its name,
         load and execution addresses, and the data contained in the file.
         If positions is an integer then return a tuple
 
