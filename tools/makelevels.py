@@ -115,8 +115,14 @@ def load_level(path):
         portals[src] = (index, dest, colour)
         index += 1
     
+    if lines[32].startswith("Finish:"):
+        finish = int(lines[32][7:].strip())
+        l = 33
+    else:
+        finish = 0
+        l = 32
+    
     levels = []
-    l = 32
     
     while l < len(lines):
     
@@ -124,7 +130,7 @@ def load_level(path):
         levels.append((name, lines[l + 1:l + 17]))
         l += 17
     
-    return levels, special, portals
+    return levels, special, portals, finish
 
 def create_level_data(levels, tiles, special, portals):
 
@@ -245,7 +251,7 @@ def create_level_data(levels, tiles, special, portals):
 def create_level(levels_address, level_path, maximum_number_of_special_tiles,
                  maximum_number_of_portals):
     
-    levels, special, portals = load_level(level_path)
+    levels, special, portals, finish = load_level(level_path)
     
     tiles = {}
     for i in range(len(tile_order)):
@@ -384,4 +390,4 @@ def create_level(levels_address, level_path, maximum_number_of_special_tiles,
     # Append the data to the table of row offsets.
     data = special_tiles_table + visibility_table + portal_table + table + data
     
-    return data, monster_row_address
+    return data, monster_row_address, finish

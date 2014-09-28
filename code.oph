@@ -153,8 +153,8 @@ main:
                 dec $80
                 bpl main_loop_lost_loop
 
-            lda player_lives
-            beq main_loop_endloop
+            lda player_lives            ; Exit the main loop if there are no
+            beq main_loop_endloop       ; lives left.
 
             jsr clear_banks             ; Clear both banks and show the first.
 
@@ -189,6 +189,15 @@ main:
             clc                     ; Check for horizontal input. Note that it
             jsr player_move         ; might still be forbidden by the jumping
                                     ; counter or falling flag.
+
+            lda scroll_offset_low
+            cmp #finish_scroll_offset_low
+            bne main_loop_check_monsters
+            lda scroll_offset_high
+            cmp #finish_scroll_offset_high
+            bne main_loop_check_monsters
+
+            jmp game_completed
 
         main_loop_check_monsters:
         jsr check_player_monsters
@@ -236,9 +245,12 @@ main:
         main_loop_check_escape:
         ldx #143            ; (Escape)
         jsr check_key
-        bne main_loop
+        beq main_loop_endloop
+        jmp main_loop
 
     main_loop_endloop:
+
+    ; Do something to indicate the game is over.
 
     jmp main
 
@@ -1070,42 +1082,13 @@ player_demise:
     sec
     rts
 
-;track_position: ; Scroll back to the last stored position.
-;
-;    clc
-;
-;    lda scroll_offset_high
-;    cmp tracking_high
-;    beq track_position_check_low
-;    bcs track_position_scroll_left
-;    bcc track_position_scroll_right
-;
-;    track_position_check_low:
-;    lda scroll_offset_low
-;    cmp tracking_low
-;    beq track_position_check_bank
-;    bcs track_position_scroll_left
-;    bcc track_position_scroll_right
-;
-;    track_position_check_bank:
-;    lda bank_number
-;    cmp #0
-;    beq track_position_exit
-;    bcs track_position_scroll_left
-;
-;    track_position_scroll_right:
-;    jsr scroll_right_update
-;    sec
-;    rts
-;
-;    track_position_scroll_left:
-;    jsr scroll_left_update
-;    sec
-;    rts
-;
-;    track_position_exit:
-;    clc
-;    rts
+game_completed:
+
+    ; Do something to indicate the game has been completed.
+    ; Check whether the player found the treasures.
+
+    clc
+    rts
 
 .include "screen.oph"
 .include "plotting.oph"

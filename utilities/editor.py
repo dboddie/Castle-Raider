@@ -116,6 +116,8 @@ class LevelWidget(QWidget):
         self.maximum_width = 1024
         self.monster_images = monster_images
         
+        self.finishing_offset = 0x304
+        
         font = QFont("Monospace")
         font.setPixelSize(min(4 * self.xs - 2, 8 * self.ys - 2))
         self.setFont(font)
@@ -164,11 +166,12 @@ class LevelWidget(QWidget):
     def loadMap(self, path):
     
         try:
-            levels, special, portals = makelevels.load_level(path)
+            levels, special, portals, finish = makelevels.load_level(path)
             
             self.special = special
             self.portals = portals
             self.portal_locations = {}
+            self.finishing_offset = finish
             
             self.rows = {}
             self.order = []
@@ -232,6 +235,9 @@ class LevelWidget(QWidget):
                 f.write("%s %s %s\n" % (src, dest, colour))
             
             f.write("\n")
+            
+            # Write the finishing offset.
+            f.write("Finish: %i\n\n" % self.finishing_offset)
             
             for name in self.order:
             
@@ -370,6 +376,15 @@ class LevelWidget(QWidget):
             pen.setStyle(Qt.DashLine)
             painter.setPen(pen)
             painter.drawLine(19 * 4 * self.xs, 0, 19 * 4 * self.xs, 24 * 8 * self.ys)
+        
+        # Plot the finishing position.
+        if c1 <= self.finishing_offset + 19 and c2 >= self.finishing_offset + 20:
+        
+            pen = QPen(Qt.white)
+            pen.setStyle(Qt.DashLine)
+            painter.setPen(pen)
+            painter.drawRect((self.finishing_offset + 19) * 4 * self.xs, 0,
+                              8 * self.xs, 24 * 8 * self.ys)
         
         painter.end()
     

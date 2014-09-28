@@ -316,7 +316,7 @@ if __name__ == "__main__":
     
     # Create the level data.
     levels_address = level_data_start
-    level_data, monster_row_address = makelevels.create_level(
+    level_data, monster_row_address, finishing_offset = makelevels.create_level(
         levels_address, level_file, maximum_number_of_special_tiles, maximum_number_of_portals)
     
     level_extent = makelevels.level_extent
@@ -389,6 +389,8 @@ if __name__ == "__main__":
         ".alias scrolled                        $7f\n"
         ".alias scroll_offset_low               $8e\n"
         ".alias scroll_offset_high              $8f\n"
+        ".alias finish_scroll_offset_low        $%02x\n"
+        ".alias finish_scroll_offset_high       $%02x\n"
         "\n"
         "; Declare these here to make it easy to see that they are being used.\n"
         ".alias tile_visibility_table_low       $82\n"
@@ -400,7 +402,7 @@ if __name__ == "__main__":
         "\n"
         ".alias check_monster_tile              $8a\n"
         "\n"
-        )
+        ) % (finishing_offset & 0xff, finishing_offset >> 8)
 
     constants_oph += (
         ".alias player_x                        $%x\n"
