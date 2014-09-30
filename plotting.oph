@@ -15,6 +15,7 @@
 
 clear_banks:
 
+    clc
     jsr clear_bank1
     jsr clear_bank2
     jmp show_bank1

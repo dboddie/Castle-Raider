@@ -526,7 +526,7 @@ move_title_data:
         clc
 
         inx
-        cpx #[title_length + in_game_title_text_length]
+        cpx #[title_length + in_game_total_text_length]
         bne move_title_data_loop
 
     clc

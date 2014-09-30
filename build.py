@@ -37,72 +37,6 @@ def read_basic(path):
     t = "\r".join(lines) + "\r"
     return t
 
-def encode_text(text):
-
-    words = text.split(" ")
-    word_dict = {}
-    
-    # Count the number of occurrences of each word.
-    for word in words:
-        word_dict.setdefault(word, 0)
-        word_dict[word] += 1
-    
-    # Sort the words in order of decreasing frequency.
-    frequencies = map(lambda x: (x[1], x[0]), word_dict.items())
-    frequencies.sort()
-    frequencies.reverse()
-    
-    # Create encoding and decoding look up tables.
-    decoding_lookup = {}
-    encoding_lookup = {}
-    
-    i = 0
-    for count, word in frequencies:
-    
-        if i >= 128:
-            j = 1 + i * 2
-        else:
-            j = i * 2
-        
-        encoding_lookup[word] = j
-        decoding_lookup[j] = word
-        
-        i += 1
-    
-    # Encode the text.
-    encoded = []
-    for word in words:
-    
-        encoded.append(encoding_lookup[word])
-    
-    encoded_string = ""
-    for value in encoded:
-    
-        if value & 1 == 0:
-            encoded_string += chr(value)
-        else:
-            encoded_string += struct.pack("<H", value)
-    
-    return decoding_lookup, encoded_string
-
-def decode_text(data, lookup):
-
-    words = ""
-    i = 0
-    while i < len(data):
-    
-        value = ord(data[i])
-        if value & 1 != 0:
-            value += ord(data[i+1]) << 8
-            i += 2
-        else:
-            i += 1
-        
-        words += lookup[value]
-        words += " "
-    
-    return words[:-1]
-
 def address_length_end(address, data):
 
     address_low = address & 0xff
@@ -114,6 +48,33 @@ def address_length_end(address, data):
     end_low = end & 0xff
     end_high = end >> 8
     return address_low, address_high, length_low, length_high, end_low, end_high
+
+def encode_text(lines):
+
+    # Store the text reversed to reduce the number of instructions needed to
+    # print it.
+    
+    text_length = 0
+    data_oph = ""
+    lines.reverse()
+    
+    for line in lines:
+    
+        text_values = []
+        
+        for piece in line:
+        
+            if type(piece) == int:
+                text_length += 1
+                text_values.append(str(piece))
+            else:
+                text_length += len(piece)
+                text_values.append('"' + piece[::-1] + '"')
+        
+        text_values.reverse()
+        data_oph += ".byte " + ", ".join(text_values) + "\n"
+    
+    return data_oph, text_length
 
 
 tiles = map(lambda tile: makelevels.tile_ref[tile], makelevels.tile_order)
@@ -188,24 +149,17 @@ if __name__ == "__main__":
                       (31, 6, 29, 17, 2, "to play")]
     
     title_data_oph += 'game_title_text:\n'
-    in_game_title_text_length = 0
-    
-    for line in title_text:
-    
-        in_game_title_text_values = []
-        
-        for piece in line:
-        
-            if type(piece) == int:
-                in_game_title_text_length += 1
-                in_game_title_text_values.append(str(piece))
-            else:
-                in_game_title_text_length += len(piece)
-                in_game_title_text_values.append('"' + piece + '"')
-        
-        title_data_oph += ".byte " + ", ".join(in_game_title_text_values) + "\n"
-    
+    title_data, in_game_title_text_length = encode_text(title_text)
+    title_data_oph += title_data
     title_data_oph += 'game_title_text_end:\n'
+    
+    game_over_text = [(26, 31, 1, 16, 17, 3, "Your quest is over"),
+                          (31, 4, 29, 17, 1, "Press  SPACE")]
+    
+    title_data_oph += 'game_over_text:\n'
+    game_over_data, in_game_game_over_text_length = encode_text(game_over_text)
+    title_data_oph += game_over_data
+    title_data_oph += 'game_over_text_end:\n'
     
     open("title-data.oph", "w").write(title_data_oph)
     
@@ -280,13 +234,15 @@ if __name__ == "__main__":
     # Initial displacements for the rows.
     initial_row_offsets           = row_indices + 0x10
     
-    # Store the in-game title data above the working data - this is done in the
-    # loader.
+    # Store the in-game text data and the completion code above the working
+    # data - this is done in the loader.
     title_data_address = initial_row_offsets + 0x10
     
     in_game_title_text_address = title_data_address + (title_rows * 10)
+    in_game_game_over_text_address = in_game_title_text_address + in_game_title_text_length
+    in_game_completion_address = in_game_game_over_text_address + in_game_game_over_text_length
     
-    working_end = in_game_title_text_address + in_game_title_text_length
+    working_end = in_game_completion_address
     
     # Permanent data
     
@@ -600,9 +556,14 @@ if __name__ == "__main__":
         ".alias title_rows                      %i\n"
         ".alias in_game_title_text_address      $%x\n"
         ".alias in_game_title_text_length       %i\n"
+        ".alias in_game_game_over_text_address  $%x\n"
+        ".alias in_game_game_over_text_length   %i\n"
+        ".alias in_game_total_text_length       %i\n"
         "\n"
-        ) % (title_data_address, title_rows, in_game_title_text_address,
-             in_game_title_text_length)
+        ) % (title_data_address, title_rows,
+             in_game_title_text_address, in_game_title_text_length,
+             in_game_game_over_text_address, in_game_game_over_text_length,
+             in_game_title_text_length + in_game_game_over_text_length)
     
     scenery_rows = 16
     extra_rows = 7

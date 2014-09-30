@@ -30,24 +30,20 @@ main:
     jsr show_bank2          ; Show bank 2 since this is where the output of OS
                             ; calls will appear.
 
-    ldx #0
+    ldx #[in_game_title_text_length - 1]
     title_text_loop:
         lda in_game_title_text_address,x
         jsr $ffee
-        inx
-        cpx #in_game_title_text_length
-        bne title_text_loop
+        dex
+        bpl title_text_loop
 
     ; Wait for the SPACE key or fire button to be pressed.
     main_start_wait_loop:
 
         jsr read_joystick_fire
-        bcc main_start_wait_loop_key_check
 
         lda #1
-        sta using_joystick
-        clc
-        bcc main_init
+        bcs main_init
 
         main_start_wait_loop_key_check:
 
@@ -56,9 +52,10 @@ main:
         bne main_start_wait_loop
 
     lda #0
-    sta using_joystick
 
     main_init:
+    clc
+    sta using_joystick
 
     ; Set character's initial position and status.
 
@@ -218,11 +215,8 @@ main:
         jsr check_key
         bne main_loop_no_pause
 
-        main_loop_pause_loop:
-        
-            ldx #201        ; (O)
-            jsr check_key
-            bne main_loop_pause_loop
+        lda #201            ; (O)
+        jsr wait_for_key
 
         main_loop_no_pause:
 
@@ -252,7 +246,30 @@ main:
 
     ; Do something to indicate the game is over.
 
+    jsr clear_banks
+    jsr show_bank2          ; Show bank 2 since this is where the output of OS
+                            ; calls will appear.
+
+    ldx #[in_game_game_over_text_length - 1]
+    game_over_text_loop:
+        lda in_game_game_over_text_address,x
+        jsr $ffee
+        dex
+        bpl game_over_text_loop
+
+    lda #157        ; (SPACE)
+    jsr wait_for_key
+
     jmp main
+
+wait_for_key:   ; A=key
+
+    sta $70
+    wait_for_key_loop:
+        ldx $70
+        jsr check_key
+        bne wait_for_key_loop
+    rts
 
 player_move:
 
