@@ -1,5 +1,22 @@
 #!/usr/bin/env python
 
+"""
+Copyright (C) 2012 David Boddie <david@boddie.org.uk>
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+"""
+
 import os, sys
 import Image
 
@@ -89,6 +106,7 @@ if __name__ == "__main__":
         
         y = 8 * 6
         colours_used = {}
+        
         for row in rows:
         
             x = 0
@@ -116,7 +134,7 @@ if __name__ == "__main__":
                 
                 elif tile in portals:
                     portal_colour = portals[tile][-1]
-                    colours_used[portal_colour] = colours_used.get(portal_colour, 0) + 1
+                    colours_used.setdefault(portal_colour, []).append(x)
                     tile = "."
                 
                 if not skip and tile in tile_images:
@@ -127,12 +145,18 @@ if __name__ == "__main__":
             
             y += 8
         
-        colours_used = map(lambda (c, f): (f, c), colours_used.items())
-        colours_used.sort()
-        colour = colours[colours_used[-1][1]]
+        for portal_colour in colours_used.keys():
         
-        level_image.putpalette(colours["black"] + colours["red"] + colour + \
-                               colours["yellow"])
-        level_image.save(os.path.join(output_dir, name + ".png"))
+            level_image.putpalette(
+                colours["black"] + colours["red"] + \
+                colours[portal_colour] + colours["yellow"]
+                )
+            
+            if len(colours_used) > 1:
+                file_name = "%s-%s.png" % (name, portal_colour)
+            else:
+                file_name = "%s.png" % name
+            
+            level_image.save(os.path.join(output_dir, file_name))
     
     sys.exit()
