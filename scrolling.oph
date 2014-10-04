@@ -142,12 +142,12 @@ scroll_right_update:
     lda #1
     sta scrolled
 
-    lda scroll_offset_low   ; Increase the scroll offset before showing bank 1.
-    adc #1
-    sta scroll_offset_low
-    lda scroll_offset_high
-    adc #0
-    sta scroll_offset_high
+    inc scroll_offset_low   ; Increase the scroll offset before showing bank 1.
+    lda scroll_offset_low
+    cmp #0
+    bne scroll_right_update_show_bank1_next
+    inc scroll_offset_high
+    scroll_right_update_show_bank1_next:
     clc
 
     jsr scroll_right
