@@ -76,6 +76,16 @@ def encode_text(lines):
     
     return data_oph, text_length
 
+def encode_data(bytes):
+
+    data = []
+    i = 0
+    while i < len(bytes):
+    
+        data.append(".byte " + ",".join(map(lambda x: "$%02x" % ord(x), bytes[i:i+24])))
+        i += 24
+    
+    return "\n".join(data)
 
 tiles = map(lambda tile: makelevels.tile_ref[tile], makelevels.tile_order)
 
@@ -89,31 +99,36 @@ monster_sprites = ["images/bat1.png", "images/bat2.png",
 
 life_sprites = ["images/life1.png", "images/life2.png"]
 
+title_data_oph_routines = [
+("print_title_text", """
 
-if __name__ == "__main__":
+    ldx #[%(in_game_title_text_length)i - 1]
+    title_text_loop:
+        lda $%(in_game_title_text_address)x,x
+        jsr $ffee
+        dex
+        bpl title_text_loop
 
-    if not 3 <= len(sys.argv) <= 4:
-    
-        sys.stderr.write("Usage: %s -e|-b -t|-a|-d <new UEF or ADF file> [level file]\n" % sys.argv[0])
-        sys.exit(1)
-    
-    machine_type = sys.argv[1]
-    if machine_type not in ("-e", "-b"):
-        sys.stderr.write("Please specify a valid machine type.\n")
-        sys.exit(1)
-    
-    make_tape_image = sys.argv[2] == "-t"
-    make_adfs_image = sys.argv[2] == "-a"
-    make_dfs_image = sys.argv[2] == "-d"
-    out_file = sys.argv[3]
-    
-    if len(sys.argv) == 4:
-        level_file = "levels/default.txt"
-    else:
-        level_file = sys.argv[4]
-    
+    clc
+    rts
+"""),
+("print_game_over_text", """
+
+    ldx #[%(in_game_game_over_text_length)i - 1]
+    game_over_text_loop:
+        lda $%(in_game_game_over_text_address)x,x
+        jsr $ffee
+        dex
+        bpl game_over_text_loop
+
+    clc
+    rts
+""")]
+
+def encode_in_game_data(in_game_data_address):
+
     # Encode the in-game title data.
-    title_data_oph = "title_data:\n"
+    title_data_oph = ""
     
     title_rows = 0
     for line in open("title.txt").readlines():
@@ -136,32 +151,105 @@ if __name__ == "__main__":
         title_data_oph += "\n"
         title_rows += 1
     
-    title_data_oph += (
-        "\n"
-        "title_end:\n"
-        ".alias title_length [title_end - title_data]\n"
-        "\n"
-        )
+    title_data_oph += "\n"
     
     title_text = [(26, 31, 3, 6, 17, 3, "Retro Software"),
                       (31, 6, 8, "presents"),
                       (31, 2, 27, 17, 2, "Press ", 17, 3, "SPACE/FIRE"),
                       (31, 6, 29, 17, 2, "to play")]
     
-    title_data_oph += 'game_title_text:\n'
     title_data, in_game_title_text_length = encode_text(title_text)
     title_data_oph += title_data
-    title_data_oph += 'game_title_text_end:\n'
+    title_data_oph += '\n'
     
     game_over_text = [(26, 31, 1, 16, 17, 3, "Your quest is over"),
                           (31, 4, 29, 17, 1, "Press  SPACE")]
     
-    title_data_oph += 'game_over_text:\n'
     game_over_data, in_game_game_over_text_length = encode_text(game_over_text)
     title_data_oph += game_over_data
-    title_data_oph += 'game_over_text_end:\n'
+    title_data_oph += '\n'
     
-    open("title-data.oph", "w").write(title_data_oph)
+    in_game_title_text_address = in_game_data_address + (title_rows * 10)
+    in_game_game_over_text_address = in_game_title_text_address + in_game_title_text_length
+    in_game_title_routines_address = in_game_game_over_text_address + in_game_game_over_text_length
+    
+    labels = (
+        ".alias title_data_address              $%(title_data_address)x\n"
+        ".alias title_rows                      %(title_rows)i\n"
+        ".alias in_game_title_text_address      $%(in_game_title_text_address)x\n"
+        ".alias in_game_title_text_length       %(in_game_title_text_length)i\n"
+        ".alias in_game_game_over_text_address  $%(in_game_game_over_text_address)x\n"
+        ".alias in_game_game_over_text_length   %(in_game_game_over_text_length)i\n"
+        ".alias in_game_completion_address      $%(in_game_completion_address)x\n"
+    )
+    
+    details = {
+        "title_data_address": in_game_data_address,
+        "title_rows": title_rows,
+        "in_game_title_text_address": in_game_title_text_address,
+        "in_game_title_text_length": in_game_title_text_length,
+        "in_game_game_over_text_address": in_game_game_over_text_address,
+        "in_game_game_over_text_length": in_game_game_over_text_length,
+        }
+    
+    routine_address = in_game_title_routines_address
+    for name, routine in title_data_oph_routines:
+    
+        routine = name + ":" + (routine % details)
+        open("temp.oph", "w").write(routine)
+        system("ophis temp.oph -o TEMP")
+        
+        # Include the routine in the title data file.
+        title_data_oph += routine + "\n"
+        
+        # Add the run-time address to the constants.
+        labels += ".alias " + name + "_address" + (" $%0x\n" % routine_address)
+        details[name + "_address"] = routine_address
+        
+        # Update the routine address.
+        routine_address += os.stat("TEMP")[stat.ST_SIZE]
+        
+        os.remove("temp.oph")
+        os.remove("TEMP")
+    
+    # The completion code is stored after the title routines.
+    details["in_game_completion_address"] = routine_address
+    
+    ending = open("ending.oph").read()
+    ending = ending % {"in_game_completion_address": routine_address}
+    open("temp.oph", "w").write(ending)
+    
+    system("ophis temp.oph -o TEMP")
+    ending = open("TEMP").read()
+    os.remove("temp.oph")
+    os.remove("TEMP")
+    title_data_oph += encode_data(ending)
+    
+    open("title-data-and-ending.oph", "w").write(title_data_oph)
+    
+    return labels, details
+
+if __name__ == "__main__":
+
+    if not 3 <= len(sys.argv) <= 4:
+    
+        sys.stderr.write("Usage: %s -e|-b -t|-a|-d <new UEF or ADF file> [level file]\n" % sys.argv[0])
+        sys.exit(1)
+    
+    machine_type = sys.argv[1]
+    if machine_type not in ("-e", "-b"):
+        sys.stderr.write("Please specify a valid machine type.\n")
+        sys.exit(1)
+    
+    make_tape_image = sys.argv[2] == "-t"
+    make_adfs_image = sys.argv[2] == "-a"
+    make_dfs_image = sys.argv[2] == "-d"
+    out_file = sys.argv[3]
+    
+    if len(sys.argv) == 4:
+        level_file = "levels/default.txt"
+    else:
+        level_file = sys.argv[4]
     
     # Memory map
     memory_map = {
@@ -238,11 +326,8 @@ if __name__ == "__main__":
     # data - this is done in the loader.
     title_data_address = initial_row_offsets + 0x10
     
-    in_game_title_text_address = title_data_address + (title_rows * 10)
-    in_game_game_over_text_address = in_game_title_text_address + in_game_title_text_length
-    in_game_completion_address = in_game_game_over_text_address + in_game_game_over_text_length
-    
-    working_end = in_game_completion_address
+    in_game_data_labels, in_game_data_details = encode_in_game_data(title_data_address)
+    working_end = in_game_data_details["in_game_completion_address"]
     
     # Permanent data
     
@@ -551,19 +636,7 @@ if __name__ == "__main__":
              monster_right_offset,
              monster_right_max_offset)
     
-    constants_oph += (
-        ".alias title_data_address              $%x\n"
-        ".alias title_rows                      %i\n"
-        ".alias in_game_title_text_address      $%x\n"
-        ".alias in_game_title_text_length       %i\n"
-        ".alias in_game_game_over_text_address  $%x\n"
-        ".alias in_game_game_over_text_length   %i\n"
-        ".alias in_game_total_text_length       %i\n"
-        "\n"
-        ) % (title_data_address, title_rows,
-             in_game_title_text_address, in_game_title_text_length,
-             in_game_game_over_text_address, in_game_game_over_text_length,
-             in_game_title_text_length + in_game_game_over_text_length)
+    constants_oph += (in_game_data_labels % in_game_data_details) + "\n"
     
     scenery_rows = 16
     extra_rows = 7
@@ -620,6 +693,7 @@ if __name__ == "__main__":
     
     system("ophis code.oph -o CODE")
     code = open("CODE").read()
+    os.remove("CODE")
     
     loader_start = 0x3500
     
@@ -662,6 +736,7 @@ if __name__ == "__main__":
     
     system("ophis loader.oph -o LOADER")
     loader_code = open("LOADER").read() + markers + title_data
+    os.remove("LOADER")
     
     bootloader_start = 0xe00
     bootloader_code = ("\r\x00\x0a\x0d*FX 229,1"
@@ -683,12 +758,18 @@ if __name__ == "__main__":
     #    uncompressed = c.uncompress(compressed)
     #    print info[0], len(data), len(compressed), data == uncompressed
     
-    loader_size = os.stat("LOADER")[stat.ST_SIZE]
+    loader_size = len(loader_code)
     print
     print "%i bytes (%04x) of loader code" % (loader_size, loader_size)
     
-    code_size = os.stat("CODE")[stat.ST_SIZE]
+    code_size = len(code)
     print "%i bytes (%04x) of code" % (code_size, code_size)
+    print
+    
+    # Calculate the amount of space used for the loader.
+    
+    loader_finish = loader_start + loader_size
+    print "LOADER runs from %04x to %04x" % (loader_start, loader_finish)
     print
     
     # Calculate the amount of working space used.
@@ -811,6 +892,13 @@ if __name__ == "__main__":
         
         print
         print "Written", out_file
+    
+    # Remove temporary files.
+    os.remove("bank_routines.oph")
+    os.remove("constants.oph")
+    os.remove("loader-constants.oph")
+    os.remove("screen.oph")
+    os.remove("title-data-and-ending.oph")
     
     # Exit
     sys.exit()

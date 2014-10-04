@@ -117,12 +117,12 @@ main:
     jsr tab_x_y
 
     ldx #0
-    title_text_loop:
+    loader_title_text_loop:
         lda title_text,x
         jsr $ffee
         inx
         cpx #[title_text_end - title_text]
-        bne title_text_loop
+        bne loader_title_text_loop
 
     ; Define ENVELOPEs.
     lda #0
@@ -490,12 +490,9 @@ title_text_end:
 
 move_title_data:
 
-    ldx #0
-    ldy #0
-
-    lda #<title_data
+    lda #<in_game_data_start
     sta $70
-    lda #>title_data
+    lda #>in_game_data_start
     sta $71
 
     lda #<title_data_address
@@ -503,6 +500,7 @@ move_title_data:
     lda #>title_data_address
     sta $73
 
+    ldy #0
     move_title_data_loop:
 
         clc
@@ -525,14 +523,19 @@ move_title_data:
         sta $73
         clc
 
-        inx
-        cpx #[title_length + in_game_total_text_length]
+        lda $70
+        cmp #<in_game_data_end
+        bne move_title_data_loop
+        lda $71
+        cmp #>in_game_data_end
         bne move_title_data_loop
 
     clc
     rts
 
-.include "title-data.oph"
+in_game_data_start:
+.include "title-data-and-ending.oph"
+in_game_data_end:
 
 ; Flag drawing routines
 

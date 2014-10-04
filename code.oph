@@ -30,12 +30,7 @@ main:
     jsr show_bank2          ; Show bank 2 since this is where the output of OS
                             ; calls will appear.
 
-    ldx #[in_game_title_text_length - 1]
-    title_text_loop:
-        lda in_game_title_text_address,x
-        jsr $ffee
-        dex
-        bpl title_text_loop
+    jsr print_title_text_address
 
     ; Wait for the SPACE key or fire button to be pressed.
     main_start_wait_loop:
@@ -194,7 +189,7 @@ main:
             cmp #finish_scroll_offset_high
             bne main_loop_check_monsters
 
-            jmp game_completed
+            jsr in_game_completion_address
 
         main_loop_check_monsters:
         jsr check_player_monsters
@@ -250,12 +245,7 @@ main:
     jsr show_bank2          ; Show bank 2 since this is where the output of OS
                             ; calls will appear.
 
-    ldx #[in_game_game_over_text_length - 1]
-    game_over_text_loop:
-        lda in_game_game_over_text_address,x
-        jsr $ffee
-        dex
-        bpl game_over_text_loop
+    jsr print_game_over_text_address
 
     lda #157        ; (SPACE)
     jsr wait_for_key
@@ -1097,14 +1087,6 @@ player_demise:
 
     player_demise_exit:
     sec
-    rts
-
-game_completed:
-
-    ; Do something to indicate the game has been completed.
-    ; Check whether the player found the treasures.
-
-    clc
     rts
 
 .include "screen.oph"
