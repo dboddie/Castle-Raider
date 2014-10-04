@@ -123,6 +123,40 @@ title_data_oph_routines = [
 
     clc
     rts
+"""),
+("set_core_palette", """
+
+    lda #2
+    sta $70
+    lda #2
+    sta $71
+    jsr set_palette
+
+    lda #3
+    sta $70
+    lda #3
+    sta $71
+    jsr set_palette
+
+    rts
+
+set_palette:
+                    ; $70=logical colour
+                    ; $71=physical colour
+    lda $70
+    sta $3dfb
+    lda $71
+    sta $3dfc
+    lda #0
+    sta $3dfd
+    sta $3dfe
+    sta $3dff
+
+    lda #$c         
+    ldx #$fb
+    ldy #$3d
+    jsr $fff1
+    rts
 """)]
 
 def encode_in_game_data(in_game_data_address):
