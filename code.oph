@@ -30,7 +30,7 @@ main:
     jsr show_bank2          ; Show bank 2 since this is where the output of OS
                             ; calls will appear.
 
-    jsr print_title_text_address
+    jsr print_title_text
 
     ; Wait for the SPACE key or fire button to be pressed.
     main_start_wait_loop:
@@ -189,6 +189,8 @@ main:
             cmp #finish_scroll_offset_high
             bne main_loop_check_monsters
 
+            ; Jump to an address in the working area where the completion code
+            ; was copied to by the loader.
             jsr in_game_completion_address
 
         main_loop_check_monsters:
@@ -245,21 +247,12 @@ main:
     jsr show_bank2          ; Show bank 2 since this is where the output of OS
                             ; calls will appear.
 
-    jsr print_game_over_text_address
+    jsr print_game_over_text
 
     lda #157        ; (SPACE)
     jsr wait_for_key
 
     jmp main
-
-wait_for_key:   ; A=key
-
-    sta $70
-    wait_for_key_loop:
-        ldx $70
-        jsr check_key
-        bne wait_for_key_loop
-    rts
 
 player_move:
 
@@ -388,13 +381,6 @@ player_move:
     bne player_move_exit
 
     jmp player_enter                ; Branch then exit.
-
-check_key:      ; x=key code
-    lda #129    ; returns y=255 or 0
-    ldy #255
-    jsr $fff4
-    cpy #255    ; Perform the check for a pressed key here.
-    rts
 
 check_beneath:      ; Checks beneath the character for solid tiles.
                     ; Sets player_falling if none exist.
@@ -969,13 +955,12 @@ jump_to_tracking_offset:
 
     jump_to_tracking_offset_left:
     
-    sec
+    dec scroll_offset_low
     lda scroll_offset_low
-    sbc #1
-    sta scroll_offset_low
-    lda scroll_offset_high
-    sbc #0
-    sta scroll_offset_high
+    cmp #$ff
+    bne jump_to_tracking_offset_left_next
+    dec scroll_offset_high
+    jump_to_tracking_offset_left_next:
     clc
 
     jsr scroll_left_update_monsters
@@ -984,12 +969,12 @@ jump_to_tracking_offset:
 
     jump_to_tracking_offset_right:
 
+    inc scroll_offset_low
     lda scroll_offset_low
-    adc #1
-    sta scroll_offset_low
-    lda scroll_offset_high
-    adc #0
-    sta scroll_offset_high
+    cmp #0
+    bne jump_to_tracking_offset_right_next
+    inc scroll_offset_high
+    jump_to_tracking_offset_right_next:
     clc
 
     jsr scroll_right_update_monsters

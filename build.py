@@ -124,38 +124,20 @@ title_data_oph_routines = [
     clc
     rts
 """),
-("set_core_palette", """
-
-    lda #2
-    sta $70
-    lda #2
-    sta $71
-    jsr set_palette
-
-    lda #3
-    sta $70
-    lda #3
-    sta $71
-    jsr set_palette
-
+("check_key", """ ; x=key code
+    lda #129    ; returns y=255 or 0
+    ldy #255
+    jsr $fff4
+    cpy #255    ; Perform the check for a pressed key here.
     rts
+"""),
+("wait_for_key", """ ; A=key
 
-set_palette:
-                    ; $70=logical colour
-                    ; $71=physical colour
-    lda $70
-    sta $3dfb
-    lda $71
-    sta $3dfc
-    lda #0
-    sta $3dfd
-    sta $3dfe
-    sta $3dff
-
-    lda #$c         
-    ldx #$fb
-    ldy #$3d
-    jsr $fff1
+    sta $70
+    wait_for_key_loop:
+        ldx $70
+        jsr check_key
+        bne wait_for_key_loop
     rts
 """)]
 
@@ -214,7 +196,6 @@ def encode_in_game_data(in_game_data_address):
         ".alias in_game_title_text_length       %(in_game_title_text_length)i\n"
         ".alias in_game_game_over_text_address  $%(in_game_game_over_text_address)x\n"
         ".alias in_game_game_over_text_length   %(in_game_game_over_text_length)i\n"
-        ".alias in_game_completion_address      $%(in_game_completion_address)x\n"
     )
     
     details = {
@@ -229,16 +210,22 @@ def encode_in_game_data(in_game_data_address):
     routine_address = in_game_title_routines_address
     for name, routine in title_data_oph_routines:
     
-        routine = name + ":" + (routine % details)
+        print "Assembling", name, "at $%x" % routine_address
+        
+        # Substitute the routine address into the code if necessary and include
+        # aliases so that the routine can call any previously defined routines.
+        details["routine_address"] = routine_address
+        routine = (routine % details) + "\n" + (labels % details)
+        
         open("temp.oph", "w").write(routine)
         system("ophis temp.oph -o TEMP")
         
         # Include the routine in the title data file.
-        title_data_oph += routine + "\n"
+        title_data_oph += encode_data(open("TEMP").read()) + "\n"
         
         # Add the run-time address to the constants.
-        labels += ".alias " + name + "_address" + (" $%0x\n" % routine_address)
-        details[name + "_address"] = routine_address
+        labels += ".alias " + name + (" $%0x\n" % routine_address)
+        details[name] = routine_address
         
         # Update the routine address.
         routine_address += os.stat("TEMP")[stat.ST_SIZE]
@@ -248,9 +235,11 @@ def encode_in_game_data(in_game_data_address):
     
     # The completion code is stored after the title routines.
     details["in_game_completion_address"] = routine_address
+    labels += ".alias in_game_completion_address      $%(in_game_completion_address)x\n"
     
+    print "Assembling ending.oph at $%x" % routine_address
     ending = open("ending.oph").read()
-    ending = ending % {"in_game_completion_address": routine_address}
+    ending = (ending % details) + "\n" + (labels % details)
     open("temp.oph", "w").write(ending)
     
     system("ophis temp.oph -o TEMP")
@@ -784,14 +773,6 @@ if __name__ == "__main__":
              ("PANEL", panel_address, panel_address, panel),
              ("CODE", code_start, code_start, code)]
     
-    #from tools.compress import Compressor
-    #c = Compressor()
-    #for info in files:
-    #    data = info[-1]
-    #    compressed = c.compress(data)
-    #    uncompressed = c.uncompress(compressed)
-    #    print info[0], len(data), len(compressed), data == uncompressed
-    
     loader_size = len(loader_code)
     print
     print "%i bytes (%04x) of loader code" % (loader_size, loader_size)
@@ -807,8 +788,9 @@ if __name__ == "__main__":
     print
     
     # Calculate the amount of working space used.
+    # 0xcfb is the start of a block of memory used for palette operations.
     
-    print "Working data area runs from 0b00 to %04x (%i bytes free)" % (working_end, 0xd00 - working_end)
+    print "Working data area runs from 0b00 to %04x (%i bytes free)" % (working_end, 0xcfb - working_end)
     print
     
     # Calculate the amount of memory used for each file.

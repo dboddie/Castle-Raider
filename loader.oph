@@ -20,7 +20,7 @@
 main:
     jsr move_title_data     ; Move the title data into the temporary data area.
 
-    lda #22         ; MODE 5
+    lda #22
     jsr $ffee
     lda #5
     jsr $ffee
@@ -36,7 +36,7 @@ main:
         dex
         bpl cursor_loop
 
-    jsr set_core_palette_address
+    jsr set_core_palette
 
     ; Load the sprites.
 
@@ -80,9 +80,6 @@ main:
     jsr $ffee
 
     jsr init_update_title
-
-    lda #0                  ; clear polling flag to indicate that the animation
-    sta $8f                 ; is not running as an interrupt routine
 
     title_animation_loop:
 
@@ -143,9 +140,6 @@ main:
         bne define_envelopes_loop
 
     ; Configure the interrupt routine.
-
-    lda #1                  ; set polling flag to ensure that the interrupt
-    sta $8f                 ; routine gives enough time to the OS
 
     jsr cassette_init
 
@@ -221,6 +215,37 @@ set_colour:
     txa
     jmp $ffee
 
+set_core_palette:
+
+    lda #2
+    sta $70
+    lda #2
+    sta $71
+    jsr set_palette
+
+    lda #3
+    sta $70
+    lda #3
+    sta $71         ; drop through into the subroutine
+
+set_palette:
+                    ; $70=logical colour
+                    ; $71=physical colour
+    lda $70
+    sta $cfb
+    lda $71
+    sta $cfc
+    lda #0
+    sta $cfd
+    sta $cfe
+    sta $cff
+
+    lda #$c         
+    ldx #$fb
+    ldy #$0c
+    jsr $fff1
+    rts
+
 copy_panel:
 
     lda #$00
@@ -239,35 +264,28 @@ copy_panel:
         lda ($70),y
         sta ($72),y
 
+        inc $70
         lda $70
-        adc #1
-        sta $70
-        lda $71
-        adc #0
-        sta $71
+        cmp #0
+        bne copy_top_panel_loop_next1
+        inc $71
+        copy_top_panel_loop_next1:
         clc
 
+        inc $72
         lda $72
-        adc #1
-        sta $72
-        lda $73
-        adc #0
-        sta $73
+        cmp #0
+        bne copy_top_panel_loop_next2
+        inc $73
+        copy_top_panel_loop_next2:
         clc
 
+        lda $73
         cmp #$5d
         bne copy_top_panel_loop
 
     clc
     rts
-
-check_key:      ; x=key code
-    lda #129    ; returns Z flag set if the key is pressed
-    ldy #255
-    jsr $fff4
-    cpy #255
-    rts
-
 
 plot8x24_y0:            ; $70,$71=source address
                         ; $72,$73=destination address
@@ -473,20 +491,20 @@ move_title_data:
         lda ($70),y
         sta ($72),y
 
+        inc $70
         lda $70
-        adc #1
-        sta $70
-        lda $71
-        adc #0
-        sta $71
+        cmp #0
+        bne move_title_data_loop_next1
+        inc $71
+        move_title_data_loop_next1:
         clc
 
+        inc $72
         lda $72
-        adc #1
-        sta $72
-        lda $73
-        adc #0
-        sta $73
+        cmp #0
+        bne move_title_data_loop_next2
+        inc $73
+        move_title_data_loop_next2:
         clc
 
         lda $70
@@ -498,10 +516,6 @@ move_title_data:
 
     clc
     rts
-
-in_game_data_start:
-.include "title-data-and-ending.oph"
-in_game_data_end:
 
 ; Flag drawing routines
 
@@ -722,16 +736,6 @@ update_column:      ; $72,$73=address of column top
     dey
     sta ($72),y
 
-    lda $8f                 ; if not running as an interrupt, jump straight
-    beq update_column_loop  ; into the column loop
-
-    lda #<update_column_loop
-    sta $7a
-    lda #>update_column_loop
-    sta $7b
-
-    rts
-
 update_column_loop:
 
         lda $81             ; load the current colour
@@ -789,10 +793,7 @@ update_column_loop:
         eor #$f0                    ; red <-> yellow
         sta $81
 
-        lda $8f
-        beq update_column_loop
-
-        rts                 ; keep $7a,$7b the same (loop)
+        jmp update_column_loop
 
     update_column_loop_next:
     clc
@@ -816,17 +817,6 @@ update_column_loop:
     lda #$0f                ; plot the top of the last row
     dey
     sta ($76),y
-
-    lda $8f                 ; if not running as an interrupt, jump straight
-    beq update_title3       ; into the next part of the routine
-
-    lda #<update_title3
-    sta $7a
-    lda #>update_title3
-    sta $7b
-
-    clc
-    rts
 
 update_title3:
 
@@ -860,20 +850,7 @@ update_title3:
     beq update_title_loop_exit
     inc $84
 
-    lda $8f
-    bne update_title3_break
-
     jmp update_title2
-
-    update_title3_break:
-
-    lda #<update_title2
-    sta $7a
-    lda #>update_title2
-    sta $7b
-
-    clc                         ; loop back to update_title2
-    rts
 
     update_title_loop_exit:
 
@@ -1043,5 +1020,9 @@ cassette_interrupt_routine:
     tax
     pla
     jmp (cassette_original_irq1v)
+
+in_game_data_start:
+.include "title-data-and-ending.oph"
+in_game_data_end:
 
 cassette_markers:
