@@ -100,46 +100,14 @@ monster_sprites = ["images/bat1.png", "images/bat2.png",
 life_sprites = ["images/life1.png", "images/life2.png"]
 
 title_data_oph_routines = [
-("print_title_text", """
-
-    ldx #[%(in_game_title_text_length)i - 1]
-    title_text_loop:
-        lda $%(in_game_title_text_address)x,x
-        jsr $ffee
-        dex
-        bpl title_text_loop
-
-    clc
-    rts
-"""),
-("print_game_over_text", """
-
-    ldx #[%(in_game_game_over_text_length)i - 1]
-    game_over_text_loop:
-        lda $%(in_game_game_over_text_address)x,x
-        jsr $ffee
-        dex
-        bpl game_over_text_loop
-
-    clc
-    rts
-"""),
-("check_key", """ ; x=key code
-    lda #129    ; returns y=255 or 0
-    ldy #255
-    jsr $fff4
-    cpy #255    ; Perform the check for a pressed key here.
-    rts
-"""),
-("wait_for_key", """ ; A=key
-
-    sta $70
-    wait_for_key_loop:
-        ldx $70
-        jsr check_key
-        bne wait_for_key_loop
-    rts
-""")]
+    "print_title_text",
+    "print_game_over_text",
+    "check_key",
+    "wait_for_key",
+    "clear_bank",
+    "read_joystick_axis",
+    "read_joystick_fire"
+    ]
 
 def encode_in_game_data(in_game_data_address):
 
@@ -208,8 +176,10 @@ def encode_in_game_data(in_game_data_address):
         }
     
     routine_address = in_game_title_routines_address
-    for name, routine in title_data_oph_routines:
+    for name in title_data_oph_routines:
     
+        routine = open(os.path.join("routines", name + ".oph")).read()
+        
         print "Assembling", name, "at $%x" % routine_address
         
         # Substitute the routine address into the code if necessary and include
@@ -233,20 +203,8 @@ def encode_in_game_data(in_game_data_address):
         os.remove("temp.oph")
         os.remove("TEMP")
     
-    # The completion code is stored after the title routines.
-    details["in_game_completion_address"] = routine_address
-    labels += ".alias in_game_completion_address      $%(in_game_completion_address)x\n"
-    
-    print "Assembling ending.oph at $%x" % routine_address
-    ending = open("ending.oph").read()
-    ending = (ending % details) + "\n" + (labels % details)
-    open("temp.oph", "w").write(ending)
-    
-    system("ophis temp.oph -o TEMP")
-    ending = open("TEMP").read()
-    os.remove("temp.oph")
-    os.remove("TEMP")
-    title_data_oph += encode_data(ending)
+    # Store the address of the end of the working area.
+    details["working_end"] = routine_address
     
     open("title-data-and-ending.oph", "w").write(title_data_oph)
     
@@ -345,12 +303,12 @@ if __name__ == "__main__":
     # Initial displacements for the rows.
     initial_row_offsets           = row_indices + 0x10
     
-    # Store the in-game text data and the completion code above the working
-    # data - this is done in the loader.
+    # Store the in-game text data and other routines above the working data.
+    # This is done in the loader.
     title_data_address = initial_row_offsets + 0x10
     
     in_game_data_labels, in_game_data_details = encode_in_game_data(title_data_address)
-    working_end = in_game_data_details["in_game_completion_address"]
+    working_end = in_game_data_details["working_end"]
     
     # Permanent data
     

@@ -13,15 +13,14 @@
 ; You should have received a copy of the GNU General Public License
 ; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-; The following line contains a placeholder address that the build script
-; calculates and fills in.
+; print_game_over_text:
 
-game_completed:
-
-    ; Do something to indicate the game has been completed.
-    ; Check whether the player found the treasures.
-
-    jmp game_completed
+    ldx #[%(in_game_game_over_text_length)i - 1]
+    game_over_text_loop:
+        lda $%(in_game_game_over_text_address)x,x
+        jsr $ffee
+        dex
+        bpl game_over_text_loop
 
     clc
     rts

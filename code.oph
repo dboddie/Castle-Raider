@@ -191,7 +191,7 @@ main:
 
             ; Jump to an address in the working area where the completion code
             ; was copied to by the loader.
-            jsr in_game_completion_address
+            jsr game_completed
 
         main_loop_check_monsters:
         jsr check_player_monsters
@@ -1079,5 +1079,5 @@ player_demise:
 .include "scrolling.oph"
 .include "bank_routines.oph"
 .include "monsters.oph"
-.include "joystick.oph"
 .include "sound.oph"
+.include "ending.oph"

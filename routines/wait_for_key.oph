@@ -13,15 +13,11 @@
 ; You should have received a copy of the GNU General Public License
 ; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-; The following line contains a placeholder address that the build script
-; calculates and fills in.
+; wait_for_key:   ; A=key
 
-game_completed:
-
-    ; Do something to indicate the game has been completed.
-    ; Check whether the player found the treasures.
-
-    jmp game_completed
-
-    clc
+    sta $70
+    wait_for_key_loop:
+        ldx $70
+        jsr check_key
+        bne wait_for_key_loop
     rts

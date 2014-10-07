@@ -34,32 +34,7 @@ clear_bank2:
     sta $71
     lda #$80
     sta $72
-    ; fall through
-
-clear_bank:
-
-    lda #$00
-    sta $70
-    ldy #0
-
-    clear_bank_loop:
-
-        lda #0
-        sta ($70),y
-
-        lda $70
-        adc #1
-        sta $70
-        lda $71
-        adc #0
-        sta $71
-        clc
-
-        cmp $72
-        bne clear_bank_loop
-
-    clc
-    rts
+    jmp clear_bank
 
 read_screen_address_bank1:  ; X=row, A=column offset
                             ; sets $72,$73

@@ -1,4 +1,4 @@
-; Copyright (C) 2014 David Boddie <david@boddie.org.uk>
+; Copyright (C) 2013 David Boddie <david@boddie.org.uk>
 ;
 ; This program is free software: you can redistribute it and/or modify
 ; it under the terms of the GNU General Public License as published by
@@ -13,15 +13,28 @@
 ; You should have received a copy of the GNU General Public License
 ; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-; The following line contains a placeholder address that the build script
-; calculates and fills in.
+; clear_bank:
 
-game_completed:
+    lda #$00
+    sta $70
+    ldy #0
 
-    ; Do something to indicate the game has been completed.
-    ; Check whether the player found the treasures.
+    clear_bank_loop:
 
-    jmp game_completed
+        lda #0
+        sta ($70),y
+
+        lda $70
+        adc #1
+        sta $70
+        lda $71
+        adc #0
+        sta $71
+        clc
+
+        cmp $72
+        bne clear_bank_loop
 
     clc
     rts
+

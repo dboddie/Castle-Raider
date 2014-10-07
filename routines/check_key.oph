@@ -13,15 +13,10 @@
 ; You should have received a copy of the GNU General Public License
 ; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-; The following line contains a placeholder address that the build script
-; calculates and fills in.
+; check_key:      ; x=key code
 
-game_completed:
-
-    ; Do something to indicate the game has been completed.
-    ; Check whether the player found the treasures.
-
-    jmp game_completed
-
-    clc
+    lda #129    ; returns y=255 or 0
+    ldy #255
+    jsr $fff4
+    cpy #255    ; Perform the check for a pressed key here.
     rts

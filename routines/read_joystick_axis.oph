@@ -13,7 +13,7 @@
 ; You should have received a copy of the GNU General Public License
 ; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-read_joystick_axis:     ; X=axis (1=horizontal, 2=vertical)
+; read_joystick_axis:   ; X=axis (1=horizontal, 2=vertical)
                         ; Returns 0=left/up or 1=right/down with carry set if
                         ; valid input is present; otherwise carry is clear.
     lda #128
@@ -33,12 +33,4 @@ read_joystick_axis:     ; X=axis (1=horizontal, 2=vertical)
     read_joystick_negative:
     lda #0
     sec
-    rts
-
-read_joystick_fire:     ; Returns with carry set if a button is pressed;
-                        ; otherwise returns with carry clear.
-    lda #128
-    ldx #0
-    jsr $fff4
-    cpx #$01            ; If X>=1 then set the carry flag.
     rts
