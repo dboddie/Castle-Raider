@@ -18,8 +18,6 @@
 .include "loader-constants.oph"
 
 main:
-    jsr move_title_data     ; Move the title data into the temporary data area.
-
     lda #22
     jsr $ffee
     lda #5
@@ -37,6 +35,13 @@ main:
         bpl cursor_loop
 
     jsr set_core_palette
+
+    ; Load miscellaneous routines.
+
+    lda #255
+    ldx #<routines_block
+    ldy #>routines_block
+    jsr $ffdd
 
     ; Load the sprites.
 
@@ -151,11 +156,6 @@ main:
         inx
         cpx #6
         bne init_load_window_loop
-
-    lda #255
-    ldx #<tiles_block
-    ldy #>tiles_block
-    jsr $ffdd
 
     lda #255
     ldx #<levels_block
@@ -404,19 +404,19 @@ switch_characters:
     clc
     rts
 
-tiles_block: .byte <tiles_file_name, >tiles_file_name
-             .byte sprite_area_low, sprite_area_high, 0, 0
-             .byte sprite_area_low, sprite_area_high, 0, 0
-             .byte sprite_area_length_low, sprite_area_length_high, 0, 0
-             .byte sprite_area_end_low, sprite_area_end_high, 0, 0
+routines_block: .byte <routines_file_name, >routines_file_name
+                .byte routines_low, routines_high, 0, 0
+                .byte routines_low, routines_high, 0, 0
+                .byte routines_length_low, routines_length_high, 0, 0
+                .byte routines_end_low, routines_end_high, 0, 0
 
-tiles_file_name: .byte "TILES", 13
+routines_file_name: .byte "ROUTINES", 13
 
 sprites_block: .byte <sprites_file_name, >sprites_file_name
-             .byte char_area_low, char_area_high, 0, 0
-             .byte char_area_low, char_area_high, 0, 0
-             .byte char_area_length_low, char_area_length_high, 0, 0
-             .byte char_area_end_low, char_area_end_high, 0, 0
+             .byte sprites_file_area_low, sprites_file_area_high, 0, 0
+             .byte sprites_file_area_low, sprites_file_area_high, 0, 0
+             .byte sprites_file_area_length_low, sprites_file_area_length_high, 0, 0
+             .byte sprites_file_area_end_low, sprites_file_area_end_high, 0, 0
 
 sprites_file_name: .byte "SPRITES", 13
 
@@ -469,53 +469,6 @@ title_text: .byte 17, 3
             .byte 17, 1
             .byte "GNU GPL v.3 or later"
 title_text_end:
-
-; In-game title data handling routines and data.
-
-move_title_data:
-
-    lda #<in_game_data_start
-    sta $70
-    lda #>in_game_data_start
-    sta $71
-
-    lda #<title_data_address
-    sta $72
-    lda #>title_data_address
-    sta $73
-
-    ldy #0
-    move_title_data_loop:
-
-        clc
-        lda ($70),y
-        sta ($72),y
-
-        inc $70
-        lda $70
-        cmp #0
-        bne move_title_data_loop_next1
-        inc $71
-        move_title_data_loop_next1:
-        clc
-
-        inc $72
-        lda $72
-        cmp #0
-        bne move_title_data_loop_next2
-        inc $73
-        move_title_data_loop_next2:
-        clc
-
-        lda $70
-        cmp #<in_game_data_end
-        bne move_title_data_loop
-        lda $71
-        cmp #>in_game_data_end
-        bne move_title_data_loop
-
-    clc
-    rts
 
 ; Flag drawing routines
 
@@ -1020,9 +973,5 @@ cassette_interrupt_routine:
     tax
     pla
     jmp (cassette_original_irq1v)
-
-in_game_data_start:
-.include "title-data-and-ending.oph"
-in_game_data_end:
 
 cassette_markers:

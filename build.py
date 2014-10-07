@@ -55,7 +55,7 @@ def encode_text(lines):
     # print it.
     
     text_length = 0
-    data_oph = ""
+    data = ""
     lines.reverse()
     
     for line in lines:
@@ -65,16 +65,14 @@ def encode_text(lines):
         for piece in line:
         
             if type(piece) == int:
-                text_length += 1
-                text_values.append(str(piece))
+                text_values.append(chr(piece))
             else:
-                text_length += len(piece)
-                text_values.append('"' + piece[::-1] + '"')
+                text_values.append(piece[::-1])
         
         text_values.reverse()
-        data_oph += ".byte " + ", ".join(text_values) + "\n"
+        data += "".join(text_values)
     
-    return data_oph, text_length
+    return data
 
 def encode_data(bytes):
 
@@ -99,7 +97,7 @@ monster_sprites = ["images/bat1.png", "images/bat2.png",
 
 life_sprites = ["images/life1.png", "images/life2.png"]
 
-title_data_oph_routines = [
+misc_routines = [
     "print_title_text",
     "print_game_over_text",
     "check_key",
@@ -109,16 +107,15 @@ title_data_oph_routines = [
     "read_joystick_fire"
     ]
 
-def encode_in_game_data(in_game_data_address):
+def encode_in_game_data_and_routines(in_game_data_address):
 
     # Encode the in-game title data.
-    title_data_oph = ""
+    data = ""
     
     title_rows = 0
     for line in open("title.txt").readlines():
     
         line = line.rstrip("\n")
-        title_data_oph += ".byte "
         
         for i in range(0, 40, 4):
         
@@ -128,34 +125,33 @@ def encode_in_game_data(in_game_data_address):
                 byte = byte | (".@#+".index(char) << shift)
                 shift += 2
             
-            title_data_oph += "$%02x" % byte
-            if i < 36:
-                title_data_oph += ", "
+            data += chr(byte)
         
-        title_data_oph += "\n"
         title_rows += 1
     
-    title_data_oph += "\n"
+    in_game_title_text_address = in_game_data_address + len(data)
     
     title_text = [(26, 31, 3, 6, 17, 3, "Retro Software"),
                       (31, 6, 8, "presents"),
                       (31, 2, 27, 17, 2, "Press ", 17, 3, "SPACE/FIRE"),
                       (31, 6, 29, 17, 2, "to play")]
     
-    title_data, in_game_title_text_length = encode_text(title_text)
-    title_data_oph += title_data
-    title_data_oph += '\n'
+    title_data = encode_text(title_text)
+    data += title_data
+    in_game_title_text_length = len(title_data)
+    
+    in_game_game_over_text_address = in_game_title_text_address + \
+                                     in_game_title_text_length
     
     game_over_text = [(26, 31, 1, 16, 17, 3, "Your quest is over"),
                           (31, 4, 29, 17, 1, "Press  SPACE")]
     
-    game_over_data, in_game_game_over_text_length = encode_text(game_over_text)
-    title_data_oph += game_over_data
-    title_data_oph += '\n'
+    game_over_data = encode_text(game_over_text)
+    data += game_over_data
+    in_game_game_over_text_length = len(game_over_data)
     
-    in_game_title_text_address = in_game_data_address + (title_rows * 10)
-    in_game_game_over_text_address = in_game_title_text_address + in_game_title_text_length
-    in_game_title_routines_address = in_game_game_over_text_address + in_game_game_over_text_length
+    in_game_title_routines_address = in_game_game_over_text_address + \
+                                     in_game_game_over_text_length
     
     labels = (
         ".alias title_data_address              $%(title_data_address)x\n"
@@ -176,10 +172,10 @@ def encode_in_game_data(in_game_data_address):
         }
     
     routine_address = in_game_title_routines_address
-    for name in title_data_oph_routines:
+    
+    for name in misc_routines:
     
         routine = open(os.path.join("routines", name + ".oph")).read()
-        
         print "Assembling", name, "at $%x" % routine_address
         
         # Substitute the routine address into the code if necessary and include
@@ -191,7 +187,7 @@ def encode_in_game_data(in_game_data_address):
         system("ophis temp.oph -o TEMP")
         
         # Include the routine in the title data file.
-        title_data_oph += encode_data(open("TEMP").read()) + "\n"
+        data += open("TEMP").read()
         
         # Add the run-time address to the constants.
         labels += ".alias " + name + (" $%0x\n" % routine_address)
@@ -206,9 +202,22 @@ def encode_in_game_data(in_game_data_address):
     # Store the address of the end of the working area.
     details["working_end"] = routine_address
     
-    open("title-data-and-ending.oph", "w").write(title_data_oph)
+    # Define aliases for the start, length and end of the block of data
+    # created by this function.
     
-    return labels, details
+    labels += (
+        ".alias routines_low                    $%02x\n"
+        ".alias routines_high                   $%02x\n"
+        ".alias routines_length_low             $%02x\n"
+        ".alias routines_length_high            $%02x\n"
+        ".alias routines_end_low                $%02x\n"
+        ".alias routines_end_high               $%02x\n"
+        ) % (in_game_data_address & 0xff, in_game_data_address >> 8,
+             len(data) & 0xff, len(data) >> 8,
+             (in_game_data_address + len(data)) & 0xff,
+             (in_game_data_address + len(data)) >> 8)
+    
+    return labels, details, data
 
 if __name__ == "__main__":
 
@@ -307,7 +316,8 @@ if __name__ == "__main__":
     # This is done in the loader.
     title_data_address = initial_row_offsets + 0x10
     
-    in_game_data_labels, in_game_data_details = encode_in_game_data(title_data_address)
+    in_game_data_labels, in_game_data_details, title_data_routines = \
+        encode_in_game_data_and_routines(title_data_address)
     working_end = in_game_data_details["working_end"]
     
     # Permanent data
@@ -533,16 +543,16 @@ if __name__ == "__main__":
              tile_visibility_high, maximum_number_of_special_tiles)
     
     constants_oph += (
-        ".alias char_area                       $%x\n"
-        ".alias char_area_low                   $%02x\n"
-        ".alias char_area_high                  $%02x\n"
-        ".alias char_area_length_low            $%02x\n"
-        ".alias char_area_length_high           $%02x\n"
-        ".alias char_area_end_low               $%02x\n"
-        ".alias char_area_end_high              $%02x\n"
+        ".alias sprites_file_area                       $%x\n"
+        ".alias sprites_file_area_low                   $%02x\n"
+        ".alias sprites_file_area_high                  $%02x\n"
+        ".alias sprites_file_area_length_low            $%02x\n"
+        ".alias sprites_file_area_length_high           $%02x\n"
+        ".alias sprites_file_area_end_low               $%02x\n"
+        ".alias sprites_file_area_end_high              $%02x\n"
         "\n"
-        ) % ((char_area_address,) + \
-        address_length_end(char_area_address, char_data))
+        ) % ((sprite_area_address,) + \
+        address_length_end(sprite_area_address, sprite_data + char_data))
     
     constants_oph += (
         ".alias top_panel_address_low           $%02x\n"
@@ -678,8 +688,7 @@ if __name__ == "__main__":
     
     loader_start = 0x3500
     
-    marker_info = [(sprite_area_address, sprite_data),
-                   (levels_address, level_data),
+    marker_info = [(levels_address, level_data),
                    (panel_address, panel),
                    (code_start, code)]
     markers = ""
@@ -725,8 +734,10 @@ if __name__ == "__main__":
     
     files = [("CASTLE", bootloader_start, bootloader_start, bootloader_code),
              ("LOADER", loader_start, loader_start, loader_code),
-             ("SPRITES", char_area_address, char_area_address, char_data),
-             ("TILES", sprite_area_address, sprite_area_address, sprite_data),
+             ("ROUTINES", title_data_address, title_data_address,
+                          title_data_routines),
+             ("SPRITES", sprite_area_address, sprite_area_address,
+                         sprite_data + char_data),
              ("LEVELS", levels_address, levels_address, level_data),
              ("PANEL", panel_address, panel_address, panel),
              ("CODE", code_start, code_start, code)]
@@ -771,17 +782,8 @@ if __name__ == "__main__":
     else:
         print " (%i bytes free)" % (sprite_area_address - levels_finish)
     
-    sprite_area_finish = sprite_area_address + len(sprite_data)
-    print "TILES   runs from %04x to %04x" % (sprite_area_address, sprite_area_finish),
-    if sprite_area_finish > char_area_address:
-        print
-        sys.stderr.write("TILES overruns following data by %i bytes.\n" % (sprite_area_finish - char_area_address))
-        sys.exit(1)
-    else:
-        print " (%i bytes free)" % (char_area_address - sprite_area_finish)
-    
-    char_area_finish = char_area_address + len(char_data)
-    print "SPRITES runs from %04x to %04x" % (char_area_address, char_area_finish)
+    char_area_finish = sprite_area_address + len(sprite_data) + len(char_data)
+    print "SPRITES runs from %04x to %04x" % (sprite_area_address, char_area_finish)
     #if char_area_finish > panel_address:
     #    sys.stderr.write("SPRITES overruns following data by %i bytes.\n" % (char_area_finish - panel_address))
     #    sys.exit(1)
@@ -872,7 +874,6 @@ if __name__ == "__main__":
     os.remove("constants.oph")
     os.remove("loader-constants.oph")
     os.remove("screen.oph")
-    os.remove("title-data-and-ending.oph")
     
     # Exit
     sys.exit()
