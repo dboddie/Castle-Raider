@@ -21,7 +21,61 @@ game_completed:
     ; Do something to indicate the game has been completed.
     ; Check whether the player found the treasures.
 
-    jmp game_completed
+    ldx #0
+    game_completed_text_loop:
+
+        lda completed_text,x
+        jsr $ffee
+        inx
+        cpx #completed_text_length
+        bne game_completed_text_loop
+
+    ldx #0
+    game_completed_copy_loop:
+
+        lda #4                          ; column 4 is text column 2
+        jsr read_screen_address_bank2   ; $72,$73=address
+
+        lda $72     ; Use $70,$71 for the source address.
+        sta $70
+        lda $73
+        sec
+        sbc #$0a    ; Subtract 8 rows ($a00) from the address.
+        sta $71
+        clc
+
+        lda #4
+        jsr read_screen_address_bank1   ; $72,$73=address
+
+        lda $73
+        sec
+        sbc #$0a    ; Subtract 8 rows ($a00) from the address.
+        sta $73
+        clc
+
+        ldy #255
+        game_completed_copy_inner_loop:
+
+            lda ($70),y
+            sta ($72),y
+            dey
+            cpy #255
+            bne game_completed_copy_inner_loop
+
+        inx
+        cpx #12
+        bne game_completed_copy_loop
+
+    game_completed_wait:
+
+    jmp game_completed_wait
 
     clc
     rts
+
+completed_text: .byte 17,131, 28,2,16,17,5,  12, 26
+                .byte 17,130, 28,3,15,16,6, 12, 26
+                .byte 17,129, 28,4,14,15,7, 12, 26
+completed_text_end:
+
+.alias completed_text_length [completed_text_end - completed_text]

@@ -378,13 +378,14 @@ class LevelWidget(QWidget):
             painter.drawLine(19 * 4 * self.xs, 0, 19 * 4 * self.xs, 24 * 8 * self.ys)
         
         # Plot the finishing position.
-        if c1 <= self.finishing_offset + 19 and c2 >= self.finishing_offset + 20:
+        if c1 <= self.finishing_offset + 20 and c2 >= self.finishing_offset + 19:
         
             pen = QPen(Qt.white)
             pen.setStyle(Qt.DashLine)
             painter.setPen(pen)
+            painter.setBrush(Qt.NoBrush)
             painter.drawRect((self.finishing_offset + 19) * 4 * self.xs, 0,
-                              8 * self.xs, 24 * 8 * self.ys)
+                              8 * self.xs - 1, 24 * 8 * self.ys)
         
         painter.end()
     
