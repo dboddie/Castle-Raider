@@ -1,6 +1,5 @@
 To Do
 
-Fix clearing of the right hand side of the treasure chest on restart.
-Game over screen.
-Finishing screens.
+Add joystick support on the game over screen and perhaps also a jingle.
+Finishing screens
 Music?

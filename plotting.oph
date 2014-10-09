@@ -20,22 +20,6 @@ clear_banks:
     jsr clear_bank2
     jmp show_bank1
 
-clear_bank1:
-
-    lda #$35
-    sta $71
-    lda #$58
-    sta $72
-    jmp clear_bank
-
-clear_bank2:
-
-    lda #$5d
-    sta $71
-    lda #$80
-    sta $72
-    jmp clear_bank
-
 read_screen_address_bank1:  ; X=row, A=column offset
                             ; sets $72,$73
 

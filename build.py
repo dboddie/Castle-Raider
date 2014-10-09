@@ -103,6 +103,8 @@ misc_routines = [
     "check_key",
     "wait_for_key",
     "clear_bank",
+    "clear_bank1",
+    "clear_bank2",
     "read_joystick_axis",
     "read_joystick_fire"
     ]
