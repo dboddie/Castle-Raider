@@ -981,15 +981,7 @@ initial_plot_bank_tile_loop:
 
     jsr plot_tile_bank
 
-    lda $72
-    adc #8
-    sta $72
-    lda $73
-    adc #0
-    sta $73
-    clc
-
-    inc $74         ; one tile filled on the screen
+    jsr next_cell
 
     lda bank_number ; check if we are showing bank 2 and plotting on bank 1
     cmp #1
@@ -1015,6 +1007,19 @@ initial_plot_bank_tile_loop:
 
     initial_plot_bank_tile_loop_span_endloop1:
     jmp initial_plot_bank1_span_endloop
+
+next_cell:
+
+    lda $72
+    adc #8
+    sta $72
+    lda $73
+    adc #0
+    sta $73
+    clc
+
+    inc $74         ; one tile filled on the screen
+    rts
 
 player_sprites_low:  .byte <player_left1, <player_left2, <player_right1, <player_right2
 player_sprites_high: .byte >player_left1, >player_left2, >player_right1, >player_right2
