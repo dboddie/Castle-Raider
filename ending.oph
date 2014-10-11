@@ -38,67 +38,94 @@ game_completed:
         sta $74
         jsr read_screen_address_bank1   ; $72,$73=address
 
+        lda $72
+        sta $78
         lda $73
         sec
         sbc #$0a    ; Subtract 8 rows ($a00) from the address.
-        sta $73
+        sta $79
         clc
 
-        lda $72     ; Use $70,$71 for the source address.
-        sta $70
-        lda $73
+        lda $78     ; Use $76,$77 for the source address.
+        sta $76
+        lda $79
         adc #$28    ; Find the corresponding bank 2 address.
-        sta $71     ; This addition will not cause the carry flag to be set.
+        sta $77     ; This addition will not cause the carry flag to be set.
 
-        ; Traverse each column in the row
+        stx $7a
+        jsr plot_roll
+        ldx $7a
 
-        ldy #0
-        game_completed_column_loop:
-
-            lda #4                          ; Draw from column 4 to column 35.
-            sta $74
-
-            game_completed_copy_inner_loop:
-
-                lda ($70),y
-                sta ($72),y
-
-                ;sty $75
-                ;jsr gc_plot_roll
-                ;ldy $75
-
-                jsr next_cell   ; Reuse a plotting routine to increase $72,$73
-                                ; by 8 and $74 by 1.
-
-                lda $70
-                adc #8
-                sta $70
-                lda $71
-                adc #0
-                sta $71
-
-                lda $74
-                cmp #36
-                bne game_completed_copy_inner_loop
-
-            ;iny
-            ;cpy #8
-            ;bne game_completed_column_loop
-
-        clc
         inc $75                     ; Increment the vertical counter.
-        lda $75                     ; If at the bottom of the display area
-        cmp #96                     ; then break out of the loop.
-        beq game_completed_wait
-
-        and #$07                        ; Update the row counter (X) every
-        bne game_completed_copy_loop    ; eight pixels.
-        inx
-        jmp game_completed_copy_loop
+        lda $75
+        and #$07
+        sta $75
+        bne game_completed_copy_loop
+                                        ; Update the row counter (X) every
+        inx                             ; eight pixels.
+        cpx #12                         ; If not at the bottom of the area then
+        bne game_completed_copy_loop    ; loop again.
 
     game_completed_wait:
 
     jmp game_completed_wait
+
+    clc
+    rts
+
+plot_roll:      ; $76,$77=start address of a row in the area to be copied
+                ; $78,$79=start address of a row in the display area
+                ; $75=offset within the row (0 - 7) to start from
+
+    lda $78     ; Set the initial destination address within the row.
+    adc $75
+    sta $78
+
+    lda $75
+    tax         ; Use the row offset as an index.
+    adc #8
+    sta $7b     ; Define an end value for the index.
+
+    ldy #0
+
+    game_completed_column_loop: 
+
+        ldx #4
+        plot_roll_restore_addresses_loop:
+            dex
+            lda $76,x
+            sta $70,x
+            cpx #0
+            bne plot_roll_restore_addresses_loop
+
+        clc
+
+        lda #4                  ; Draw from column 4 to column 35.
+        sta $74
+
+        plot_roll_pixel_row_loop: ; Traverse each column in the pixel row.
+
+            lda ($70),y
+            sta ($72),y
+
+            jsr next_cell   ; Reuse a plotting routine to increase $72,$73
+                            ; by 8 and $74 by 1.
+
+            lda $70
+            adc #8
+            sta $70
+            lda $71
+            adc #0
+            sta $71
+
+            lda $74
+            cmp #36
+            bne plot_roll_pixel_row_loop
+
+        inc $75
+        lda $75
+        cmp $7b
+        bne game_completed_column_loop
 
     clc
     rts
