@@ -120,7 +120,6 @@ read_monster_row_address:   ; A=index
     lda #>monster_row_address
     adc #0
     sta $77
-    clc
 
     rts
 
@@ -254,7 +253,6 @@ plot_monster:   ; $7a,$7b=sprite plotting routine for a given bank
     lda #0
     adc #0
     sta $73
-    clc
 
     iny
     lda ($86),y                 ; y offset

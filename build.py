@@ -106,7 +106,9 @@ misc_routines = [
     "clear_bank1",
     "clear_bank2",
     "read_joystick_axis",
-    "read_joystick_fire"
+    "read_joystick_fire",
+    "disable_sound",
+    "wait_for_space_or_fire"
     ]
 
 def encode_in_game_data_and_routines(in_game_data_address):
@@ -146,7 +148,7 @@ def encode_in_game_data_and_routines(in_game_data_address):
                                      in_game_title_text_length
     
     game_over_text = [(26, 31, 1, 16, 17, 3, "Your quest is over"),
-                          (31, 4, 29, 17, 1, "Press  SPACE")]
+                          (31, 2, 29, 17, 1, "Press SPACE/FIRE")]
     
     game_over_data = encode_text(game_over_text)
     data += game_over_data
@@ -315,7 +317,7 @@ if __name__ == "__main__":
     initial_row_offsets           = row_indices + 0x10
     
     # Store the in-game text data and other routines above the working data.
-    # This is done in the loader.
+    # The generated file is loaded in the game loader.
     title_data_address = initial_row_offsets + 0x10
     
     in_game_data_labels, in_game_data_details, title_data_routines = \

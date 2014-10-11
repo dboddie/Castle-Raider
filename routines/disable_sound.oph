@@ -13,27 +13,8 @@
 ; You should have received a copy of the GNU General Public License
 ; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-sounds:
-demise_sound:   .byte 1,0, 1,0, 160,0, 6,0      ; 6 * 50ms
-item_sound:     .byte $13,0, 2,0, 160,0, 4,0    ; 4 * 50ms
-jump_sound:     .byte $13,0, 3,0, 50,0, 2,0     ; 2 * 50ms
-step_sound:     .byte $01,0, 241,0, 0,0, 1,0    ; 50ms
-door_sound:     .byte $11,0, 4,0, 0,0, 4,0      ; 200ms
-portal_sound:   .byte $11,0, 5,0, 10,0, 2,0     ; 100ms
+; disable_sound:  ; X=1 (disable); X=0 (enable)
 
-play_sound:     ; X=sound number
-
-    txa
-    asl
-    asl
-    asl
-    adc #<sounds
-    tax
-    lda #0
-    adc #>sounds
-    tay
-    clc
-    lda #7
-    jsr $fff1
-
-    rts
+    lda #210
+    ldy #0
+    jmp $fff4   ; optimise away the rts

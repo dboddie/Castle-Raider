@@ -31,20 +31,7 @@ main:
                             ; calls will appear.
 
     jsr print_title_text
-
-    ; Wait for the SPACE key or fire button to be pressed.
-    main_start_wait_loop:
-
-        jsr read_joystick_fire
-
-        lda #1
-        bcs main_init
-
-        main_start_wait_loop_key_check:
-
-        ldx #157            ; (SPACE)
-        jsr check_key
-        bne main_start_wait_loop
+    jsr wait_for_space_or_fire
 
     lda #0
 
@@ -249,8 +236,7 @@ main:
 
     jsr print_game_over_text
 
-    lda #157        ; (SPACE)
-    jsr wait_for_key
+    jsr wait_for_space_or_fire
 
     jmp main
 
@@ -453,7 +439,6 @@ read_row_address:           ; X=row number
     lda $77
     adc #0
     sta $77
-    clc
 
     rts
 

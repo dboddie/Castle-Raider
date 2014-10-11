@@ -44,7 +44,6 @@ read_screen_address_low:
     lda #0
     adc #0
     sta $73
-    clc
     rts
 
 read_screen_address_bank2:  ; X=row, A=column offset
@@ -81,7 +80,6 @@ read_sprite_address:        ; $76,$77=span address
     adc #0
     sta $71                     ; S1 ($70,$71)
 
-    clc
     rts
 
 read_and_mask_visible_sprite:
@@ -110,7 +108,6 @@ read_left_sprite_address:       ; A=tile number
     lda #left_sprites_high
     adc #0
     sta $71                     ; S2 ($70,$71)
-    clc
 
     rts
 
@@ -132,7 +129,6 @@ read_rotated_sprite_address:    ; A=tile number
     lda #rotated_sprites_high
     adc #0
     sta $71                 ; S1 ($70,$71)
-    clc
 
     rts
 
@@ -154,7 +150,6 @@ read_right_sprite_address:      ; A=tile number
     lda #right_sprites_high
     adc #0
     sta $81                     ; S2 ($80,$81)
-    clc
 
     rts
 
@@ -230,7 +225,6 @@ plot_bank1r:
             lda #0
             adc #0
             sta $8d
-            clc
 
             lda $72
             adc $8c
@@ -248,7 +242,6 @@ plot_bank1r:
             lda $77
             adc #0
             sta $77
-            clc
 
             bcc plot_bank1r_offset_loop
 
@@ -352,7 +345,6 @@ plot_bank1l:
             lda #0
             adc #0
             sta $8d
-            clc
 
             lda $72
             adc $8c
@@ -374,7 +366,6 @@ plot_bank1l:
             lda $77
             adc #0
             sta $77
-            clc
 
             bcc plot_bank1l_offset_loop
 
@@ -460,7 +451,6 @@ plot_bank2r:
         lda $73
         adc #0
         sta $73
-        clc
 
         plot_bank2r_row_loop_skip_leading:
         clc
@@ -499,7 +489,6 @@ plot_bank2r:
             lda #0
             adc #0
             sta $8d
-            clc
 
             lda $72
             adc $8c
@@ -518,7 +507,6 @@ plot_bank2r:
             lda $77
             adc #0
             sta $77
-            clc
 
             lda $78                         ; Read the current type and the
             jsr read_right_sprite_address   ; corresponding right edge sprite.
@@ -536,7 +524,6 @@ plot_bank2r:
             lda $73
             adc #0
             sta $73
-            clc
 
             inc $74
 
@@ -621,7 +608,6 @@ plot_bank2l:
                 lda $73
                 adc #0
                 sta $73
-                clc
 
                 bcc plot_bank2l_offset_loop ; Jump to the loop so that the span
                                             ; can be plotted.
@@ -716,7 +702,6 @@ plot_bank2l:
             lda #0
             adc #0
             sta $8d
-            clc
 
             lda $72
             adc $8c
@@ -747,7 +732,6 @@ plot_bank2l:
             lda $73
             adc #0
             sta $73
-            clc
 
             lda $76                 ; Add 2 to I.
             adc #2
@@ -755,7 +739,6 @@ plot_bank2l:
             lda $77
             adc #0
             sta $77
-            clc
 
             jmp plot_bank2l_offset_loop
 
@@ -856,7 +839,6 @@ initial_plot_bank1:
             lda $77
             adc #0
             sta $77
-            clc
 
             bcc initial_plot_bank1_span_loop
 
@@ -921,7 +903,6 @@ initial_plot_bank2:
             lda $73
             adc #0
             sta $73
-            clc
 
             inc $74         ; one tile filled on the screen
 
@@ -949,7 +930,6 @@ initial_plot_bank2:
             lda $77
             adc #0
             sta $77
-            clc
 
             bcc initial_plot_bank2_span_loop
 
@@ -1016,7 +996,6 @@ next_cell:
     lda $73
     adc #0
     sta $73
-    clc
 
     inc $74         ; one tile filled on the screen
     rts
@@ -1044,7 +1023,6 @@ plot_char_bank1:
     lda bank1_char_rows_high,x
     adc #0
     sta $73
-    clc
 
     jmp plot_char_bank
 
@@ -1060,7 +1038,6 @@ plot_char_bank2:
     lda bank2_char_rows_high,x
     adc #0
     sta $73
-    clc
 
     ; fall through
 
@@ -1153,7 +1130,6 @@ plot8x8_x0_y1:          ; $70,$71=source address
     lda $73
     adc #0
     sta $73
-    clc
 
     ldy $8c                     ; Start reading from the first offset.
     lda #1
@@ -1237,7 +1213,6 @@ plot8x24_y0:            ; $70,$71=source address
         lda $71
         adc #0
         sta $71
-        clc
 
         bcc plot8x24_y0_loop
 
@@ -1322,7 +1297,6 @@ plot8x24_y1:            ; $70,$71=source address
         lda $71
         adc #0
         sta $71
-        clc
 
         lda $72         ; update the destination pointer to point to the next
         adc #8          ; space
@@ -1330,7 +1304,6 @@ plot8x24_y1:            ; $70,$71=source address
         lda $73
         adc #0
         sta $73
-        clc
 
         bcc plot8x24_y1_loop
 
@@ -1371,7 +1344,6 @@ plot_collected_object_bank1:    ; A=screen offset
     lda #top_panel_objects_bank1_high
     adc #0
     sta $73
-    clc
 
     jmp plot_tile_bank
 
@@ -1382,7 +1354,6 @@ plot_collected_object_bank2:    ; A=screen offset
     lda #top_panel_objects_bank2_high
     adc #0
     sta $73
-    clc
 
     jmp plot_tile_bank
 
@@ -1426,7 +1397,6 @@ plot_life:              ; A=number, X=add/remove (0=add, 1=remove)
     lda #$00
     adc #0
     sta $8d
-    clc
 
     plot_life_after_row_check:
 

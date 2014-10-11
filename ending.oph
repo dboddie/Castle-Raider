@@ -31,33 +31,41 @@ game_completed:
         bne game_completed_text_loop
 
     ldx #0
+    stx $75
     game_completed_copy_loop:
+
+        lda #4                          ; Draw from column 4 to column 35.
+        sta $74
+        jsr read_screen_address_bank1   ; $72,$73=address
+
+        lda $73
+        sec
+        sbc #$0a    ; Subtract 8 rows ($a00) from the address.
+        sta $73
+        clc
+
+        lda $72     ; Use $70,$71 for the source address.
+        sta $70
+        lda $73
+        adc #$28    ; Find the corresponding bank 2 address.
+        sta $71     ; This addition will not cause the carry flag to be set.
 
         ; Traverse each column in the row
 
         ldy #0
         game_completed_column_loop:
 
-            lda #4                          ; Draw from column 4 to column 35,
+            lda #4                          ; Draw from column 4 to column 35.
             sta $74
-            jsr read_screen_address_bank1   ; $72,$73=address
-
-            lda $73
-            sec
-            sbc #$0a    ; Subtract 8 rows ($a00) from the address.
-            sta $73
-            clc
-
-            lda $72     ; Use $70,$71 for the source address.
-            sta $70
-            lda $73
-            adc #$28    ; Find the corresponding bank 2 address.
-            sta $71     ; This addition will not cause the carry flag to be set.
 
             game_completed_copy_inner_loop:
 
                 lda ($70),y
                 sta ($72),y
+
+                ;sty $75
+                ;jsr gc_plot_roll
+                ;ldy $75
 
                 jsr next_cell   ; Reuse a plotting routine to increase $72,$73
                                 ; by 8 and $74 by 1.
@@ -68,19 +76,25 @@ game_completed:
                 lda $71
                 adc #0
                 sta $71
-                clc
 
                 lda $74
                 cmp #36
                 bne game_completed_copy_inner_loop
 
-            iny
-            cpy #8
-            bne game_completed_column_loop
+            ;iny
+            ;cpy #8
+            ;bne game_completed_column_loop
 
+        clc
+        inc $75                     ; Increment the vertical counter.
+        lda $75                     ; If at the bottom of the display area
+        cmp #96                     ; then break out of the loop.
+        beq game_completed_wait
+
+        and #$07                        ; Update the row counter (X) every
+        bne game_completed_copy_loop    ; eight pixels.
         inx
-        cpx #12
-        bne game_completed_copy_loop
+        jmp game_completed_copy_loop
 
     game_completed_wait:
 

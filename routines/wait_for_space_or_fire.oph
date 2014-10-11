@@ -13,27 +13,21 @@
 ; You should have received a copy of the GNU General Public License
 ; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-sounds:
-demise_sound:   .byte 1,0, 1,0, 160,0, 6,0      ; 6 * 50ms
-item_sound:     .byte $13,0, 2,0, 160,0, 4,0    ; 4 * 50ms
-jump_sound:     .byte $13,0, 3,0, 50,0, 2,0     ; 2 * 50ms
-step_sound:     .byte $01,0, 241,0, 0,0, 1,0    ; 50ms
-door_sound:     .byte $11,0, 4,0, 0,0, 4,0      ; 200ms
-portal_sound:   .byte $11,0, 5,0, 10,0, 2,0     ; 100ms
+; wait_for_space_or_fire:
 
-play_sound:     ; X=sound number
+    ; Wait for the SPACE key or fire button to be pressed.
+    wait_for_space_or_fire_loop:
 
-    txa
-    asl
-    asl
-    asl
-    adc #<sounds
-    tax
-    lda #0
-    adc #>sounds
-    tay
+        jsr read_joystick_fire
+
+        lda #1
+        bcs wait_for_space_or_fire_exit
+
+        ldx #157            ; (SPACE)
+        jsr check_key
+        bne wait_for_space_or_fire_loop
+
+    wait_for_space_or_fire_exit:
+
     clc
-    lda #7
-    jsr $fff1
-
     rts

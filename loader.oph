@@ -320,7 +320,6 @@ plot8x24_y0:            ; $70,$71=source address
         lda $71
         adc #0
         sta $71
-        clc
 
         jmp plot8x24_y0_loop
 
@@ -350,7 +349,6 @@ plot_character:
     lda #>player_left1
     adc #0
     sta $71
-    clc
 
     lda #$a0
     sta $72
@@ -367,7 +365,6 @@ plot_character:
     lda $71
     adc #0
     sta $71
-    clc
 
     lda $72
     adc #$70                        ; plot 7 characters to the right
