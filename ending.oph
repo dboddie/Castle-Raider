@@ -81,6 +81,10 @@ plot_roll:      ; $76,$77=start address of a row in the area to be copied
     adc $75
     sta $78
 
+    lda $76     ; Set the initial destination address within the row.
+    adc $75
+    sta $76
+
     lda $75
     tax         ; Use the row offset as an index.
     adc #8
@@ -88,7 +92,7 @@ plot_roll:      ; $76,$77=start address of a row in the area to be copied
 
     ldy #0
 
-    game_completed_column_loop: 
+    plot_roll_loop:
 
         ldx #4
         plot_roll_restore_addresses_loop:
@@ -125,14 +129,15 @@ plot_roll:      ; $76,$77=start address of a row in the area to be copied
         inc $75
         lda $75
         cmp $7b
-        bne game_completed_column_loop
+        bne plot_roll_loop
+
+    plot_roll_exit:
 
     clc
     rts
 
-completed_text: .byte 17,131, 28,2,16,17,5,  12, 26
-                .byte 17,130, 28,3,15,16,6, 12, 26
-                .byte 17,129, 28,4,14,15,7, 12, 26
+completed_text: .byte 17,131, 28,2,16,17,5, 12
+                .byte 17,1, 10, " Well done!"
 completed_text_end:
 
 .alias completed_text_length [completed_text_end - completed_text]
