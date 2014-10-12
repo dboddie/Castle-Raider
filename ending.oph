@@ -40,14 +40,13 @@ game_completed:
 
         lda $72
         sta $78
+        sta $76     ; Use $76,$77 for the source address.
         lda $73
         sec
         sbc #$0a    ; Subtract 8 rows ($a00) from the address.
         sta $79
         clc
 
-        lda $78     ; Use $76,$77 for the source address.
-        sta $76
         lda $79
         adc #$28    ; Find the corresponding bank 2 address.
         sta $77     ; This addition will not cause the carry flag to be set.
@@ -56,8 +55,8 @@ game_completed:
         jsr plot_roll
         ldx $7a
 
-        inc $75                     ; Increment the vertical counter.
         lda $75
+        adc #1                      ; Increment the vertical counter.
         and #$07
         sta $75
         bne game_completed_copy_loop
@@ -77,32 +76,28 @@ plot_roll:      ; $76,$77=start address of a row in the area to be copied
                 ; $78,$79=start address of a row in the display area
                 ; $75=offset within the row (0 - 7) to start from
 
-    lda $78     ; Set the initial destination address within the row.
-    adc $75
-    sta $78
-
-    lda $76     ; Set the initial destination address within the row.
-    adc $75
-    sta $76
-
     lda $75
-    tax         ; Use the row offset as an index.
     adc #8
     sta $7b     ; Define an end value for the index.
 
     ldy #0
+    ldx $75     ; Use the row offset as an index.
 
     plot_roll_loop:
 
-        ldx #4
-        plot_roll_restore_addresses_loop:
-            dex
-            lda $76,x
-            sta $70,x
-            cpx #0
-            bne plot_roll_restore_addresses_loop
+        lda $78
+        adc roll_row_offsets_low,x
+        sta $72
+        lda $79
+        adc roll_row_offsets_high,x
+        sta $73
 
-        clc
+        lda $76
+        adc roll_row_offsets_low,x
+        sta $70
+        lda $77
+        adc roll_row_offsets_high,x
+        sta $71
 
         lda #4                  ; Draw from column 4 to column 35.
         sta $74
@@ -126,9 +121,8 @@ plot_roll:      ; $76,$77=start address of a row in the area to be copied
             cmp #36
             bne plot_roll_pixel_row_loop
 
-        inc $75
-        lda $75
-        cmp $7b
+        inx
+        cpx $7b
         bne plot_roll_loop
 
     plot_roll_exit:
@@ -141,3 +135,8 @@ completed_text: .byte 17,131, 28,2,16,17,5, 12
 completed_text_end:
 
 .alias completed_text_length [completed_text_end - completed_text]
+
+roll_row_offsets_low:   .byte 0,1,2,3,4,5,6,7,$40,$41,$42,$43,$44,$45,$46
+roll_row_offsets_high:  .byte 0,0,0,0,0,0,0,0,1,1,1,1,1,1,1
+
+roll_row_source_offsets: .byte 0,7,6,5,4,3,2,1
