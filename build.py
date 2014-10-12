@@ -249,9 +249,9 @@ if __name__ == "__main__":
     memory_map = {
         "working area": 0xb00,
         "code start": 0x0e00,
-        "data start": 0x2150,
-        "tile sprites": 0x2aa0 + 0xc0,
-        "character and object sprites": 0x2de0 + 0xc0,
+        "data start": 0x2150 + 0x20,
+        "tile sprites": 0x2aa0 + 0xc0 + 0x20,
+        "character and object sprites": 0x2de0 + 0xc0 + 0x20,
         "bank 1 (panel)": 0x3000,
         "(loader code)": 0x3500,
         "bank 2": 0x5800
