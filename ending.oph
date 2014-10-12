@@ -52,6 +52,7 @@ game_completed:
         sta $77     ; This addition will not cause the carry flag to be set.
 
         stx $7a
+        jsr vsync
         jsr plot_roll
         ldx $7a
 
@@ -81,23 +82,33 @@ plot_roll:      ; $76,$77=start address of a row in the area to be copied
     sta $7b     ; Define an end value for the index.
 
     ldy #0
-    ldx $75     ; Use the row offset as an index.
+    sty $7c     ; Maintain an index into a source translation table.
+    ldx $75     ; Use the row offset as an index into source and destination
+                ; address look-up tables.
 
     plot_roll_loop:
 
-        lda $78
-        adc roll_row_offsets_low,x
+        lda $78                     ; Find the address of the start of the
+        adc roll_row_offsets_low,x  ; pixel row to plot.
         sta $72
         lda $79
         adc roll_row_offsets_high,x
         sta $73
 
-        lda $76
-        adc roll_row_offsets_low,x
+        stx $7d                 ; Save the current pixel row.
+        ldx $7c                 ; Load the pixel row offset in the roll.
+        lda roll_row_source_offsets,x   ; Load the pixel row displacement.
+        adc $7d                         ; Add it to the current pixel row.
+        tax                     ; Use it to reference a source pixel row.
+
+        lda $76                     ; Find the address of the start of the
+        adc roll_row_offsets_low,x  ; source pixel row.
         sta $70
         lda $77
         adc roll_row_offsets_high,x
         sta $71
+
+        ldx $7d                 ; Restore the current pixel row.
 
         lda #4                  ; Draw from column 4 to column 35.
         sta $74
@@ -121,6 +132,7 @@ plot_roll:      ; $76,$77=start address of a row in the area to be copied
             cmp #36
             bne plot_roll_pixel_row_loop
 
+        inc $7c
         inx
         cpx $7b
         bne plot_roll_loop
@@ -131,12 +143,14 @@ plot_roll:      ; $76,$77=start address of a row in the area to be copied
     rts
 
 completed_text: .byte 17,131, 28,2,16,17,5, 12
-                .byte 17,1, 10, " Well done!"
+                .byte 17,1
+                .byte 10,    "  Well done!"
+                .byte 13,10,10, " You escaped!"
 completed_text_end:
 
 .alias completed_text_length [completed_text_end - completed_text]
 
-roll_row_offsets_low:   .byte 0,1,2,3,4,5,6,7,$40,$41,$42,$43,$44,$45,$46
-roll_row_offsets_high:  .byte 0,0,0,0,0,0,0,0,1,1,1,1,1,1,1
+roll_row_offsets_low:   .byte 0,1,2,3,4,5,6,7,$40,$41,$42,$43,$44,$45,$46,$47,$80,$81,$82
+roll_row_offsets_high:  .byte 0,0,0,0,0,0,0,0,$01,$01,$01,$01,$01,$01,$01,$01,$02,$02,$02
 
-roll_row_source_offsets: .byte 0,7,6,5,4,3,2,1
+roll_row_source_offsets: .byte 0,11,10,8,6,4,2,1

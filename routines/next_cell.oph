@@ -1,4 +1,4 @@
-; Copyright (C) 2013 David Boddie <david@boddie.org.uk>
+; Copyright (C) 2014 David Boddie <david@boddie.org.uk>
 ;
 ; This program is free software: you can redistribute it and/or modify
 ; it under the terms of the GNU General Public License as published by
@@ -13,27 +13,14 @@
 ; You should have received a copy of the GNU General Public License
 ; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-; clear_bank:
+; next_cell:
 
-    lda #$00
-    sta $70
-    ldy #0
+    lda $72
+    adc #8
+    sta $72
+    lda $73
+    adc #0
+    sta $73
 
-    clear_bank_loop:
-
-        lda #0
-        sta ($70),y
-
-        lda $70
-        adc #1
-        sta $70
-        lda $71
-        adc #0
-        sta $71
-
-        cmp $72
-        bne clear_bank_loop
-
-    clc
+    inc $74         ; one tile filled on the screen
     rts
-

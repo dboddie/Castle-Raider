@@ -108,7 +108,8 @@ misc_routines = [
     "read_joystick_axis",
     "read_joystick_fire",
     "disable_sound",
-    "wait_for_space_or_fire"
+    "wait_for_space_or_fire",
+    "next_cell"
     ]
 
 def encode_in_game_data_and_routines(in_game_data_address):
@@ -763,7 +764,14 @@ if __name__ == "__main__":
     # Calculate the amount of working space used.
     # 0xcfb is the start of a block of memory used for palette operations.
     
-    print "Working data area runs from 0b00 to %04x (%i bytes free)" % (working_end, 0xcfb - working_end)
+    working_free = 0xcfb - working_end
+    print "Working data area runs from 0b00 to %04x" % working_end,
+    if working_free < 0:
+        print
+        sys.stderr.write("Working data area overruns following data by %i bytes.\n" % -working_free)
+        sys.exit(1)
+    else:
+        print "(%i bytes free)" % working_free
     print
     
     # Calculate the amount of memory used for each file.
@@ -775,7 +783,7 @@ if __name__ == "__main__":
         sys.stderr.write("CODE overruns following data by %i bytes.\n" % (code_finish - data_start))
         sys.exit(1)
     else:
-        print " (%i bytes free)" % (data_start - code_finish)
+        print "(%i bytes free)" % (data_start - code_finish)
     
     levels_finish = levels_address + len(level_data)
     print "LEVELS  runs from %04x to %04x" % (levels_address, levels_finish),
@@ -784,7 +792,7 @@ if __name__ == "__main__":
         sys.stderr.write("LEVELS overruns following data by %i bytes.\n" % (levels_finish - sprite_area_address))
         sys.exit(1)
     else:
-        print " (%i bytes free)" % (sprite_area_address - levels_finish)
+        print "(%i bytes free)" % (sprite_area_address - levels_finish)
     
     char_area_finish = sprite_area_address + len(sprite_data) + len(char_data)
     print "SPRITES runs from %04x to %04x" % (sprite_area_address, char_area_finish)

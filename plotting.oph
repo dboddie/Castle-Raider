@@ -31,7 +31,6 @@ read_screen_address_bank1:  ; X=row, A=column offset
     lda $73
     adc bank1_rows_high,x
     sta $73                 ; x ($72,$73)
-    clc
 
     rts
 
@@ -57,7 +56,6 @@ read_screen_address_bank2:  ; X=row, A=column offset
     lda $73
     adc bank2_rows_high,x
     sta $73                 ; x ($72,$73)
-    clc
 
     rts
 
@@ -232,7 +230,6 @@ plot_bank1r:
             lda $73
             adc $8d
             sta $73             ; x ($72,$73)
-            clc
 
             lda $76             ; Add 2 to I.
             adc #2
@@ -305,7 +302,6 @@ plot_bank1l:
             sta $72                 ; row, R, to get x.
             lda bank1_rows_high,x
             sta $73                 ; x ($72,$73)
-            clc
 
             lda $72     ; The leading tile would be plotted off the left hand
             sec         ; side of the screen.
@@ -352,7 +348,6 @@ plot_bank1l:
             lda $73
             adc $8d
             sta $73             ; x ($72,$73)
-            clc
 
             ldy #0
             lda ($76),y             ; Load the type number, t,
@@ -441,7 +436,7 @@ plot_bank2r:
         cmp #40
         bcc plot_bank2r_row_on_screen
 
-        jmp plot_bank2r_offset_endloop   ; break if the screen edge is reached
+        bcs plot_bank2r_offset_endloop   ; break if the screen edge is reached
 
         plot_bank2r_row_on_screen:
 
@@ -496,7 +491,6 @@ plot_bank2r:
             lda $73
             adc $8d
             sta $73                 ; x ($72,$73)
-            clc
 
             plot_bank2r_offset_next:
             clc
@@ -638,7 +632,6 @@ plot_bank2l:
             sta $72                 ; row, R, to get x.
             lda bank2_rows_high,x
             sta $73                 ; x ($72,$73)
-            clc
 
             lda $72     ; The merged tile would be plotted off the left hand
             sec         ; side of the screen.
@@ -709,7 +702,6 @@ plot_bank2l:
             lda $73
             adc $8d
             sta $73                 ; x ($72,$73)
-            clc
 
             ldy #0
             lda ($76),y                 ; Load the type number, t,
@@ -740,7 +732,7 @@ plot_bank2l:
             adc #0
             sta $77
 
-            jmp plot_bank2l_offset_loop
+            bcc plot_bank2l_offset_loop
 
         plot_bank2l_offset_endloop:
         clc
@@ -988,18 +980,6 @@ initial_plot_bank_tile_loop:
     initial_plot_bank_tile_loop_span_endloop1:
     jmp initial_plot_bank1_span_endloop
 
-next_cell:
-
-    lda $72
-    adc #8
-    sta $72
-    lda $73
-    adc #0
-    sta $73
-
-    inc $74         ; one tile filled on the screen
-    rts
-
 player_sprites_low:  .byte <player_left1, <player_left2, <player_right1, <player_right2
 player_sprites_high: .byte >player_left1, >player_left2, >player_right1, >player_right2
 player_y_offset:     .byte 0, 4
@@ -1024,7 +1004,7 @@ plot_char_bank1:
     adc #0
     sta $73
 
-    jmp plot_char_bank
+    bcc plot_char_bank
 
 plot_char_bank2:
 
@@ -1086,7 +1066,6 @@ plot_monster_bank2:       ; X=monster y offset,Y=offset of monster y offset
     lda $73
     adc bank2_char_rows_high,x  ; y position (high)
     sta $73
-    clc
 
     plot_monster_both_banks:
 
@@ -1170,7 +1149,6 @@ plot8x8_x0_y1:          ; $70,$71=source address
         lda $73
         adc #$01
         sta $73
-        clc
 
         lda $8c
         adc #4
@@ -1205,7 +1183,6 @@ plot8x24_y0:            ; $70,$71=source address
         lda $73
         adc #$01
         sta $73
-        clc
 
         lda $70
         adc #16
@@ -1265,7 +1242,6 @@ plot8x24_y1:            ; $70,$71=source address
         lda $73
         adc #$01
         sta $73
-        clc
 
         ldx #0
         plot8x24_y1_lower_loop_outer:
@@ -1411,7 +1387,6 @@ plot_life:              ; A=number, X=add/remove (0=add, 1=remove)
     lda $8d
     adc #top_panel_lives_bank1_high
     sta $73
-    clc
 
     jsr plot_life_sprite
 
@@ -1421,7 +1396,6 @@ plot_life:              ; A=number, X=add/remove (0=add, 1=remove)
     lda $8d
     adc #top_panel_lives_bank2_high
     sta $73
-    clc
 
     ; Fall through into the plotting routine.
 

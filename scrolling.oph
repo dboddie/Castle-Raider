@@ -74,7 +74,6 @@ init_scrolling:
         lda $77
         adc #0
         sta $77
-        clc
         bcc init_scrolling_monster_loop
 
     init_scrolling_monster_next:
