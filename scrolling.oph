@@ -164,10 +164,7 @@ scroll_right_update:
 
     jsr plot_char_bank1         ; plot the player on bank 1
     jsr scroll_monsters_right
-    jsr plot_monsters_bank1     ; plot the monsters, too
-
-    clc
-    rts
+    jmp plot_monsters_bank1     ; plot the monsters, too, then exit
 
 scroll_left_update:
 
