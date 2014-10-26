@@ -31,7 +31,10 @@ main:
                             ; calls will appear.
 
     jsr print_title_text
-    jsr wait_for_space_or_fire
+
+    main_before_game:
+        jsr space_or_fire
+        bcs main_before_game
 
     main_init:
     clc
@@ -238,9 +241,11 @@ main:
     ldy #game_over_notes_finish
     jsr play_music
 
-    after_game:
+    main_wait_after_game:
+        jsr space_or_fire
+        bcs main_wait_after_game
 
-    jsr wait_for_space_or_fire
+    main_after_game:
 
     jmp main
 

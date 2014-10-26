@@ -13,23 +13,24 @@
 ; You should have received a copy of the GNU General Public License
 ; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-; wait_for_space_or_fire:
+; space_or_fire:
 
-    ; Wait for the SPACE key or fire button to be pressed.
-    wait_for_space_or_fire_loop:
+    jsr read_joystick_fire
 
-        jsr read_joystick_fire
+    lda #1
+    bcs space_or_fire_exit
 
-        lda #1
-        bcs wait_for_space_or_fire_exit
+    ldx #157            ; (SPACE)
+    jsr check_key
+    beq space_or_fire_key_pressed
 
-        ldx #157            ; (SPACE)
-        jsr check_key
-        bne wait_for_space_or_fire_loop
+    sec
+    rts
+
+    space_or_fire_key_pressed:
 
     lda #0
 
-    wait_for_space_or_fire_exit:
-
+    space_or_fire_exit:
     clc
     rts

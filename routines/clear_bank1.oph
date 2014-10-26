@@ -18,5 +18,4 @@
     lda #$35
     sta $71
     lda #$58
-    sta $72
     jmp clear_bank

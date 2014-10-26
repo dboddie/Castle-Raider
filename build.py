@@ -108,7 +108,7 @@ misc_routines = [
     "read_joystick_axis",
     "read_joystick_fire",
     "disable_sound",
-    "wait_for_space_or_fire",
+    "space_or_fire",
     "next_cell",
     "next_cell_screen",
     ]

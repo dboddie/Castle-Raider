@@ -13,9 +13,6 @@
 ; You should have received a copy of the GNU General Public License
 ; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-; The following line contains a placeholder address that the build script
-; calculates and fills in.
-
 game_completed:
 
     ldx #0
@@ -60,7 +57,12 @@ game_completed:
     ldy #completed_notes_length
     jsr play_music
 
-    jmp after_game
+    completed_wait_loop:
+        jsr copy_completed_text
+        jsr space_or_fire
+        bcs completed_wait_loop
+
+    jmp main
 
 print_completed_text:   ; A=text length,X=offset
 
@@ -163,6 +165,9 @@ copy_completed_text:
             cpy #0
             bne copy_completed_text_loop
 
+        jsr space_or_fire
+        bcc copy_completed_text_exit
+
         lda $75
         cmp #$ff
         bcs copy_completed_text_exit
@@ -173,5 +178,4 @@ copy_completed_text:
         bcc copy_completed_text_outer_loop
 
     copy_completed_text_exit:
-    clc
     rts
