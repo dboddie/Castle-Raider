@@ -279,7 +279,6 @@ scroll_right:   ; Scroll the screen right by decreasing the initial row offsets
         dex
         bpl scroll_right_loop       ; Examine the next row.
 
-        clc
         rts
 
         scroll_right_loop_next_offset:  ; Update the current span.
@@ -301,7 +300,6 @@ scroll_right:   ; Scroll the screen right by decreasing the initial row offsets
         dex
         bpl scroll_right_loop
 
-    clc
     rts
 
 scroll_right_update_monsters:
@@ -357,7 +355,6 @@ scroll_right_update_monsters:
                                     ; next span.
 
     scroll_right_update_monsters_exit:
-    clc
     rts
 
 scroll_left:    ; Scroll the screen left by increasing the initial row offsets
@@ -374,7 +371,6 @@ scroll_left:    ; Scroll the screen left by increasing the initial row offsets
         dex
         bpl scroll_left_loop        ; Examine the next row.
 
-        clc
         rts
 
         scroll_left_loop_previous_offset:   ; Update the current span.
@@ -407,7 +403,6 @@ scroll_left:    ; Scroll the screen left by increasing the initial row offsets
         dex
         bpl scroll_left_loop
 
-    clc
     rts
 
 scroll_left_update_monsters:

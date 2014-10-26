@@ -710,7 +710,6 @@ plot_bank2l:
         jmp plot_bank2l_row_loop
 
     plot_bank2l_row_endloop:
-    clc
     rts
 
 plot_tile_bank:     ; $70,$71 source address
@@ -724,7 +723,6 @@ plot_tile_bank:     ; $70,$71 source address
         dey
         bpl plot_tile_bank_loop
 
-    clc
     rts
 
 plot_merged_tile_bank:  ; $70,$71 source address 1
@@ -740,7 +738,6 @@ plot_merged_tile_bank:  ; $70,$71 source address 1
         dey
         bpl plot_merged_tile_bank_loop
 
-    clc
     rts
 
 next_span:
@@ -808,11 +805,11 @@ initial_plot_bank1:
             bcc initial_plot_bank1_span_loop
 
         initial_plot_bank1_span_endloop:
+        clc
 
         dex
         bpl initial_plot_bank1_row_loop
 
-    clc
     rts
 
 initial_plot_bank2:
@@ -887,13 +884,13 @@ initial_plot_bank2:
             bcc initial_plot_bank2_span_loop
 
         initial_plot_bank2_span_endloop:
+        clc
 
         dex
         bmi initial_plot_bank2_row_endloop
         bpl initial_plot_bank2_row_loop
 
     initial_plot_bank2_row_endloop:
-    clc
     rts
 
 initial_plot_bank2_tile_loop:   ; $74=column
