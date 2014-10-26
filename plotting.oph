@@ -41,7 +41,7 @@ read_screen_address_low:
     asl
     sta $72
     lda #0
-    adc #0
+    rol                     ; Should be equivalent to adc #0 in this case.
     sta $73
     rts
 
@@ -221,7 +221,7 @@ plot_bank1r:
             asl                 ; n*8
             sta $8c
             lda #0
-            adc #0
+            rol                 ; Should be equivalent to adc #0 in this case.
             sta $8d
 
             lda $72
@@ -339,7 +339,7 @@ plot_bank1l:
             asl                 ; n*8
             sta $8c
             lda #0
-            adc #0
+            rol                 ; Should be equivalent to adc #0 in this case.
             sta $8d
 
             lda $72
@@ -477,7 +477,7 @@ plot_bank2r:
             asl                     ; (n - 1)*8
             sta $8c
             lda #0
-            adc #0
+            rol                     ; Should be equivalent to adc #0 in this case.
             sta $8d
 
             lda $72
@@ -671,7 +671,7 @@ plot_bank2l:
             asl                     ; (n - 1)*8
             sta $8c
             lda #0
-            adc #0
+            rol                     ; Should be equivalent to adc #0 in this case.
             sta $8d
 
             lda $72
@@ -1187,7 +1187,6 @@ plot8x24_y1:            ; $70,$71=source address
                 jmp plot8x24_y1_upper_loop_inner
 
             plot8x24_y1_upper_loop_inner_endloop:
-            clc
 
             inx
             cpx #2
@@ -1325,7 +1324,7 @@ plot_life:              ; A=number, X=add/remove (0=add, 1=remove)
     adc #$f0                    ; Add five characters less than a row to the
     sta $8c                     ; screen address.
     lda #$00
-    adc #0
+    rol                         ; Should be equivalent to adc #0 in this case.
     sta $8d
 
     plot_life_after_row_check:

@@ -1020,7 +1020,6 @@ player_fall:        ; sets C if the player is moving horizontally
 
 player_drop:
 
-    clc
     ldx player_falling
     lda fall_steps_y,x
     adc player_y

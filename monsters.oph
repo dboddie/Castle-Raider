@@ -251,7 +251,7 @@ plot_monster:   ; $7a,$7b=sprite plotting routine for a given bank
     asl                         ; x position
     sta $72
     lda #0
-    adc #0
+    rol                         ; Should be equivalent to adc #0 in this case.
     sta $73
 
     iny
