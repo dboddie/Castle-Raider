@@ -124,8 +124,10 @@ copy_completed_text:
             tya
             pha
             jsr vsync
+            jsr space_or_fire
             pla
             tay
+            bcc copy_completed_text_exit
 
             lda #$40
             sta $70
@@ -164,9 +166,6 @@ copy_completed_text:
             tay
             cpy #0
             bne copy_completed_text_loop
-
-        jsr space_or_fire
-        bcc copy_completed_text_exit
 
         lda $75
         cmp #$ff
