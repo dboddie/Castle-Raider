@@ -452,8 +452,8 @@ envelopes_high: .byte >demise_envelope, >item_envelope, >jump_envelope
 demise_envelope:    .byte 1,2,252,250,0,15,15,0,126,0,0,130,126,126
 item_envelope:      .byte 2,2,10,254,2,6,2,2,126,0,0,130,126,126
 jump_envelope:      .byte 3,1,20,10,5,2,4,4,126,0,0,130,126,126
-door_envelope:      .byte 4,1,1,25,1,10,1,9,126,0,0,130,126,126
-portal_envelope:    .byte 5,1,4,0,252,1,1,1,126,0,0,130,126,126
+door_envelope:      .byte 4,1,4,0,252,1,1,1,126,0,0,130,126,126
+portal_envelope:    .byte 5,4,16,12,20,1,1,1,126,0,0,130,126,126
 
 init_load_window_vdu_bytes: .byte 28,0,30,19,26,12
 

@@ -22,5 +22,4 @@
         dex
         bpl title_text_loop
 
-    clc
     rts

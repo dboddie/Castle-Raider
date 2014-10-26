@@ -27,6 +27,8 @@
         jsr check_key
         bne wait_for_space_or_fire_loop
 
+    lda #0
+
     wait_for_space_or_fire_exit:
 
     clc

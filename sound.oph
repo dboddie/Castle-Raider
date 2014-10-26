@@ -37,3 +37,84 @@ play_sound:     ; X=sound number
     jsr $fff1
 
     rts
+
+play_music: ; X=offset,Y=end
+
+    sty $70
+
+    play_music_loop:
+
+        lda #$f0
+        sta [note_buffer + 2]
+        lda #$ff
+        sta [note_buffer + 3]
+
+        ldy notes,x
+        sty [note_buffer + 4]
+
+        txa
+        pha
+
+        cpy #0
+        bne play_music_note
+
+        lda #0
+        sta [note_buffer + 2]
+        sta [note_buffer + 3]
+
+        play_music_note:
+
+        lda #7
+        ldx #<note_buffer
+        ldy #>note_buffer
+        jsr $fff1
+
+        pla
+        tax
+        inx
+        cpx $70
+        bcc play_music_loop
+
+    clc
+    rts
+
+completed_text: .byte 17,131, 28,2,16,17,5, 12
+                .byte 17,1
+                .byte 10,    "  Well done!"
+                .byte 13,10,10, " You escaped!"
+completed_text_end:
+
+.alias completed_text_length [completed_text_end - completed_text]
+
+.alias gap 0
+
+.alias C4 4
+.alias D4 12
+.alias E4 20
+.alias F4 24
+.alias G4 32
+.alias A4 40
+.alias B4 48
+.alias C5 52
+
+.alias short 4
+.alias long 4
+.alias longer 8
+
+note_buffer:
+note_buffer_channel:   .byte 1,0
+note_buffer_amplitude: .byte 0,0
+note_buffer_pitch:     .byte 0,0
+note_buffer_length:    .byte short,0
+
+notes:
+.byte C4, D4, C4, G4, E4, G4, C4, A4, F4, A4, D4, B4, G4, B4, E4, C5
+.byte C5, C5, C5, B4, G4, B4, G4, A4, F4, A4, F4, G4, F4, E4, D4, C4
+completed_notes_end:
+game_over_notes:
+.byte G4, A4, G4, A4, G4, F4, E4, D4, C4, C4
+game_over_notes_end:
+
+.alias completed_notes_length [completed_notes_end - notes]
+.alias game_over_notes_start  [completed_notes_end - notes]
+.alias game_over_notes_finish [game_over_notes_end - notes]

@@ -33,8 +33,6 @@ main:
     jsr print_title_text
     jsr wait_for_space_or_fire
 
-    lda #0
-
     main_init:
     clc
     sta using_joystick
@@ -114,6 +112,8 @@ main:
     sta tracking_low
     sta scroll_offset_high
     sta tracking_high
+
+    ;jmp game_completed
 
     main_loop:
 
@@ -235,6 +235,10 @@ main:
                             ; calls will appear.
 
     jsr print_game_over_text
+
+    ldx #game_over_notes_start
+    ldy #game_over_notes_finish
+    jsr play_music
 
     jsr wait_for_space_or_fire
 

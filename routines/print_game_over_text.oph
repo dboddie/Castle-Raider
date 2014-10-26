@@ -22,5 +22,4 @@
         dex
         bpl game_over_text_loop
 
-    clc
     rts
