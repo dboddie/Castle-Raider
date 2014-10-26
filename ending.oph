@@ -19,10 +19,159 @@
 game_completed:
 
     ldx #0
+    lda #completed_text_length
+    jsr print_completed_text
+
+    lda [tile_visibility_address + 10]
+    cmp #0                              ; Check the left-hand piece of the
+    bne game_completed_no_crown         ; crown item.
+
+        ldx #crown_text_start
+        lda #crown_text_finish
+        jsr print_completed_text
+
+    game_completed_no_crown:
+
+    lda [tile_visibility_address + 14]
+    cmp #0                              ; Check the left-hand piece of the
+    bne game_completed_no_treasure      ; treasure item.
+
+        ldx #treasure_text_start
+        lda #treasure_text_finish
+        jsr print_completed_text
+
+        bcc game_completed_after_checks
+
+    game_completed_no_treasure:
+    lda [tile_visibility_address + 10]
+    and [tile_visibility_address + 14]
+    beq game_completed_some_treasures_collected
+
+        ldx #no_treasures_text_start
+        lda #no_treasures_text_finish
+        jsr print_completed_text
+
+    game_completed_some_treasures_collected:
+    game_completed_after_checks:
+
+    jsr copy_completed_text
+
+    ldx #0
     ldy #completed_notes_length
     jsr play_music
 
-    jmp game_completed
+    jmp after_game
 
+print_completed_text:   ; A=text length,X=offset
+
+    sta $70
+
+    print_completed_text_loop:
+
+        lda completed_text,x
+        jsr $ffee
+        inx
+        cpx $70
+        bne print_completed_text_loop
+
+    clc
+    rts
+
+completed_text:
+.byte 31,5,8, 17,3
+.byte "Well done!"
+completed_text_end:
+
+.alias completed_text_length [completed_text_end - completed_text]
+
+no_treasures_text:
+.byte 31,4,10, 17,1
+.byte "You escaped!"
+no_treasures_text_end:
+
+.alias no_treasures_text_start  [no_treasures_text - completed_text]
+.alias no_treasures_text_finish [no_treasures_text_end - completed_text]
+
+crown_text:
+.byte 31,1,10, 17,2
+.byte "You found",10,8,"the crown!"
+crown_text_end:
+
+.alias crown_text_start  [crown_text - completed_text]
+.alias crown_text_finish [crown_text_end - completed_text]
+
+treasure_text:
+.byte 31,2,13, 17,1
+.byte "The treasure was", 13,10
+.byte " finally unearthed!"
+treasure_text_end:
+
+.alias treasure_text_start  [treasure_text - completed_text]
+.alias treasure_text_finish [treasure_text_end - completed_text]
+
+copy_completed_text:
+
+    lda #$81
+    sta $75
+
+    copy_completed_text_outer_loop:
+
+        ldy #0
+        copy_completed_text_loop:
+
+            tya
+            pha
+            jsr vsync
+            pla
+            tay
+
+            lda #$40
+            sta $70
+            sta $72
+            lda #$5e
+            sta $71
+
+            lda #$36
+            sta $73
+
+            copy_completed_text_inner_loop:
+
+                lda ($70),y
+                and $75
+                sta ($72),y
+
+                clc
+
+                lda $70
+                adc #8
+                sta $70
+                lda $71
+                adc #0
+                sta $71
+
+                jsr next_cell_screen    ; Re-use an existing routine.
+
+                lda $73
+                cmp #$46
+                bne copy_completed_text_inner_loop
+
+            clc
+            tya
+            adc #5
+            and #$07
+            tay
+            cpy #0
+            bne copy_completed_text_loop
+
+        lda $75
+        cmp #$ff
+        bcs copy_completed_text_exit
+        asl
+        clc
+        ora #$01
+        sta $75
+        bcc copy_completed_text_outer_loop
+
+    copy_completed_text_exit:
     clc
     rts

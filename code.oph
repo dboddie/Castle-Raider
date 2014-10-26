@@ -113,8 +113,6 @@ main:
     sta scroll_offset_high
     sta tracking_high
 
-    ;jmp game_completed
-
     main_loop:
 
         lda #0
@@ -176,9 +174,9 @@ main:
             cmp #finish_scroll_offset_high
             bne main_loop_check_monsters
 
-            ; Jump to an address in the working area where the completion code
-            ; was copied to by the loader.
-            jsr game_completed
+            jmp game_completed      ; Jump to the game completed routine.
+                                    ; This jumps directly back to the
+                                    ; after_game label.
 
         main_loop_check_monsters:
         jsr check_player_monsters
@@ -239,6 +237,8 @@ main:
     ldx #game_over_notes_start
     ldy #game_over_notes_finish
     jsr play_music
+
+    after_game:
 
     jsr wait_for_space_or_fire
 
@@ -557,12 +557,7 @@ check_tile:         ; $80=x position (-16 to 56) (-16 is represented as 240)
         cmp #60
         bpl check_tile_spans_endloop
 
-        lda $76             ; Increment the row address.
-        adc #2
-        sta $76
-        lda $77
-        adc #0
-        sta $77
+        jsr next_span       ; Increment the row address.
 
         jmp check_tile_spans_loop
 

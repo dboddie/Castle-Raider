@@ -44,23 +44,11 @@ play_music: ; X=offset,Y=end
 
     play_music_loop:
 
-        lda #$f0
-        sta [note_buffer + 2]
-        lda #$ff
-        sta [note_buffer + 3]
-
         ldy notes,x
         sty [note_buffer + 4]
 
         txa
         pha
-
-        cpy #0
-        bne play_music_note
-
-        lda #0
-        sta [note_buffer + 2]
-        sta [note_buffer + 3]
 
         play_music_note:
 
@@ -78,16 +66,6 @@ play_music: ; X=offset,Y=end
     clc
     rts
 
-completed_text: .byte 17,131, 28,2,16,17,5, 12
-                .byte 17,1
-                .byte 10,    "  Well done!"
-                .byte 13,10,10, " You escaped!"
-completed_text_end:
-
-.alias completed_text_length [completed_text_end - completed_text]
-
-.alias gap 0
-
 .alias C4 4
 .alias D4 12
 .alias E4 20
@@ -98,12 +76,11 @@ completed_text_end:
 .alias C5 52
 
 .alias short 4
-.alias long 4
-.alias longer 8
+.alias long 8
 
 note_buffer:
 note_buffer_channel:   .byte 1,0
-note_buffer_amplitude: .byte 0,0
+note_buffer_amplitude: .byte 240,255
 note_buffer_pitch:     .byte 0,0
 note_buffer_length:    .byte short,0
 

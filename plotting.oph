@@ -436,16 +436,11 @@ plot_bank2r:
         cmp #40
         bcc plot_bank2r_row_on_screen
 
-        bcs plot_bank2r_offset_endloop   ; break if the screen edge is reached
+        bcs plot_bank2r_offset_endloop  ; break if the screen edge is reached
 
         plot_bank2r_row_on_screen:
 
-        lda $72                 ; move to the next cell
-        adc #8
-        sta $72
-        lda $73
-        adc #0
-        sta $73
+        jsr next_cell_screen            ; move to the next cell
 
         plot_bank2r_row_loop_skip_leading:
         clc
@@ -495,12 +490,7 @@ plot_bank2r:
             plot_bank2r_offset_next:
             clc
 
-            lda $76                 ; Add 2 to I.
-            adc #2
-            sta $76
-            lda $77
-            adc #0
-            sta $77
+            jsr next_span                   ; Add 2 to I.
 
             lda $78                         ; Read the current type and the
             jsr read_right_sprite_address   ; corresponding right edge sprite.
@@ -512,14 +502,7 @@ plot_bank2r:
 
             jsr plot_merged_tile_bank
 
-            lda $72                 ; move to the next cell
-            adc #8
-            sta $72
-            lda $73
-            adc #0
-            sta $73
-
-            inc $74
+            jsr next_cell                   ; move to the next cell
 
             lda $74
             cmp #40
@@ -596,12 +579,7 @@ plot_bank2l:
 
             plot_bank2l_leading_next:
 
-                lda $72                 ; move to the next cell
-                adc #8
-                sta $72
-                lda $73
-                adc #0
-                sta $73
+                jsr next_cell_screen    ; move to the next cell
 
                 bcc plot_bank2l_offset_loop ; Jump to the loop so that the span
                                             ; can be plotted.
@@ -718,19 +696,9 @@ plot_bank2l:
             cmp #42
             bcs plot_bank2l_offset_endloop
 
-            lda $72                 ; Move to the next cell.
-            adc #8
-            sta $72
-            lda $73
-            adc #0
-            sta $73
+            jsr next_cell_screen    ; Move to the next cell.
 
-            lda $76                 ; Add 2 to I.
-            adc #2
-            sta $76
-            lda $77
-            adc #0
-            sta $77
+            jsr next_span           ; Add 2 to I.
 
             bcc plot_bank2l_offset_loop
 
@@ -773,6 +741,16 @@ plot_merged_tile_bank:  ; $70,$71 source address 1
         bpl plot_merged_tile_bank_loop
 
     clc
+    rts
+
+next_span:
+
+    lda $76
+    adc #2
+    sta $76
+    lda $77
+    adc #0
+    sta $77
     rts
 
 initial_plot_bank1:
@@ -825,12 +803,7 @@ initial_plot_bank1:
             beq initial_plot_bank1_span_endloop
             clc
 
-            lda $76
-            adc #2
-            sta $76
-            lda $77
-            adc #0
-            sta $77
+            jsr next_span
 
             bcc initial_plot_bank1_span_loop
 
@@ -889,14 +862,7 @@ initial_plot_bank2:
 
             jsr plot_merged_tile_bank
 
-            lda $72
-            adc #8
-            sta $72
-            lda $73
-            adc #0
-            sta $73
-
-            inc $74         ; one tile filled on the screen
+            jsr next_cell                   ; one tile filled on the screen
 
             initial_plot_bank2_span_loop_skip_merged:
 
@@ -916,12 +882,7 @@ initial_plot_bank2:
             beq initial_plot_bank2_span_endloop
             clc
 
-            lda $76
-            adc #2
-            sta $76
-            lda $77
-            adc #0
-            sta $77
+            jsr next_span
 
             bcc initial_plot_bank2_span_loop
 
@@ -1274,12 +1235,8 @@ plot8x24_y1:            ; $70,$71=source address
         adc #0
         sta $71
 
-        lda $72         ; update the destination pointer to point to the next
-        adc #8          ; space
-        sta $72
-        lda $73
-        adc #0
-        sta $73
+        jsr next_cell_screen    ; update the destination pointer to point to
+                                ; the next space
 
         bcc plot8x24_y1_loop
 

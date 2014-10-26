@@ -109,7 +109,8 @@ misc_routines = [
     "read_joystick_fire",
     "disable_sound",
     "wait_for_space_or_fire",
-    "next_cell"
+    "next_cell",
+    "next_cell_screen",
     ]
 
 def encode_in_game_data_and_routines(in_game_data_address):
@@ -250,7 +251,7 @@ if __name__ == "__main__":
     memory_map = {
         "working area": 0xb00,
         "code start": 0x0e00,
-        "data start": 0x2150 + 0x20,
+        "data start": 0x2150 + 0x20 + 6,
         "tile sprites": 0x2aa0 + 0xc0 + 0x20,
         "character and object sprites": 0x2de0 + 0xc0 + 0x20,
         "bank 1 (panel)": 0x3000,
