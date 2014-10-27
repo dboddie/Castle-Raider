@@ -29,7 +29,7 @@
 .alias monster_horizontal_motion        $00
 .alias monster_vertical_motion          $40
 
-reset_monster_positions:            ; Clears the table of on-screen monsters.
+init_monster_positions:             ; Clears the table of on-screen monsters.
 
     ldx #$13
     lda #0
@@ -38,11 +38,6 @@ reset_monster_positions:            ; Clears the table of on-screen monsters.
         sta monster_positions_address,x
         dex
         bpl reset_monster_positions_loop
-
-    clc
-    rts
-
-init_monster_positions:
 
     lda monster_left_index          ; Load the index into the monster spans
                                     ; for the left screen edge.

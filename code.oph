@@ -102,7 +102,6 @@ main:
     jsr plot_char_bank1
 
     ; Initialise the monster positions.
-    jsr reset_monster_positions
     jsr init_monster_positions
 
     jsr plot_monsters_bank1 ; Show any initial monsters.
@@ -971,8 +970,6 @@ jump_to_tracking_offset:
     bcc jump_to_tracking_offset         ; C should be clear.
 
     jump_to_tracking_offset_exit:
-
-    jsr reset_monster_positions
 
     jsr initial_plot_bank1
     jsr init_monster_positions

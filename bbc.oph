@@ -16,52 +16,44 @@
 show_bank1:
 
     jsr vsync
-
-    lda #12
-    sta $fe00
-    lda #$06
-    sta $fe01
-    lda #13
-    sta $fe00
-    lda #$00
-    sta $fe01
-
     lda #0              ; Use 0 and 1 for banks 1 and 2.
-    sta bank_number
-
-    rts
+    ldx #$06
+    jmp show_bank_common
 
 show_bank2:
 
     jsr vsync
+    lda #1              ; Use 0 and 1 for banks 1 and 2.
+    ldx #$0b
+
+show_bank_common:
+
+    sta bank_number
 
     lda #12
     sta $fe00
-    lda #$0b
-    sta $fe01
+    stx $fe01
+
     lda #13
     sta $fe00
     lda #$00
     sta $fe01
 
-    lda #1              ; Use 0 and 1 for banks 1 and 2.
-    sta bank_number
-
     rts
 
-palette_entries_fe21_logical_02: .byte $80
+.alias palette_entries_fe21_logical_02 $80
 
 palette_entries_fe21_entries: .byte $00, $10, $40, $50
 
-palette_entries_logical_standard_00:  .byte $07
-palette_entries_logical_standard_01:  .byte $26
-palette_entries_logical_standard_03:  .byte $a4
+.alias palette_entries_logical_standard_00 $07
+.alias palette_entries_logical_standard_01 $26
+.alias palette_entries_logical_standard_03 $a4
 
 change_palette:         ; A=colour value (0-7)
 
-    eor #$07                            ; Process the physical colour.
-    ora palette_entries_fe21_logical_02 ; Mix in the logical colour.
-    sta $74                             ; Store this value for later use.
+    eor #$07                                ; Process the physical colour.
+    ora #palette_entries_fe21_logical_02    ; Mix in the logical colour.
+    sta $74                                 ; Store this value for later use.
 
     ldx #3
     change_palette_loop:
@@ -79,13 +71,13 @@ change_palette:         ; A=colour value (0-7)
 
         lda palette_entries_fe21_entries,x
         tay
-        ora palette_entries_logical_standard_00
+        ora #palette_entries_logical_standard_00
         sta $fe21
         tya
-        ora palette_entries_logical_standard_01
+        ora #palette_entries_logical_standard_01
         sta $fe21
         tya
-        ora palette_entries_logical_standard_03
+        ora #palette_entries_logical_standard_03
         sta $fe21
         dex
         bpl change_palette_standard_loop

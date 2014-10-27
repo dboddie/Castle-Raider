@@ -49,17 +49,17 @@ play_music: ; X=offset,Y=end
 
         lda notes,x
         pha
-        and #$f0
-        lsr
-        lsr
+        and #$f0                ; Read the high four bits and shift them right
+        lsr                     ; by two bits to get a value that is a multiple
+        lsr                     ; of four.
         sta [note_buffer + 4]
 
         jsr play_music_note
 
         pla
-        and #$0f
-        asl
-        asl
+        and #$0f                ; Read the low four bits and shift them left
+        asl                     ; by two bits to get a value that is a multiple
+        asl                     ; of four.
         sta [note_buffer + 4]
 
         jsr play_music_note
