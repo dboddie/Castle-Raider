@@ -44,21 +44,29 @@ play_music: ; X=offset,Y=end
 
     play_music_loop:
 
-        ldy notes,x
-        sty [note_buffer + 4]
-
         txa
         pha
 
-        play_music_note:
+        lda notes,x
+        pha
+        and #$f0
+        lsr
+        lsr
+        sta [note_buffer + 4]
 
-        lda #7
-        ldx #<note_buffer
-        ldy #>note_buffer
-        jsr $fff1
+        jsr play_music_note
+
+        pla
+        and #$0f
+        asl
+        asl
+        sta [note_buffer + 4]
+
+        jsr play_music_note
 
         pla
         tax
+
         inx
         cpx $70
         bcc play_music_loop
@@ -66,14 +74,22 @@ play_music: ; X=offset,Y=end
     clc
     rts
 
-.alias C4 4
-.alias D4 12
-.alias E4 20
-.alias F4 24
-.alias G4 32
-.alias A4 40
-.alias B4 48
-.alias C5 52
+play_music_note:
+
+    lda #7
+    ldx #<note_buffer
+    ldy #>note_buffer
+    jsr $fff1
+    rts
+
+.alias C4 $1
+.alias D4 $3
+.alias E4 $5
+.alias F4 $6
+.alias G4 $8
+.alias A4 $a
+.alias B4 $c
+.alias C5 $d
 
 .alias short 4
 .alias long 8
@@ -85,11 +101,11 @@ note_buffer_pitch:     .byte 0,0
 note_buffer_length:    .byte short,0
 
 notes:
-.byte C4, D4, C4, G4, E4, G4, C4, A4, F4, A4, D4, B4, G4, B4, E4, C5
-.byte C5, C5, C5, B4, G4, B4, G4, A4, F4, A4, F4, G4, F4, E4, D4, C4
+.byte $13, $18, $58, $1a, $6a, $3c, $8c, $5d
+.byte $dd, $dc, $8c, $8a, $6a, $68, $65, $31
 completed_notes_end:
 game_over_notes:
-.byte G4, A4, G4, A4, G4, F4, E4, D4, C4, C4
+.byte $8a, $68, $56, $35, $11
 game_over_notes_end:
 
 .alias completed_notes_length [completed_notes_end - notes]
