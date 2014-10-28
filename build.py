@@ -692,11 +692,14 @@ if __name__ == "__main__":
     code = open("CODE").read()
     os.remove("CODE")
     
+    code_size = len(code)
+    code_load_address = 0x5800 - len(code)
+    
     loader_start = 0x3500
     
     marker_info = [(levels_address, level_data),
                    (panel_address, panel),
-                   (code_start, code)]
+                   (code_load_address, code)]
     markers = ""
     n = 0
     
@@ -716,8 +719,8 @@ if __name__ == "__main__":
     extras_oph = constants_oph + (
         "; Additional definitions for the loader\n\n"
         ".alias code_start_address              $%02x\n"
-        ".alias code_start_low                  $%02x\n"
-        ".alias code_start_high                 $%02x\n"
+        ".alias code_load_low                   $%02x\n"
+        ".alias code_load_high                  $%02x\n"
         ".alias code_length_low                 $%02x\n"
         ".alias code_length_high                $%02x\n"
         ".alias code_end_low                    $%02x\n"
@@ -725,7 +728,7 @@ if __name__ == "__main__":
         "\n"
         ".alias markers_length                  $%02x\n"
         "\n"
-        ) % ((code_start,) + address_length_end(code_start, code) + \
+        ) % ((code_start,) + address_length_end(code_load_address, code) + \
              (len(markers),))
     
     open("loader-constants.oph", "w").write(extras_oph)
@@ -740,26 +743,29 @@ if __name__ == "__main__":
     
     files = [("CASTLE", bootloader_start, bootloader_start, bootloader_code),
              ("LOADER", loader_start, loader_start, loader_code),
-             ("ROUTINES", title_data_address, title_data_address,
+             ("ROUTINE", title_data_address, title_data_address,
                           title_data_routines),
              ("SPRITES", sprite_area_address, sprite_area_address,
                          sprite_data + char_data),
              ("LEVELS", levels_address, levels_address, level_data),
              ("PANEL", panel_address, panel_address, panel),
-             ("CODE", code_start, code_start, code)]
+             ("CODE", code_load_address, code_load_address, code)]
     
     loader_size = len(loader_code)
     print
     print "%i bytes (%04x) of loader code" % (loader_size, loader_size)
     
-    code_size = len(code)
     print "%i bytes (%04x) of code" % (code_size, code_size)
     print
     
-    # Calculate the amount of space used for the loader.
+    # Calculate the amount of space used for the loader and pre-relocated main
+    # game code.
     
     loader_finish = loader_start + loader_size
     print "LOADER runs from %04x to %04x" % (loader_start, loader_finish)
+    
+    code_load_finish = code_load_address + code_size
+    print "CODE runs from %04x to %04x" % (code_load_address, code_load_finish)
     print
     
     # Calculate the amount of working space used.

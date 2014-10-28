@@ -181,6 +181,9 @@ main:
     ; Copy the panel onto bank 2.
     jsr copy_panel
 
+    ; Copy the main game code to its place in memory.
+    jsr copy_game_code
+
     ; Store table addresses in zero page locations for convenient access.
     lda #tile_visibility_low
     sta $82
@@ -283,6 +286,50 @@ copy_panel:
         lda $73
         cmp #$5d
         bne copy_top_panel_loop
+
+    clc
+    rts
+
+copy_game_code:
+
+    lda #code_load_low
+    sta $70
+    lda #code_load_high
+    sta $71
+    lda #<code_start_address
+    sta $72
+    lda #>code_start_address
+    sta $73
+
+    ldy #0
+    copy_game_code_loop:
+
+        lda ($70),y
+        sta ($72),y
+
+        inc $70
+        lda $70
+        cmp #0
+        bne copy_game_code_loop_next1
+        inc $71
+        copy_game_code_loop_next1:
+        clc
+
+        inc $72
+        lda $72
+        cmp #0
+        bne copy_game_code_loop_next2
+        inc $73
+        copy_game_code_loop_next2:
+        clc
+
+        lda $70
+        cmp #code_end_low
+        bne copy_game_code_loop
+
+        lda $71
+        cmp #code_end_high
+        bne copy_game_code_loop
 
     clc
     rts
@@ -407,7 +454,7 @@ routines_block: .byte <routines_file_name, >routines_file_name
                 .byte routines_length_low, routines_length_high, 0, 0
                 .byte routines_end_low, routines_end_high, 0, 0
 
-routines_file_name: .byte "ROUTINES", 13
+routines_file_name: .byte "ROUTINE", 13
 
 sprites_block: .byte <sprites_file_name, >sprites_file_name
              .byte sprites_file_area_low, sprites_file_area_high, 0, 0
@@ -434,8 +481,8 @@ top_panel_block: .byte <top_panel_file_name, >top_panel_file_name
 top_panel_file_name: .byte "PANEL", 13
 
 code_block: .byte <code_file_name, >code_file_name
-             .byte code_start_low, code_start_high, 0, 0
-             .byte code_start_low, code_start_high, 0, 0
+             .byte code_load_low, code_load_high, 0, 0
+             .byte code_load_low, code_load_high, 0, 0
              .byte code_length_low, code_length_high, 0, 0
              .byte code_end_low, code_end_high, 0, 0
 
