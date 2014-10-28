@@ -16,12 +16,14 @@
 show_bank1:
 
     jsr vsync
+    jsr vsync
     lda #0              ; Use 0 and 1 for banks 1 and 2.
     ldx #$06
     jmp show_bank_common
 
 show_bank2:
 
+    jsr vsync
     jsr vsync
     lda #1              ; Use 0 and 1 for banks 1 and 2.
     ldx #$0b
