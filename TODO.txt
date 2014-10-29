@@ -1,5 +1,5 @@
 To Do
 
-Add joystick support on the game over screen and perhaps also a jingle.
-Finishing screens
-Music?
+Update the game completed effect, text and music.
+Polish the display panel and loader.
+Test music on the BBC Micro version.
