@@ -225,6 +225,53 @@ def encode_in_game_data_and_routines(in_game_data_address):
     
     return labels, details, data
 
+def encode_hidden_text(panel, text, start, i):
+
+    for byte in text:
+        low = byte & 0x0f
+        high = byte & 0xf0
+        panel[start + i] = low | (low << 4)
+        panel[start + i + 1] = (high | (high >> 4)) ^ panel[start + i]
+        i += 2
+    return i
+
+def add_hidden_data(panel, start):
+
+    panel = map(ord, panel)
+    
+    completed_text_start = 0
+    completed_text = [31,5,8, 17,3] + map(ord, "Well done!")
+    completed_text_finish = encode_hidden_text(
+        panel, completed_text, start, completed_text_start)
+    
+    offsets = (completed_text_start, completed_text_finish)
+    
+    no_treasures_text_start = completed_text_finish
+    no_treasures_text = [31,4,10, 17,1] + map(ord, "You escaped!")
+    no_treasures_text_finish = encode_hidden_text(
+        panel, no_treasures_text, start, no_treasures_text_start)
+    
+    offsets += (no_treasures_text_start, no_treasures_text_finish)
+    
+    crown_text_start = no_treasures_text_finish
+    crown_text = [31,1,10, 17,2] + map(ord, "You found") + [10,8] + \
+                 map(ord, "the crown!")
+    crown_text_finish = encode_hidden_text(
+        panel, crown_text, start, crown_text_start)
+    
+    offsets += (crown_text_start, crown_text_finish)
+    
+    treasure_text_start = crown_text_finish
+    treasure_text = [31,2,13, 17,1] + map(ord, "The treasure was") + [13,10] + \
+                    map(ord, " finally unearthed!")
+    treasure_text_finish = encode_hidden_text(
+        panel, treasure_text, start, treasure_text_start)
+    
+    offsets += (treasure_text_start, treasure_text_finish)
+    
+    return "".join(map(chr, panel)), offsets
+
+
 if __name__ == "__main__":
 
     if not 3 <= len(sys.argv) <= 4:
@@ -403,6 +450,7 @@ if __name__ == "__main__":
     
     panel_address = 0x3000
     panel, offsets = makesprites.read_sprites(["images/panel.png"], panel_address)
+    #panel, hidden_offsets = add_hidden_data(panel, (3 * 0x140) + 0x10)
     
     top_panel_objects_bank1 = 0x31d8
     top_panel_objects_bank1_low = top_panel_objects_bank1 & 0xff
@@ -634,6 +682,17 @@ if __name__ == "__main__":
              monster_right_max_offset)
     
     constants_oph += (in_game_data_labels % in_game_data_details) + "\n"
+    
+    #constants_oph += (
+    #    ".alias completed_text_start            $%x\n"
+    #    ".alias completed_text_finish           %i\n"
+    #    ".alias no_treasures_text_start         $%x\n"
+    #    ".alias no_treasures_text_finish        %i\n"
+    #    ".alias crown_text_start                $%x\n"
+    #    ".alias crown_text_finish               %i\n"
+    #    ".alias treasure_text_start             $%x\n"
+    #    ".alias treasure_text_finish            %i\n"
+    #    ) % hidden_offsets
     
     scenery_rows = 16
     extra_rows = 7

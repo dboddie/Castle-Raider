@@ -2,4 +2,4 @@ To Do
 
 Update the game completed effect, text and music.
 Polish the display panel and loader.
-Test music on the BBC Micro version.
+Fix music on the Electron disk and BBC Micro versions.

@@ -15,7 +15,7 @@
 
 game_completed:
 
-    ldx #0
+    ldx #completed_text_start
     lda #completed_text_length
     jsr print_completed_text
 
@@ -70,7 +70,7 @@ print_completed_text:   ; A=text length,X=offset
 
     print_completed_text_loop:
 
-        lda completed_text,x
+        lda completed_text_start,x
         jsr $ffee
         inx
         cpx $70
@@ -84,6 +84,7 @@ completed_text:
 .byte "Well done!"
 completed_text_end:
 
+.alias completed_text_start 0
 .alias completed_text_length [completed_text_end - completed_text]
 
 no_treasures_text:
