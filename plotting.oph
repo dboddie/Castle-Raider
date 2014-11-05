@@ -594,7 +594,6 @@ plot_bank2l:
             sta $72                 ; row, R, to get x.
             lda bank2_rows_high,x
             sta $73                 ; x ($72,$73)
-            clc
 
             inc $74
 
@@ -820,7 +819,6 @@ initial_plot_bank2:
     ldx #15
     initial_plot_bank2_row_loop:
 
-        clc
         jsr read_row_address
 
         lda banks_rows_low,x
@@ -1362,7 +1360,6 @@ plot_life_sprite:
         dey
         bpl plot_life_sprite_loop
 
-    clc
     rts
 
 vsync:

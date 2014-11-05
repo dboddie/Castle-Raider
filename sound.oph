@@ -96,7 +96,7 @@ play_music_note:
 
 note_buffer:
 note_buffer_channel:   .byte 1,0
-note_buffer_amplitude: .byte 240,255
+note_buffer_amplitude: .byte 6,0 ; 240,255
 note_buffer_pitch:     .byte 0,0
 note_buffer_length:    .byte short,0
 

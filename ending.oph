@@ -70,7 +70,7 @@ print_completed_text:   ; A=text length,X=offset
 
     print_completed_text_loop:
 
-        lda completed_text_start,x
+        lda completed_text,x
         jsr $ffee
         inx
         cpx $70

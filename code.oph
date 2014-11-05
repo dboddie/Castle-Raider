@@ -230,15 +230,15 @@ main:
 
     ; Do something to indicate the game is over.
 
+    ldx #game_over_notes_start
+    ldy #game_over_notes_finish
+    jsr play_music
+
     jsr clear_banks
     jsr show_bank2          ; Show bank 2 since this is where the output of OS
                             ; calls will appear.
 
     jsr print_game_over_text
-
-    ldx #game_over_notes_start
-    ldy #game_over_notes_finish
-    jsr play_music
 
     main_wait_after_game:
         jsr space_or_fire
