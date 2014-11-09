@@ -506,14 +506,26 @@ music_envelope:     .byte 6,130,1,255,0,2,2,0,126,0,0,130,126,126
 
 init_load_window_vdu_bytes: .byte 28,0,30,19,26,12
 
-title_text: .byte 17, 3
-            .byte " Copyright (C) 2014", 13, 10
+title_text: .byte 28,0,24,19,0, 12,26
+            .byte 17, 3
+            .byte " Copyright (C) 2014", 13,10,10
             .byte 17, 2
-            .byte "    David Boddie", 13, 10
+            .byte "    David Boddie", 13,10
             .byte 17, 2
-            .byte " for Retro Software", 13, 10
+            .byte " for Retro Software", 13,10,10
             .byte 17, 1
             .byte "GNU GPL v.3 or later"
+            .byte 28,1,19,18,8, 17,129, 12, 17,3, 10
+            .byte "     Controls", 13,10,10, 26
+            .byte 28,1,19,18,11, 17,130, 12
+            .byte 10, 17,0
+            .byte "      Z - left", 13,10,10
+            .byte "      X - right", 13,10,10
+            .byte " Return - jump", 13,10,10
+            .byte "      / - enter"
+            .byte 26, 17,128
+            .byte 31,1,22, 17,1, "Loading..."
+            .byte 17,3
 title_text_end:
 
 ; Flag drawing routines
@@ -946,7 +958,7 @@ cassette_markers_end:  .byte 0
 cassette_screen_index_low:  .byte 0
 cassette_screen_index_high: .byte 0
 
-.alias progress_bar_start $7614
+.alias progress_bar_start $74d2
 
 cassette_screen_value:  .byte 1
 cassette_screen_values: .byte $f0, $c0

@@ -1,0 +1,17 @@
+/* XPM */
+static char *chest_left[] = {
+/* columns rows colors chars-per-pixel */
+"4 8 3 1 ",
+"  c black",
+". c red",
+"X c yellow",
+/* pixels */
+" X.X",
+"XXX.",
+"X.XX",
+".X.X",
+"....",
+". . ",
+"....",
+" ..."
+};
