@@ -946,7 +946,7 @@ cassette_markers_end:  .byte 0
 cassette_screen_index_low:  .byte 0
 cassette_screen_index_high: .byte 0
 
-.alias progress_bar_start $760c
+.alias progress_bar_start $7614
 
 cassette_screen_value:  .byte 1
 cassette_screen_values: .byte $f0, $c0
