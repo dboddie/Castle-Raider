@@ -80,6 +80,15 @@ play_music_note:
     ldx #<note_buffer
     ldy #>note_buffer
     jsr $fff1
+
+    play_music_note_wait:   ; Don't add more notes until there is space
+    lda #128                ; in the sound buffer. This shouldn't really be
+    ldx #250                ; needed.
+    ldy #255
+    jsr $fff4
+    cpx #0
+    beq play_music_note_wait
+    
     rts
 
 .alias C4 $1
@@ -102,7 +111,7 @@ note_buffer_length:    .byte short,0
 
 notes:
 .byte $13, $18, $58, $1a, $6a, $3c, $8c, $5d
-.byte $dd, $dc, $8c, $8a, $6a, $68, $65, $31
+.byte $dd, $c8, $c8, $a6, $a6, $86, $53, $11
 completed_notes_end:
 game_over_notes:
 .byte $8a, $68, $56, $35, $11

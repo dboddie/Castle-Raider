@@ -114,7 +114,7 @@ treasure_text_end:
 
 copy_completed_text:
 
-    lda #$81
+    lda #$a5
     sta $75
 
     copy_completed_text_outer_loop:

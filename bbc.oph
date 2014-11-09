@@ -43,46 +43,19 @@ show_bank_common:
 
     rts
 
-.alias palette_entries_fe21_logical_02 $80
-
-palette_entries_fe21_entries: .byte $00, $10, $40, $50
-
-.alias palette_entries_logical_standard_00 $07
-.alias palette_entries_logical_standard_01 $26
-.alias palette_entries_logical_standard_03 $a4
+palette_sequence: .byte 0, 0, 0
+palette_entry:    .byte $00
+                  .byte 2, 19
 
 change_palette:         ; A=colour value (0-7)
 
-    eor #$07                                ; Process the physical colour.
-    ora #palette_entries_fe21_logical_02    ; Mix in the logical colour.
-    sta $74                                 ; Store this value for later use.
-
-    ldx #3
+    sta palette_entry
+    ldx #5
     change_palette_loop:
-
-        lda palette_entries_fe21_entries,x
-        ora $74
-        sta $fe21
+        lda palette_sequence,x
+        jsr $ffee
         dex
         bpl change_palette_loop
-
-    ; Set the other standard colours.
-
-    ldx #3
-    change_palette_standard_loop:
-
-        lda palette_entries_fe21_entries,x
-        tay
-        ora #palette_entries_logical_standard_00
-        sta $fe21
-        tya
-        ora #palette_entries_logical_standard_01
-        sta $fe21
-        tya
-        ora #palette_entries_logical_standard_03
-        sta $fe21
-        dex
-        bpl change_palette_standard_loop
 
     clc
     rts

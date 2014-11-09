@@ -496,12 +496,12 @@ envelopes_low:  .byte <demise_envelope, <item_envelope, <jump_envelope
 envelopes_high: .byte >demise_envelope, >item_envelope, >jump_envelope
                 .byte >door_envelope, >portal_envelope, >music_envelope
 
-demise_envelope:    .byte 1,2,252,250,0,15,15,0,126,0,0,130,126,126
-item_envelope:      .byte 2,2,10,254,2,6,2,2,126,0,0,130,126,126
-jump_envelope:      .byte 3,1,20,10,5,2,4,4,126,0,0,130,126,126
-door_envelope:      .byte 4,1,4,0,252,1,1,1,126,0,0,130,126,126
-portal_envelope:    .byte 5,4,16,12,20,1,1,1,126,0,0,130,126,126
-music_envelope:     .byte 6,2,1,255,0,2,2,0,126,0,0,130,126,126
+demise_envelope:    .byte 1,130,252,250,0,15,15,0,126,0,0,130,126,126
+item_envelope:      .byte 2,130,10,254,2,6,2,2,126,0,0,130,126,126
+jump_envelope:      .byte 3,129,20,10,5,2,4,4,126,0,0,130,126,126
+door_envelope:      .byte 4,129,4,0,252,1,1,1,126,0,0,130,126,126
+portal_envelope:    .byte 5,132,16,12,20,1,1,1,126,0,0,130,126,126
+music_envelope:     .byte 6,130,1,255,0,2,2,0,126,0,0,130,126,126
 ;music_envelope:     .byte 6,136,0,16,12,1,1,1,126,0,0,130,126,126
 
 init_load_window_vdu_bytes: .byte 28,0,30,19,26,12
