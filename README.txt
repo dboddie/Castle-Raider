@@ -42,7 +42,7 @@ worthwhile.
 Installation
 
 The sources for this game can be obtained from the Mercurial repository hosted
-on the Retro Software Web site:
+on the Retro Software site:
 
   http://www.retrosoftware.co.uk/hg/castleraider
 
@@ -62,20 +62,24 @@ to create. If the file was created, load it into an Electron emulator or create
 a sound file with one of the UEF utilities available online.
 
 
-Loading the Game
+Loading the Game from Cassette
 
-Insert the cassette or disk and type
+Insert the cassette and type
 
   CHAIN "CASTLE"
 
-then press Return. If you are loading the game from cassette, press play on the
-cassette recorder. The game should now load.
+then press Return. Press play on the cassette recorder. The game should now
+load.
+
+Loading the Game from Disk
+
+Insert the disk and press Shift-Break. The game should now load.
 
 
 Playing the Game
 
-The player must help the character reach the exit to the castle, ideally with
-some hidden treasure.
+The player must help the character escape the castle, ideally with some hidden
+treasure.
 
 Your character can roam the castle and its surroundings using the following
 control keys:
