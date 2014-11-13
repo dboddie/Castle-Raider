@@ -13,15 +13,15 @@ the force stationed here will be no threat tonight, they gave them a wide
 berth during their march here. The people in the nearby villages can sleep
 soundly for a change.
 
-As the members of the night watch slowly start the climb up onto the ramparts
-you take your chance and slip through the open gate, taking refuge in the long
-shadows fleeing the sunset. The few eyes looking in your direction are hardly
-able to make out your form as you wait for the approaching nightfall.
+As the members of the night watch slowly begin to take their places on the
+ramparts you take your chance and slip through the open gate, taking refuge in
+the long shadows fleeing the sunset. The few eyes looking in your direction are
+hardly able to make out your form as you wait for the approaching nightfall.
 
-You recall the stories told when you were young. When the town itself was old,
-the last of the elders told of a time when it was still a village, not much
-more than a few houses and shelters. The road that ran through it went to the
-castle on the edge of the wasteland that now lies derelict and deserted.
+You recall the stories told when you were young. When the town itself was
+already old, the last of the elders told of a time when it was still a village,
+not much more than a few houses and shelters. The road that ran through it went
+to the castle on the edge of the wasteland that now lies derelict and deserted.
 
 Night falls quickly in this season at the edge of the kingdom. Memories of
 fireside tales about the king's lost crown and the hidden treasure of the old
@@ -30,12 +30,12 @@ the outer fortifications. Crossing a bridge, you enter. As you pass beneath the
 outer gate it suddenly crashes into place, cutting off your exit. It was just
 as well you hadn't planned to return that way.
 
-Nature has reclaimed parts of the castle for itself, its ruins crumbling in
-places and crawling with creatures that people once knew well to leave alone.
-To make your way through it to the lands beyond, you will need to unlock the
-few doors and gates that still stand. Perhaps the folk tales were true and
-the king's treasure still remains, but survival is more important here. If you
-live to leave the outer gate then the story alone will have made the journey
+Nature has reclaimed parts of the castle, its ruins crumbling in places and
+crawling with creatures that people once knew well to leave alone. To make your
+way through it to the lands beyond, you will need to unlock the few doors and
+gates that still stand. Perhaps the folk tales were true and the king's
+treasure still remains, but survival is more important here. If you live to
+pass through the outer gate then the story alone will have made the journey
 worthwhile.
 
 
