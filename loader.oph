@@ -72,7 +72,7 @@ main:
 
     ldx #6
     ldy #29
-    jsr tab_x_y                     ; TAB(6, 28)
+    jsr tab_x_y                     ; TAB(6, 29)
     ldx #3
     jsr set_colour
     lda #49                         ; "1"
@@ -80,7 +80,7 @@ main:
 
     ldx #13
     ldy #29
-    jsr tab_x_y                     ; TAB(13, 28)
+    jsr tab_x_y                     ; TAB(13, 29)
     lda #50                         ; "2"
     jsr $ffee
 
@@ -104,13 +104,13 @@ main:
     clc
     jsr plot_characters
     jsr switch_characters
-    jmp start_loading
+    jmp show_instructions
 
     choose_character_1:
     clc
     jsr plot_characters
 
-    start_loading:
+    show_instructions:
 
     ; Write the copyright and license text.
 
@@ -125,6 +125,12 @@ main:
         inx
         cpx #[title_text_end - title_text]
         bne loader_title_text_loop
+
+    wait_before_load_loop:
+        jsr space_or_fire
+        bcs wait_before_load_loop
+
+    clc
 
     ; Define ENVELOPEs.
     lda #0
@@ -154,7 +160,7 @@ main:
         lda init_load_window_vdu_bytes,x
         jsr $ffee
         inx
-        cpx #6
+        cpx #[init_load_window_vdu_bytes_end - init_load_window_vdu_bytes]
         bne init_load_window_loop
 
     lda #255
@@ -504,7 +510,11 @@ portal_envelope:    .byte 5,132,16,12,20,1,1,1,126,0,0,130,126,126
 music_envelope:     .byte 6,130,1,255,0,2,2,0,126,0,0,130,126,126
 ;music_envelope:     .byte 6,136,0,16,12,1,1,1,126,0,0,130,126,126
 
-init_load_window_vdu_bytes: .byte 28,0,30,19,26,12
+init_load_window_vdu_bytes:
+    .byte 31,1,22, "Loading..."
+    .byte 28,0,30,19,25,12
+    .byte 17,3
+init_load_window_vdu_bytes_end:
 
 title_text: .byte 28,0,24,19,0, 12,26
             .byte 17, 3
@@ -524,8 +534,9 @@ title_text: .byte 28,0,24,19,0, 12,26
             .byte " Return - jump", 13,10,10
             .byte "      / - enter"
             .byte 26, 17,128
-            .byte 31,1,22, 17,1, "Loading..."
-            .byte 17,3
+            .byte 31,4,25, 17,1, "Press  SPACE"
+            .byte 31,7,27,          "or FIRE"
+            .byte 31,2,29,     "to load the game"
 title_text_end:
 
 ; Flag drawing routines
