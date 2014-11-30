@@ -78,8 +78,8 @@ Insert the disk and press Shift-Break. The game should now load.
 
 Playing the Game
 
-The player must help the character escape the castle, ideally with some hidden
-treasure.
+The player must help their character escape the castle, ideally with some
+hidden treasure.
 
 Your character can roam the castle and its surroundings using the following
 control keys:
@@ -93,7 +93,7 @@ The character may enter different parts of the castle by entering the arched
 doorways that can be found in various places. While standing in a doorway,
 press the / key to enter.
 
-Alternatively, you may may using an analogue joystick with the following
+Alternatively, you may may use an analogue joystick with the following
 controls:
 
   Left      left
@@ -104,7 +104,7 @@ controls:
 Select joystick controls by pressing the Fire button on the title page to start
 the game. Press Space to start the game with keyboard controls.
 
-Other keys can be used to control the game:
+Other keys are used to control features of the game:
 
   S         enable sound effects
   Q         disable sound effects
