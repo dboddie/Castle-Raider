@@ -103,7 +103,7 @@ class Inlay(SVG):
     
         SVG.__init__(self, path)
         
-        self.page_offsets = [(0, 0), (650, 0), (2 * 650, 0), (3 * 650, 0)]
+        self.page_offsets = [(0, 0), (650, 0), (2 * 650, 0)]
         self.page_number = 0
     
     def open(self):
@@ -112,12 +112,14 @@ class Inlay(SVG):
         self.text += ('<svg version="1.1"\n'
                       '     xmlns="http://www.w3.org/2000/svg"\n'
                       '     xmlns:xlink="http://www.w3.org/1999/xlink"\n'
-                      '     width="33.5cm" height="10cm"\n'
-                      '     viewBox="0 0 3350 1000">\n')
+                      '     width="27.0cm" height="10cm"\n'
+                      '     viewBox="0 0 2700 1000">\n')
     
     def add_page(self, width, height):
     
         self.ox, self.oy = self.page_offsets[self.page_number]
+        self.text += ('<rect x="%i" y="0" width="0.1" height="1000"\n'
+                      '      stroke="black" fill="none" stroke-width="0.1" />\n' % self.ox)
         self.page_number += 1
     
     def add_image(self, x, y, width, height, path):
@@ -130,7 +132,7 @@ class Inlay(SVG):
     
     def close(self):
     
-        self.text += ('<rect x="2600" y="0" width="100" height="1000"\n'
+        self.text += ('<rect x="1950" y="0" width="100" height="1000"\n'
                       '      stroke="black" fill="none" stroke-width="1" />\n')
         
         SVG.close(self)
