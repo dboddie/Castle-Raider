@@ -103,7 +103,7 @@ class Inlay(SVG):
     
         SVG.__init__(self, path)
         
-        self.page_offsets = [(0, 0), (650, 0), (2 * 650, 0)]
+        self.page_offsets = [(0, 0), (650, 0), (2 * 650, 0), (2700, 0)]
         self.page_number = 0
     
     def open(self):
@@ -157,6 +157,7 @@ class Page:
         
         return svg
 
+
 class TextBox:
 
     def __init__(self, bbox, text_items, follow = False, index = -1):
@@ -189,6 +190,7 @@ class TextBox:
                 y += line_height
         
         return x, y
+
 
 class Text:
 
@@ -302,6 +304,7 @@ class Text:
         metrics = QFontMetrics(font)
         return metrics.height()
 
+
 class Word:
 
     def __init__(self, font, text):
@@ -361,6 +364,52 @@ class Image:
             height = height * self.scale
         
         svg.add_image(x, y, width, height, self.path)
+        
+        return x + width, y + height
+
+
+class Path:
+
+    def __init__(self, bbox, elements, attributes = None, follow = False,
+                 index = -1):
+    
+        self.bbox = bbox
+        self.elements = elements
+        self.attributes = attributes
+        self.follow = follow
+        self.index = index
+    
+    def render(self, svg, positions):
+    
+        x, y, width, height = self.bbox
+        
+        if self.follow:
+            y = y + positions[self.index][1]
+        
+        svg.text += "<path "
+        path = []
+        
+        for element in self.elements:
+        
+            path.append(element[0])
+            absolute = element[0] == element[0].upper()
+            
+            for i in range(1, len(element)):
+                if absolute:
+                    if i % 2 == 1:
+                        path.append(x + element[i])
+                    else:
+                        path.append(y + element[i])
+                else:
+                    path.append(element[i])
+        
+        svg.text += 'd="' + " ".join(map(str, path)) + '"'
+        
+        if self.attributes:
+            for key, value in self.attributes.items():
+                svg.text += ' %s="%s"' % (key, value)
+        
+        svg.text += " />\n"
         
         return x + width, y + height
 
@@ -595,6 +644,11 @@ if __name__ == "__main__":
                             "along with this program. If not, see <http://www.gnu.org/licenses/>.")],
                       follow = True)
              ]),
+        Page((650, 1000),
+            [Path((0, 0, 650, 1000),
+                  [("M",0,0), ("l",650,0), ("l",0,1000), ("l",-650,0), ("l",0,-1000)],
+                  {"fill": "#ffdd77"})
+            ])
         ]
     
     if inlay:
