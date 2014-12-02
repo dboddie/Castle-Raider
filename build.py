@@ -911,6 +911,9 @@ if __name__ == "__main__":
         for name, load, exec_, data in files:
             disk_files.append(makeadf.File(name, data, load, exec_, len(data)))
         
+        COPYING = open("COPYING").read().replace("\n", "\r\n")
+        disk_files.append(makeadf.File("COPYING", COPYING, 0x0000, 0x0000, len(COPYING)))
+        
         dir_address = catalogue.sector_size * 2
         catalogue.write("$", "Castle Raider", disk_files, dir_address, dir_address)
         catalogue.write_free_space()
@@ -937,6 +940,9 @@ if __name__ == "__main__":
             elif name == "CASTLE":
                 continue
             disk_files.append(makedfs.File("$." + name, data, load, exec_, len(data)))
+        
+        COPYING = open("COPYING").read().replace("\n", "\r\n")
+        disk_files.append(makedfs.File("$.COPYING", COPYING, 0x0000, 0x0000, len(COPYING)))
         
         catalogue.write("CastleRaider", disk_files)
         
