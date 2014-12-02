@@ -41,8 +41,9 @@ def relpath(source, destination):
         else:
             break
     
-    to_common = os.sep.join([os.pardir]*(len(src_pieces)-len(common)))
-    return to_common + os.sep + os.sep.join(dest_pieces[len(common):])
+    to_common = [os.pardir]*(len(src_pieces)-len(common))
+    rel_pieces = to_common + dest_pieces[len(common):]
+    return os.sep.join(rel_pieces)
 
 
 class SVG:
@@ -87,6 +88,8 @@ class SVG:
             self.text += '      font-weight="%s"\n' % font["weight"]
         if font.has_key("style"):
             self.text += '      font-style="%s"\n' % font["style"]
+        if font.has_key("colour"):
+            self.text += '      fill="%s"\n' % font["colour"]
         self.text += '>\n'
         self.text += self._escape(text)
         self.text += '</text>\n'
@@ -103,7 +106,7 @@ class Inlay(SVG):
     
         SVG.__init__(self, path)
         
-        self.page_offsets = [(0, 0), (650, 0), (2 * 650, 0), (2700, 0)]
+        self.page_offsets = [(0, 0), (650, 0), (2 * 650, 0), (2050, 0)]
         self.page_number = 0
     
     def open(self):
@@ -397,9 +400,9 @@ class Path:
             for i in range(1, len(element)):
                 if absolute:
                     if i % 2 == 1:
-                        path.append(x + element[i])
+                        path.append(svg.ox + x + element[i])
                     else:
-                        path.append(y + element[i])
+                        path.append(svg.oy + y + element[i])
                 else:
                     path.append(element[i])
         
@@ -413,6 +416,18 @@ class Path:
         
         return x + width, y + height
 
+
+def curved_box(x, y, w, h, style):
+
+    r = w/10.0
+    hr = r/2.0
+    ll = w - (4 * r)
+    
+    return Path((x, y, w, h),
+                 [("M",r,0), ("l",ll,0), ("c",hr,0,r,hr,r,r),
+                  ("l",0,ll), ("c",0,hr,-hr,r,-r,r),
+                  ("l",-ll,0), ("c",-hr,0,-r,-hr,-r,-r),
+                  ("l",0,-ll), ("c",0,-hr,hr,-r,r,-r)], style)
 
 if __name__ == "__main__":
 
@@ -491,6 +506,56 @@ if __name__ == "__main__":
     back_cover_centred = {"family": "FreeSerif",
                           "size": 24,
                           "align": "centre"}
+    
+    front_cover_publisher1 = {"family": "FreeSans", "size": 32,
+                              "weight": "bold", "align": "centre",
+                              "colour": "#202020"}
+    
+    front_cover_publisher2 = {"family": "FreeSans", "size": 32,
+                              "weight": "bold", "align": "centre",
+                              "colour": "#ffffc0"}
+    
+    front_cover_platforms = {"family": "FreeSans", "size": 28,
+                             "weight": "bold", "align": "centre"}
+    
+    front_cover_title = {"family": "FreeSans", "size": 52,
+                         "weight": "bold", "align": "centre"}
+    
+    r = 25
+    hr = r/2.0
+    
+    logo = []
+    w = h = 50
+    cx = 650/2.0
+    x = cx - (len("RETRO") * w)/2.0
+    y = 25
+    lr = 5
+    lhr = 2.5
+    
+    for ch in "RETRO":
+        logo.append(curved_box(x, y + lr, w, h,
+                               {"fill": "#ff4040", "stroke": "#000000",
+                                "stroke-width": 1}))
+        logo.append(curved_box(x + lr, y, w, h,
+                               {"fill": "#ffffc0", "stroke": "#000000",
+                                "stroke-width": 1}))
+        logo.append(TextBox((x + lr, y + lr + h/2, w - (lr * 2), h),
+                            [Text(front_cover_publisher1, ch)]))
+        x += w
+    
+    x = cx - (len("SOFTWARE") * w)/2.0
+    y += h
+    
+    for ch in "SOFTWARE":
+        logo.append(curved_box(x, y + lr, w, h,
+                               {"fill": "#ffffc0", "stroke": "#000000",
+                                "stroke-width": 1}))
+        logo.append(curved_box(x + lr, y, w, h,
+                               {"fill": "#202020", "stroke": "#000000",
+                                "stroke-width": 1}))
+        logo.append(TextBox((x + lr, y + lr + h/2, w - (lr * 2), h),
+                            [Text(front_cover_publisher2, ch)]))
+        x += w
     
     pages = [
         Page((650, 1000),
@@ -647,8 +712,23 @@ if __name__ == "__main__":
         Page((650, 1000),
             [Path((0, 0, 650, 1000),
                   [("M",0,0), ("l",650,0), ("l",0,1000), ("l",-650,0), ("l",0,-1000)],
-                  {"fill": "#ffdd77"})
-            ])
+                  {"fill": "#ffdd77", "stroke": "#000000", "stroke-width": 1}),
+             Path((100-hr, 50+hr, 450, 250),
+                  [("M",r,0), ("l",450-(r*2),0), ("c",hr,0,r,hr,r,r),
+                   ("l",0,250-(r*2)), ("c",0,hr,-hr,r,-r,r),
+                   ("l",-(450-(r*2)),0), ("c",-hr,0,-r,-hr,-r,-r),
+                   ("l",0,-(250-(r*2))), ("c",0,-hr,hr,-r,r,-r)],
+                  {"fill": "#8080e0", "stroke": "#000000", "stroke-width": 4}),
+             Path((100, 50, 450, 250),
+                  [("M",r,0), ("l",450-(r*2),0), ("c",hr,0,r,hr,r,r),
+                   ("l",0,250-(r*2)), ("c",0,hr,-hr,r,-r,r),
+                   ("l",-(450-(r*2)),0), ("c",-hr,0,-r,-hr,-r,-r),
+                   ("l",0,-(250-(r*2))), ("c",0,-hr,hr,-r,r,-r)],
+                  {"fill": "#ffffff", "stroke": "#000000", "stroke-width": 4}),
+             TextBox((100+hr, 170, 450-(hr*2), 250-(r*2)),
+                 [Text(front_cover_platforms, "ACORN ELECTRON\nBBC MODEL B\n\n"),
+                  Text(front_cover_title, "CASTLE RAIDER")])
+             ] + logo)
         ]
     
     if inlay:
