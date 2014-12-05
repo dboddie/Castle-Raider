@@ -51,6 +51,7 @@ class SVG:
     def __init__(self, path):
     
         self.path = path
+        self.ox = self.oy = 0
     
     def _escape(self, text):
     
@@ -518,7 +519,7 @@ if __name__ == "__main__":
     front_cover_platforms = {"family": "FreeSans", "size": 28,
                              "weight": "bold", "align": "centre"}
     
-    front_cover_title = {"family": "FreeSans", "size": 52,
+    front_cover_title = {"family": "FreeSans", "size": 50,
                          "weight": "bold", "align": "centre"}
     
     r = 25
@@ -556,6 +557,17 @@ if __name__ == "__main__":
         logo.append(TextBox((x + lr, y + lr + h/2, w - (lr * 2), h),
                             [Text(front_cover_publisher2, ch)]))
         x += w
+    
+    checkered = []
+    x = 12.5
+    while x < 650:
+        checkered += [("M",x,0), ("l",0,1000)]
+        x += 25
+    
+    y = 12.5
+    while y < 1000:
+        checkered += [("M",0,y), ("l",650,0)]
+        y += 25
     
     pages = [
         Page((650, 1000),
@@ -713,6 +725,8 @@ if __name__ == "__main__":
             [Path((0, 0, 650, 1000),
                   [("M",0,0), ("l",650,0), ("l",0,1000), ("l",-650,0), ("l",0,-1000)],
                   {"fill": "#ffdd77", "stroke": "#000000", "stroke-width": 1}),
+             Path((0, 0, 650, 1000), checkered, {"stroke": "#c0c0c0",
+                                                 "stroke-width": 1}),
              Path((100-hr, 50+hr, 450, 250),
                   [("M",r,0), ("l",450-(r*2),0), ("c",hr,0,r,hr,r,r),
                    ("l",0,250-(r*2)), ("c",0,hr,-hr,r,-r,r),
@@ -728,7 +742,20 @@ if __name__ == "__main__":
              TextBox((100+hr, 170, 450-(hr*2), 250-(r*2)),
                  [Text(front_cover_platforms, "ACORN ELECTRON\nBBC MODEL B\n\n"),
                   Text(front_cover_title, "CASTLE RAIDER")])
-             ] + logo)
+            ] + logo + [
+             Path((100-hr, 350+hr, 450, 500),
+                  [("M",r,0), ("l",450-(r*2),0), ("c",hr,0,r,hr,r,r),
+                   ("l",0,500-(r*2)), ("c",0,hr,-hr,r,-r,r),
+                   ("l",-(450-(r*2)),0), ("c",-hr,0,-r,-hr,-r,-r),
+                   ("l",0,-(500-(r*2))), ("c",0,-hr,hr,-r,r,-r)],
+                  {"fill": "#8080e0", "stroke": "#000000", "stroke-width": 4}),
+             Path((100, 350, 450, 500),
+                  [("M",r,0), ("l",450-(r*2),0), ("c",hr,0,r,hr,r,r),
+                   ("l",0,500-(r*2)), ("c",0,hr,-hr,r,-r,r),
+                   ("l",-(450-(r*2)),0), ("c",-hr,0,-r,-hr,-r,-r),
+                   ("l",0,-(500-(r*2))), ("c",0,-hr,hr,-r,r,-r)],
+                  {"fill": "#ffffff", "stroke": "#000000", "stroke-width": 4})
+            ])
         ]
     
     if inlay:

@@ -14,6 +14,9 @@ if __name__ == "__main__":
     else:
         resolution = 144
     
+    if not os.path.exists("png"):
+        os.mkdir("png")
+    
     for i in range(4):
         os.system("inkscape -e png/page-%i.png -d %i -y 255 svg/page-%i.svg" % (i, resolution, i))
     
