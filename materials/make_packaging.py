@@ -516,58 +516,11 @@ if __name__ == "__main__":
                               "weight": "bold", "align": "centre",
                               "colour": "#ffffc0"}
     
-    front_cover_platforms = {"family": "FreeSans", "size": 28,
+    front_cover_platforms = {"family": "FreeSans", "size": 30,
                              "weight": "bold", "align": "centre"}
     
-    front_cover_title = {"family": "FreeSans", "size": 50,
+    front_cover_title = {"family": "FreeSans", "size": 52,
                          "weight": "bold", "align": "centre"}
-    
-    r = 25
-    hr = r/2.0
-    
-    logo = []
-    w = h = 50
-    cx = 650/2.0
-    x = cx - (len("RETRO") * w)/2.0
-    y = 25
-    lr = 5
-    lhr = 2.5
-    
-    for ch in "RETRO":
-        logo.append(curved_box(x, y + lr, w, h,
-                               {"fill": "#ff4040", "stroke": "#000000",
-                                "stroke-width": 1}))
-        logo.append(curved_box(x + lr, y, w, h,
-                               {"fill": "#ffffc0", "stroke": "#000000",
-                                "stroke-width": 1}))
-        logo.append(TextBox((x + lr, y + lr + h/2, w - (lr * 2), h),
-                            [Text(front_cover_publisher1, ch)]))
-        x += w
-    
-    x = cx - (len("SOFTWARE") * w)/2.0
-    y += h
-    
-    for ch in "SOFTWARE":
-        logo.append(curved_box(x, y + lr, w, h,
-                               {"fill": "#ffffc0", "stroke": "#000000",
-                                "stroke-width": 1}))
-        logo.append(curved_box(x + lr, y, w, h,
-                               {"fill": "#202020", "stroke": "#000000",
-                                "stroke-width": 1}))
-        logo.append(TextBox((x + lr, y + lr + h/2, w - (lr * 2), h),
-                            [Text(front_cover_publisher2, ch)]))
-        x += w
-    
-    checkered = []
-    x = 12.5
-    while x < 650:
-        checkered += [("M",x,0), ("l",0,1000)]
-        x += 25
-    
-    y = 12.5
-    while y < 1000:
-        checkered += [("M",0,y), ("l",650,0)]
-        y += 25
     
     pages = [
         Page((650, 1000),
@@ -720,41 +673,104 @@ if __name__ == "__main__":
                             "You should have received a copy of the GNU General Public License "
                             "along with this program. If not, see <http://www.gnu.org/licenses/>.")],
                       follow = True)
-             ]),
+             ])
+        ]
+    
+    r = 25
+    hr = 0.5*r
+    
+    bx = 60
+    bw = 550
+    bh = bw
+    
+    logo = []
+    w = h = 50
+    cx = bx + bw/2.0
+    x = cx - (len("RETRO") * w)/2.0
+    y = 25
+    lr = 5
+    lhr = 2.5
+    
+    for ch in "RETRO":
+        logo.append(curved_box(x, y + lr, w, h,
+                               {"fill": "#ff4040", "stroke": "#000000",
+                                "stroke-width": 1}))
+        logo.append(curved_box(x + lr, y, w, h,
+                               {"fill": "#ffffc0", "stroke": "#000000",
+                                "stroke-width": 1}))
+        logo.append(TextBox((x + lr, y + lr + h/2, w - (lr * 2), h),
+                            [Text(front_cover_publisher1, ch)]))
+        x += w
+    
+    x = cx - (len("SOFTWARE") * w)/2.0
+    y += h
+    
+    for ch in "SOFTWARE":
+        logo.append(curved_box(x, y + lr, w, h,
+                               {"fill": "#ff4040", "stroke": "#000000",
+                                "stroke-width": 1}))
+        logo.append(curved_box(x + lr, y, w, h,
+                               {"fill": "#202020", "stroke": "#000000",
+                                "stroke-width": 1}))
+        logo.append(TextBox((x + lr, y + lr + h/2, w - (lr * 2), h),
+                            [Text(front_cover_publisher2, ch)]))
+        x += w
+    
+    checkered = []
+    x = 12.5
+    while x < 650:
+        checkered += [("M",x,0), ("l",0,1000)]
+        x += 25
+    
+    y = 12.5
+    while y < 1000:
+        checkered += [("M",0,y), ("l",650,0)]
+        y += 25
+    
+    o = 0.32 # 1 - 1/(2**0.5)
+    
+    pages += [
         Page((650, 1000),
             [Path((0, 0, 650, 1000),
                   [("M",0,0), ("l",650,0), ("l",0,1000), ("l",-650,0), ("l",0,-1000)],
                   {"fill": "#ffdd77", "stroke": "#000000", "stroke-width": 1}),
              Path((0, 0, 650, 1000), checkered, {"stroke": "#c0c0c0",
                                                  "stroke-width": 1}),
-             Path((100-hr, 50+hr, 450, 250),
-                  [("M",r,0), ("l",450-(r*2),0), ("c",hr,0,r,hr,r,r),
-                   ("l",0,250-(r*2)), ("c",0,hr,-hr,r,-r,r),
-                   ("l",-(450-(r*2)),0), ("c",-hr,0,-r,-hr,-r,-r),
-                   ("l",0,-(250-(r*2))), ("c",0,-hr,hr,-r,r,-r)],
+             Path((bx-r+(r*o), 60, bw+r-(r*o*2), 240+r-(r*o)),
+                  [("M",bw+r-(r*o*2),240-(r*o)),
+                   ("l",-r*0.5,r*0.5), ("c",-r*0.5,r*0.5,-r*0.5,r*0.5,-r,r*0.5),
+                   ("l",-bw+(r*o*2)+(r*1.5),0), ("c",-hr,0,-r,-r+hr,-r,-r),
+                   ("l",0,-240+(r*o*2)+(r*1.5)), ("c",0,-r*0.5,0,-r*0.5,r*0.5,-r),
+                   ("l",r*0.5,-r*0.5), ("z",)],
                   {"fill": "#8080e0", "stroke": "#000000", "stroke-width": 4}),
-             Path((100, 50, 450, 250),
-                  [("M",r,0), ("l",450-(r*2),0), ("c",hr,0,r,hr,r,r),
-                   ("l",0,250-(r*2)), ("c",0,hr,-hr,r,-r,r),
-                   ("l",-(450-(r*2)),0), ("c",-hr,0,-r,-hr,-r,-r),
-                   ("l",0,-(250-(r*2))), ("c",0,-hr,hr,-r,r,-r)],
+             
+             Path((bx, 60, bw, 240),
+                  [("M",r,0), ("l",bw-(r*2),0), ("c",hr,0,r,r-hr,r,r),
+                   ("l",0,240-(r*2)), ("c",0,hr,-r+hr,r,-r,r),
+                   ("l",-(bw-(r*2)),0), ("c",-hr,0,-r,-r+hr,-r,-r),
+                   ("l",0,-(240-(r*2))), ("c",0,-hr,r-hr,-r,r,-r)],
                   {"fill": "#ffffff", "stroke": "#000000", "stroke-width": 4}),
-             TextBox((100+hr, 170, 450-(hr*2), 250-(r*2)),
+             
+             TextBox((bx, 170, bw, 240-(r*2)),
                  [Text(front_cover_platforms, "ACORN ELECTRON\nBBC MODEL B\n\n"),
                   Text(front_cover_title, "CASTLE RAIDER")])
-            ] + logo + [
-             Path((100-hr, 350+hr, 450, 500),
-                  [("M",r,0), ("l",450-(r*2),0), ("c",hr,0,r,hr,r,r),
-                   ("l",0,500-(r*2)), ("c",0,hr,-hr,r,-r,r),
-                   ("l",-(450-(r*2)),0), ("c",-hr,0,-r,-hr,-r,-r),
-                   ("l",0,-(500-(r*2))), ("c",0,-hr,hr,-r,r,-r)],
+            
+            ] + logo + \
+            
+            [Path((bx-r+(r*o), 370, bw+r-(r*o*2), bh+r-(r*o)),
+                  [("M",bw+r-(r*o*2),bh-(r*o)),
+                   ("l",-r*0.5,r*0.5), ("c",-r*0.5,r*0.5,-r*0.5,r*0.5,-r,r*0.5),
+                   ("l",-bw+(r*o*2)+(r*1.5),0), ("c",-hr,0,-r,-r+hr,-r,-r),
+                   ("l",0,-bh+(r*o*2)+(r*1.5)), ("c",0,-r*0.5,0,-r*0.5,r*0.5,-r),
+                   ("l",r*0.5,-r*0.5), ("z",)],
                   {"fill": "#8080e0", "stroke": "#000000", "stroke-width": 4}),
-             Path((100, 350, 450, 500),
-                  [("M",r,0), ("l",450-(r*2),0), ("c",hr,0,r,hr,r,r),
-                   ("l",0,500-(r*2)), ("c",0,hr,-hr,r,-r,r),
-                   ("l",-(450-(r*2)),0), ("c",-hr,0,-r,-hr,-r,-r),
-                   ("l",0,-(500-(r*2))), ("c",0,-hr,hr,-r,r,-r)],
-                  {"fill": "#ffffff", "stroke": "#000000", "stroke-width": 4})
+             
+             Path((bx, 370, bw, bh),
+                  [("M",r,0), ("l",bw-(r*2),0), ("c",hr,0,r,r-hr,r,r),
+                   ("l",0,bh-(r*2)), ("c",0,hr,-r+hr,r,-r,r),
+                   ("l",-(bw-(r*2)),0), ("c",-hr,0,-r,-r+hr,-r,-r),
+                   ("l",0,-(bh-(r*2))), ("c",0,-hr,r-hr,-r,r,-r)],
+                  {"fill": "#ffffff", "stroke": "#000000", "stroke-width": 4}),
             ])
         ]
     
