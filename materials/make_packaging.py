@@ -738,7 +738,7 @@ if __name__ == "__main__":
         y += 20
     
     o = 0.32 # 1 - 1/(2**0.5)
-    cax = 245
+    cax = 265
     
     pages += [
         Page((650, 1000),
@@ -785,6 +785,22 @@ if __name__ == "__main__":
               
               # Hills
               Path((bx, 370, 550, 550),
+                   [("M",80,320), ("c",70,-15,150,-30,220,-35),
+                    ("c",100,5,150,10,210,25),
+                    ("L",550,320), ("z",)],
+                   {"stroke": "black", "fill": "url(#distant-hills)"}),
+              
+              Path((bx, 370, 550, 550),
+                   [("M",0,300), ("c",90,10,120,20,170,30),
+                    ("L",0,350), ("z",)],
+                   {"stroke": "black", "fill": "url(#distant-hills)"}),
+              
+              Path((bx, 370, 550, 550),
+                   [("M",400,320), ("c",70,-10,110,-15,150,-20),
+                    ("L",550,350), ("L",400,350), ("z",)],
+                   {"stroke": "black", "fill": "url(#distant-hills)"}),
+              
+              Path((bx, 370, 550, 550),
                    [("M",0,350), ("c",80,-10,130,-25,280,-30),
                     ("c",120,0,220,5,270,15),
                     ("L",550,550-r), ("c",0,hr,-r+hr,r,-r,r),
@@ -793,6 +809,14 @@ if __name__ == "__main__":
                    {"stroke": "black", "fill": "url(#hills)"}),
               
               # Castle
+              
+              # Base
+              Path((bx, 370, 550, 550),
+                   [("M",cax-45,350), ("L",cax+75,370), ("L",cax+195,350),
+                    ("L",cax+75,330), ("Z",)],
+                   {"stroke": "none", "fill": "#001000"}),
+              
+              # Left wall
               Path((bx, 370, 550, 550),
                    [("M",cax,350), ("l",0,-200),
                     ("l",15,-3), ("l",0,9), ("l",15,-3), ("l",0,-9),
@@ -800,20 +824,39 @@ if __name__ == "__main__":
                     ("l",15,-3), ("l",0,224), ("z",)],
                    {"stroke": "black", "fill": "url(#walls)", "stroke-width": 2}),
               
+              # Left window and doorway
               Path((bx, 370, 550, 550),
-                   [("M",cax+27.5,200), ("l",10,-15), ("l",10,10), ("l",0,50), ("l",-20,2), ("z",)],
+                   [("M",cax+26,200), ("l",10,-15), ("l",10,10), ("l",0,50), ("l",-20,2), ("z",)],
                    {"stroke": "none", "fill": "black"}),
               
               Path((bx, 370, 550, 550),
-                   [("M",cax+22.5,300), ("l",10,-15), ("l",10,0), ("l",10,20), ("l",0,50), ("l",-30,-2), ("z",)],
+                   [("M",cax+21,300), ("l",10,-15), ("l",10,0), ("l",10,17), ("l",0,53), ("l",-30,-2), ("z",)],
                    {"stroke": "black", "stroke-width": 2, "fill": "black"}),
               
+              # Shadow
               Path((bx, 370, 550, 550),
-                   [("M",320,359), ("l",0,-224),
+                   [("M",cax+75,359), ("L",550,389), ("L",550,349),
+                    ("L",cax+150,339), ("z",)],
+                   {"stroke": "none", "fill": "black", "opacity": 0.5}),
+              
+              # Right wall
+              Path((bx, 370, 550, 550),
+                   [("M",cax+75,359), ("l",0,-224),
                     ("l",15,3), ("l",0,9), ("l",15,3), ("l",0,-9),
                     ("l",15,3), ("l",0,9), ("l",15,3), ("l",0,-9),
                     ("l",15,3), ("l",0,200), ("z",)],
-                   {"stroke": "black", "fill": "url(#walls)", "stroke-width": 2}),
+                   {"stroke": "black", "fill": "url(#dark-walls)", "stroke-width": 2}),
+              
+              # Right window
+              Path((bx, 370, 550, 550),
+                   [("M",cax+124,200), ("l",-10,-15), ("l",-10,10), ("l",0,50), ("l",20,2), ("z",)],
+                   {"stroke": "none", "fill": "black"}),
+              
+              # Path
+              Path((bx, 370, 550, 550),
+                   [("M",cax+21,353), ("C",120,400,90,450,50,550),
+                    ("L",200,550), ("C",160,450,200,400,cax+51,353), ("Z",)],
+                   {"stroke": "black", "fill": "url(#path)", "stroke-width": 2}),
               
               # Drawing border
               Path((bx, 370, bw, bh),
@@ -825,17 +868,29 @@ if __name__ == "__main__":
              ])
         ]
     
-    defs = ('<linearGradient id="box-background" x1="0%" y1="0%" x2="0%" y2="100%">\n'
-            '  <stop offset="0%" stop-color="#000040" />\n'
+    defs = ('<linearGradient id="box-background" x1="20%" y1="0%" x2="80%" y2="100%">\n'
+            '  <stop offset="0%" stop-color="#000060" />\n'
             '  <stop offset="40%" stop-color="#000000" />\n'
             '</linearGradient>\n'
-            '<linearGradient id="hills" x1="0%" y1="0%" x2="0%" y2="100%">\n'
+            '<linearGradient id="hills" x1="0%" y1="0%" x2="100%" y2="100%">\n'
+            '  <stop offset="20%" stop-color="#003000" />\n'
+            '  <stop offset="100%" stop-color="#001000" />\n'
+            '</linearGradient>\n'
+            '<linearGradient id="distant-hills" x1="0%" y1="0%" x2="0%" y2="100%">\n'
             '  <stop offset="20%" stop-color="#002000" />\n'
-            '  <stop offset="100%" stop-color="#005000" />\n'
+            '  <stop offset="100%" stop-color="#000000" />\n'
             '</linearGradient>\n'
             '<linearGradient id="walls" x1="0%" y1="0%" x2="0%" y2="100%">\n'
             '  <stop offset="0%" stop-color="#603030" />\n'
             '  <stop offset="100%" stop-color="#502020" />\n'
+            '</linearGradient>\n'
+            '<linearGradient id="dark-walls" x1="0%" y1="0%" x2="0%" y2="100%">\n'
+            '  <stop offset="0%" stop-color="#401010" />\n'
+            '  <stop offset="100%" stop-color="#301010" />\n'
+            '</linearGradient>\n'
+            '<linearGradient id="path" x1="100%" y1="0%" x2="0%" y2="100%">\n'
+            '  <stop offset="0%" stop-color="#303030" />\n'
+            '  <stop offset="100%" stop-color="#404040" />\n'
             '</linearGradient>\n')
     
     if inlay:
