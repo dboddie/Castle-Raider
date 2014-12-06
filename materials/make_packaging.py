@@ -52,6 +52,7 @@ class SVG:
     
         self.path = path
         self.ox = self.oy = 0
+        self.defs = ""
     
     def _escape(self, text):
     
@@ -66,6 +67,10 @@ class SVG:
                      '<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"\n'
                      '  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">\n')
     
+    def add_defs(self, defs):
+    
+        self.defs = defs
+    
     def add_page(self, width, height):
     
         self.text += ('<svg version="1.1"\n'
@@ -73,6 +78,8 @@ class SVG:
                       '     xmlns:xlink="http://www.w3.org/1999/xlink"\n'
                       '     width="%fcm" height="%fcm"\n'
                       '     viewBox="0 0 %i %i">\n') % (width/100.0, height/100.0, width, height)
+        
+        self.text += '<defs>\n' + defs + '\n</defs>\n'
     
     def add_image(self, x, y, width, height, path):
     
@@ -121,6 +128,9 @@ class Inlay(SVG):
     
     def add_page(self, width, height):
     
+        if self.page_number == 0:
+            self.text += '<defs>\n' + defs + '\n</defs>\n'
+        
         self.ox, self.oy = self.page_offsets[self.page_number]
         self.text += ('<rect x="%i" y="0" width="0.1" height="1000"\n'
                       '      stroke="black" fill="none" stroke-width="0.1" />\n' % self.ox)
@@ -519,7 +529,7 @@ if __name__ == "__main__":
     front_cover_platforms = {"family": "FreeSans", "size": 30,
                              "weight": "bold", "align": "centre"}
     
-    front_cover_title = {"family": "FreeSans", "size": 52,
+    front_cover_title = {"family": "FreeSans", "size": 56,
                          "weight": "bold", "align": "centre"}
     
     pages = [
@@ -717,67 +727,122 @@ if __name__ == "__main__":
         x += w
     
     checkered = []
-    x = 12.5
+    x = 10
     while x < 650:
         checkered += [("M",x,0), ("l",0,1000)]
-        x += 25
+        x += 20
     
-    y = 12.5
+    y = 10
     while y < 1000:
         checkered += [("M",0,y), ("l",650,0)]
-        y += 25
+        y += 20
     
     o = 0.32 # 1 - 1/(2**0.5)
+    cax = 245
     
     pages += [
         Page((650, 1000),
-            [Path((0, 0, 650, 1000),
-                  [("M",0,0), ("l",650,0), ("l",0,1000), ("l",-650,0), ("l",0,-1000)],
-                  {"fill": "#ffdd77", "stroke": "#000000", "stroke-width": 1}),
-             Path((0, 0, 650, 1000), checkered, {"stroke": "#c0c0c0",
-                                                 "stroke-width": 1}),
-             Path((bx-r+(r*o), 60, bw+r-(r*o*2), 240+r-(r*o)),
-                  [("M",bw+r-(r*o*2),240-(r*o)),
-                   ("l",-r*0.5,r*0.5), ("c",-r*0.5,r*0.5,-r*0.5,r*0.5,-r,r*0.5),
-                   ("l",-bw+(r*o*2)+(r*1.5),0), ("c",-hr,0,-r,-r+hr,-r,-r),
-                   ("l",0,-240+(r*o*2)+(r*1.5)), ("c",0,-r*0.5,0,-r*0.5,r*0.5,-r),
-                   ("l",r*0.5,-r*0.5), ("z",)],
-                  {"fill": "#8080e0", "stroke": "#000000", "stroke-width": 4}),
-             
-             Path((bx, 60, bw, 240),
-                  [("M",r,0), ("l",bw-(r*2),0), ("c",hr,0,r,r-hr,r,r),
-                   ("l",0,240-(r*2)), ("c",0,hr,-r+hr,r,-r,r),
-                   ("l",-(bw-(r*2)),0), ("c",-hr,0,-r,-r+hr,-r,-r),
-                   ("l",0,-(240-(r*2))), ("c",0,-hr,r-hr,-r,r,-r)],
-                  {"fill": "#ffffff", "stroke": "#000000", "stroke-width": 4}),
-             
-             TextBox((bx, 170, bw, 240-(r*2)),
-                 [Text(front_cover_platforms, "ACORN ELECTRON\nBBC MODEL B\n\n"),
-                  Text(front_cover_title, "CASTLE RAIDER")])
-            
-            ] + logo + \
-            
-            [Path((bx-r+(r*o), 370, bw+r-(r*o*2), bh+r-(r*o)),
-                  [("M",bw+r-(r*o*2),bh-(r*o)),
-                   ("l",-r*0.5,r*0.5), ("c",-r*0.5,r*0.5,-r*0.5,r*0.5,-r,r*0.5),
-                   ("l",-bw+(r*o*2)+(r*1.5),0), ("c",-hr,0,-r,-r+hr,-r,-r),
-                   ("l",0,-bh+(r*o*2)+(r*1.5)), ("c",0,-r*0.5,0,-r*0.5,r*0.5,-r),
-                   ("l",r*0.5,-r*0.5), ("z",)],
-                  {"fill": "#8080e0", "stroke": "#000000", "stroke-width": 4}),
-             
-             Path((bx, 370, bw, bh),
-                  [("M",r,0), ("l",bw-(r*2),0), ("c",hr,0,r,r-hr,r,r),
-                   ("l",0,bh-(r*2)), ("c",0,hr,-r+hr,r,-r,r),
-                   ("l",-(bw-(r*2)),0), ("c",-hr,0,-r,-r+hr,-r,-r),
-                   ("l",0,-(bh-(r*2))), ("c",0,-hr,r-hr,-r,r,-r)],
-                  {"fill": "#ffffff", "stroke": "#000000", "stroke-width": 4}),
-            ])
+             [Path((0, 0, 650, 1000),
+                   [("M",0,0), ("l",650,0), ("l",0,1000), ("l",-650,0), ("l",0,-1000)],
+                   {"fill": "#ffdd77", "stroke": "#000000", "stroke-width": 1}),
+              Path((0, 0, 650, 1000), checkered, {"stroke": "#a0a0a0",
+                                                  "stroke-width": 1}),
+              Path((bx-r+(r*o), 60, bw+r-(r*o*2), 240+r-(r*o)),
+                   [("M",bw+r-(r*o*2),240-(r*o)),
+                    ("l",-r*0.5,r*0.5), ("c",-r*0.5,r*0.5,-r*0.5,r*0.5,-r,r*0.5),
+                    ("l",-bw+(r*o*2)+(r*1.5),0), ("c",-hr,0,-r,-r+hr,-r,-r),
+                    ("l",0,-240+(r*o*2)+(r*1.5)), ("c",0,-r*0.5,0,-r*0.5,r*0.5,-r),
+                    ("l",r*0.5,-r*0.5), ("z",)],
+                   {"fill": "#ffb060", "stroke": "#000000", "stroke-width": 4}),
+
+              Path((bx, 60, bw, 240),
+                   [("M",r,0), ("l",bw-(r*2),0), ("c",hr,0,r,r-hr,r,r),
+                    ("l",0,240-(r*2)), ("c",0,hr,-r+hr,r,-r,r),
+                    ("l",-(bw-(r*2)),0), ("c",-hr,0,-r,-r+hr,-r,-r),
+                    ("l",0,-(240-(r*2))), ("c",0,-hr,r-hr,-r,r,-r)],
+                   {"fill": "#ffffff", "stroke": "#000000", "stroke-width": 4}),
+
+              TextBox((bx, 170, bw, 240-(r*2)),
+                  [Text(front_cover_platforms, "ACORN ELECTRON\nBBC MODEL B\n\n"),
+                   Text(front_cover_title, "CASTLE RAIDER")])
+
+             ] + logo + \
+
+             [Path((bx-r+(r*o), 370, bw+r-(r*o*2), bh+r-(r*o)),
+                   [("M",bw+r-(r*o*2),bh-(r*o)),
+                    ("l",-r*0.5,r*0.5), ("c",-r*0.5,r*0.5,-r*0.5,r*0.5,-r,r*0.5),
+                    ("l",-bw+(r*o*2)+(r*1.5),0), ("c",-hr,0,-r,-r+hr,-r,-r),
+                    ("l",0,-bh+(r*o*2)+(r*1.5)), ("c",0,-r*0.5,0,-r*0.5,r*0.5,-r),
+                    ("l",r*0.5,-r*0.5), ("z",)],
+                   {"fill": "#ffb060", "stroke": "#000000", "stroke-width": 4}),
+              
+              Path((bx, 370, bw, bh),
+                   [("M",r,0), ("l",bw-(r*2),0), ("c",hr,0,r,r-hr,r,r),
+                    ("l",0,bh-(r*2)), ("c",0,hr,-r+hr,r,-r,r),
+                    ("l",-(bw-(r*2)),0), ("c",-hr,0,-r,-r+hr,-r,-r),
+                    ("l",0,-(bh-(r*2))), ("c",0,-hr,r-hr,-r,r,-r)],
+                   {"fill": "url(#box-background)", "stroke": "none", "stroke-width": 4}),
+              
+              # Hills
+              Path((bx, 370, 550, 550),
+                   [("M",0,350), ("c",80,-10,130,-25,280,-30),
+                    ("c",120,0,220,5,270,15),
+                    ("L",550,550-r), ("c",0,hr,-r+hr,r,-r,r),
+                    ("L",r,550), ("c",-hr,0,-r,-r+hr,-r,-r),
+                    ("z",)],
+                   {"stroke": "black", "fill": "url(#hills)"}),
+              
+              # Castle
+              Path((bx, 370, 550, 550),
+                   [("M",cax,350), ("l",0,-200),
+                    ("l",15,-3), ("l",0,9), ("l",15,-3), ("l",0,-9),
+                    ("l",15,-3), ("l",0,9), ("l",15,-3), ("l",0,-9),
+                    ("l",15,-3), ("l",0,224), ("z",)],
+                   {"stroke": "black", "fill": "url(#walls)", "stroke-width": 2}),
+              
+              Path((bx, 370, 550, 550),
+                   [("M",cax+27.5,200), ("l",10,-15), ("l",10,10), ("l",0,50), ("l",-20,2), ("z",)],
+                   {"stroke": "none", "fill": "black"}),
+              
+              Path((bx, 370, 550, 550),
+                   [("M",cax+22.5,300), ("l",10,-15), ("l",10,0), ("l",10,20), ("l",0,50), ("l",-30,-2), ("z",)],
+                   {"stroke": "black", "stroke-width": 2, "fill": "black"}),
+              
+              Path((bx, 370, 550, 550),
+                   [("M",320,359), ("l",0,-224),
+                    ("l",15,3), ("l",0,9), ("l",15,3), ("l",0,-9),
+                    ("l",15,3), ("l",0,9), ("l",15,3), ("l",0,-9),
+                    ("l",15,3), ("l",0,200), ("z",)],
+                   {"stroke": "black", "fill": "url(#walls)", "stroke-width": 2}),
+              
+              # Drawing border
+              Path((bx, 370, bw, bh),
+                   [("M",r,0), ("l",bw-(r*2),0), ("c",hr,0,r,r-hr,r,r),
+                    ("l",0,bh-(r*2)), ("c",0,hr,-r+hr,r,-r,r),
+                    ("l",-(bw-(r*2)),0), ("c",-hr,0,-r,-r+hr,-r,-r),
+                    ("l",0,-(bh-(r*2))), ("c",0,-hr,r-hr,-r,r,-r)],
+                   {"fill": "none", "stroke": "#000000", "stroke-width": 4})
+             ])
         ]
+    
+    defs = ('<linearGradient id="box-background" x1="0%" y1="0%" x2="0%" y2="100%">\n'
+            '  <stop offset="0%" stop-color="#000040" />\n'
+            '  <stop offset="40%" stop-color="#000000" />\n'
+            '</linearGradient>\n'
+            '<linearGradient id="hills" x1="0%" y1="0%" x2="0%" y2="100%">\n'
+            '  <stop offset="20%" stop-color="#002000" />\n'
+            '  <stop offset="100%" stop-color="#005000" />\n'
+            '</linearGradient>\n'
+            '<linearGradient id="walls" x1="0%" y1="0%" x2="0%" y2="100%">\n'
+            '  <stop offset="0%" stop-color="#603030" />\n'
+            '  <stop offset="100%" stop-color="#502020" />\n'
+            '</linearGradient>\n')
     
     if inlay:
         path = os.path.join(output_dir, "inlay.svg")
         inlay = Inlay(path)
         inlay.open()
+        inlay.add_defs(defs)
         
         i = 0
         for page in pages:
@@ -794,6 +859,7 @@ if __name__ == "__main__":
             path = os.path.join(output_dir, "page-%i.svg" % i)
             svg = SVG(path)
             svg.open()
+            svg.add_defs(defs)
             page.render(svg)
             svg.close()
             i += 1
