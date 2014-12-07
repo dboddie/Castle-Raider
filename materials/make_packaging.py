@@ -29,7 +29,7 @@ def relpath(source, destination):
     src_pieces = source.split(os.sep)
     dest_pieces = destination.split(os.sep)
     
-    if os.path.isfile(source):
+    if not os.path.exists(source) or os.path.isfile(source):
         src_pieces.pop()
     
     common = []
@@ -118,8 +118,9 @@ class Inlay(SVG):
             self.page_offsets = [(0, 0), (650, 0), (2 * 650, 0), (3 * 650, 0),
                                  ((3 * 650) + 100, 0)]
         else:
-            self.page_offsets = [(0, 0), (100, 0), (750, 0), (100 + (2 * 650), 0),
-                                 (100 + (3 * 650), 0)]
+            self.page_offsets = [(0, 0), (150, 0), (150 + 100, 0),
+                                 (150 + 100 + 650, 0), (150 + 100 + (2 * 650), 0),
+                                 (150 + 100 + (3 * 650), 0)]
         self.layout = layout
         self.page_number = 0
     
@@ -523,6 +524,14 @@ def make_logo(cx, y, w, h, font1, font2):
     
     return logo
 
+def make_back_flap(r, hr, o, background):
+
+    return Page((150, 1000),
+                [Path((0, 0, 150, 1000),
+                      [("M",0,0), ("l",650,0), ("l",0,1000), ("l",-650,0), ("l",0,-1000)],
+                       {"fill": "white", "stroke": "#000000", "stroke-width": 1})
+                ])
+
 def make_spine(r, hr, o, background):
 
     sbx = 300
@@ -856,6 +865,9 @@ if __name__ == "__main__":
     
     if inlay and inlay_layout != "enclosed":
     
+        # Add a tab/flap to the back of the box.
+        pages.append(make_back_flap(r, hr, o, background))
+        
         # Add a label to the side of the box.
         pages.append(make_spine(r, hr, o, background))
     
@@ -1045,13 +1057,14 @@ if __name__ == "__main__":
             '  <stop offset="0%" stop-color="#303030" />\n'
             '  <stop offset="100%" stop-color="#404040" />\n'
             '</linearGradient>\n'
-            '<linearGradient id="lit-window" x1="0%" y1="0%" x2="0%" y2="100%">\n'
+            '<linearGradient id="lit-window" x1="10%" y1="0%" x2="0%" y2="100%">\n'
             '  <stop offset="50%" stop-color="#00000" />\n'
             '  <stop offset="100%" stop-color="#de8600" />\n'
             '</linearGradient>\n')
     
     if inlay:
-        path = os.path.join(output_dir, "inlay.svg")
+        path = os.path.join(output_dir, "%s-%s-inlay.svg" % (platform.replace(" ", "-"),
+                                                       inlay_layout))
         inlay = Inlay(path, inlay_layout)
         inlay.open()
         inlay.add_defs(defs)
