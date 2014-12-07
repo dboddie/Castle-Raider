@@ -114,7 +114,8 @@ class Inlay(SVG):
     
         SVG.__init__(self, path)
         
-        self.page_offsets = [(0, 0), (650, 0), (2 * 650, 0), (2050, 0)]
+        self.page_offsets = [(0, 0), (650, 0), (2 * 650, 0), (3 * 650, 0),
+                             ((3 * 650) + 100, 0)]
         self.page_number = 0
     
     def open(self):
@@ -146,9 +147,6 @@ class Inlay(SVG):
     
     def close(self):
     
-        self.text += ('<rect x="1950" y="0" width="100" height="1000"\n'
-                      '      stroke="black" fill="none" stroke-width="1" />\n')
-        
         SVG.close(self)
 
 
@@ -258,7 +256,7 @@ class Text:
                 else:
                     # If no words will fit on the line, just add the first
                     # word to the list.
-                    yield self.format([word], width), self.height(words)
+                    yield self.format([word], width), self.height([word])
                     
                     used = 0
                     w += 1
@@ -428,6 +426,29 @@ class Path:
         return x + width, y + height
 
 
+class Transform:
+
+    def __init__(self, transformation, elements):
+    
+        self.transformation = transformation
+        self.elements = elements
+    
+    def render(self, svg, positions):
+    
+        svg.text += '<g transform="translate(%f,%f) ' % (svg.ox, svg.oy)
+        svg.text += ' '.join(map(lambda (k,v): '%s(%s)' % (k, v), self.transformation.items()))
+        svg.text += '">\n'
+        
+        ox, oy = svg.ox, svg.oy
+        svg.ox, svg.oy = 0, 0
+        
+        for element in self.elements:
+        
+            x, y = element.render(svg, positions)
+        
+        svg.text += '</g>\n'
+        return x, y
+
 def curved_box(x, y, w, h, style):
 
     r = w/10.0
@@ -439,6 +460,57 @@ def curved_box(x, y, w, h, style):
                   ("l",0,ll), ("c",0,hr,-hr,r,-r,r),
                   ("l",-ll,0), ("c",-hr,0,-r,-hr,-r,-r),
                   ("l",0,-ll), ("c",0,-hr,hr,-r,r,-r)], style)
+
+def make_checkered(w, h):
+
+    checkered = []
+    x = 10
+    while x < w:
+        checkered += [("M",x,0), ("l",0,h)]
+        x += 20
+    
+    y = 10
+    while y < h:
+        checkered += [("M",0,y), ("l",w,0)]
+        y += 20
+    
+    return checkered
+
+def make_logo(cx, w, h, font1, font2):
+
+    logo = []
+    x = cx - (len("RETRO") * w)/2.0
+    y = 25
+    lr = 5
+    lhr = 2.5
+    
+    for ch in "RETRO":
+        logo.append(curved_box(x, y + lr, w, h,
+                               {"fill": "#ff4040", "stroke": "#000000",
+                                "stroke-width": 1}))
+        logo.append(curved_box(x + lr, y, w, h,
+                               {"fill": "#ffffc0", "stroke": "#000000",
+                                "stroke-width": 1}))
+        logo.append(TextBox((x + lr, y + lr + h/2, w - (lr * 2), h),
+                            [Text(font1, ch)]))
+        x += w
+    
+    x = cx - (len("SOFTWARE") * w)/2.0
+    y += h
+    
+    for ch in "SOFTWARE":
+        logo.append(curved_box(x, y + lr, w, h,
+                               {"fill": "#ff4040", "stroke": "#000000",
+                                "stroke-width": 1}))
+        logo.append(curved_box(x + lr, y, w, h,
+                               {"fill": "#202020", "stroke": "#000000",
+                                "stroke-width": 1}))
+        logo.append(TextBox((x + lr, y + lr + h/2, w - (lr * 2), h),
+                            [Text(font2, ch)]))
+        x += w
+    
+    return logo
+
 
 if __name__ == "__main__":
 
@@ -526,17 +598,28 @@ if __name__ == "__main__":
                               "weight": "bold", "align": "centre",
                               "colour": "#ffffc0"}
     
+    spine_publisher1 = {"family": "FreeSans", "size": 20,
+                        "weight": "bold", "align": "centre",
+                        "colour": "#202020"}
+    
+    spine_publisher2 = {"family": "FreeSans", "size": 20,
+                        "weight": "bold", "align": "centre",
+                        "colour": "#ffffc0"}
+    
     front_cover_platforms = {"family": "FreeSans", "size": 30,
                              "weight": "bold", "align": "centre"}
     
     front_cover_title = {"family": "FreeSans", "size": 56,
                          "weight": "bold", "align": "centre"}
     
+    spine_title = {"family": "FreeSans", "size": 44,
+                   "weight": "bold", "align": "centre"}
+    
     pages = [
         Page((650, 1000),
-            [TextBox((25, 75, 600, 0), 
+            [TextBox((25, 90, 600, 0), 
                  [Text(title, "Castle Raider")]),
-             TextBox((25, 0, 600, 0),
+             TextBox((35, -15, 580, 0),
                  [Text(regular,
                        "As the sun dips below the ramparts of the old town, the last of the troops file "
                        "in. As they make their way through the narrow, cobbled streets, small groups of "
@@ -603,13 +686,13 @@ if __name__ == "__main__":
                         "Your character can roam the castle and its surroundings using the following "
                         "control keys:\n")],
                   follow = True),
-              TextBox((25, 0, 600, 0),
+              TextBox((35, 0, 580, 0),
                   [Text(keys_quote,
                         "Z\n"
                         "X\n"
                         "Return\n"
                         "/")], follow = True),
-              TextBox((25, 0, 600, 0),
+              TextBox((35, 0, 580, 0),
                   [Text(key_descriptions_quote,
                         "left\n"
                         "right\n"
@@ -622,13 +705,13 @@ if __name__ == "__main__":
                         "Alternatively, you may may use an analogue joystick with the following "
                         "controls:\n")],
                         follow = True, index = -2),
-              TextBox((25, 0, 600, 0),
+              TextBox((35, 0, 580, 0),
                   [Text(keys_quote,
                         "Left\n"
                         "Right\n"
                         "Fire\n"
                         "Down\n")], follow = True),
-              TextBox((25, 0, 600, 0),
+              TextBox((35, 0, 580, 0),
                   [Text(key_descriptions_quote,
                         "left\n"
                         "right\n"
@@ -639,14 +722,14 @@ if __name__ == "__main__":
                         "the game. Press Space to start the game with keyboard controls.\n\n"
                         "Other keys are used to control features of the game:\n")],
                         follow = True, index = -2),
-              TextBox((25, 0, 600, 0),
+              TextBox((35, 0, 580, 0),
                   [Text(keys_quote,
                         "S\n"
                         "Q\n"
                         "P\n"
                         "O\n"
                         "Escape")], follow = True),
-              TextBox((25, 0, 600, 0),
+              TextBox((35, 0, 580, 0),
                   [Text(key_descriptions_quote,
                         "enable sound effects\n"
                         "disable sound effects\n"
@@ -659,16 +742,16 @@ if __name__ == "__main__":
              [TextBox((25, 50, 600, 0),
                       [Text(back_cover_title, "Castle Raider"),
                        Text(back_cover_subtitle, "for the Acorn Electron and BBC Model B")]),
-              Image((24.667, 0, 450, 0), "images/2014-11-30-loading.png", scale = 0.9, follow = True),
-              Image((337.334, 0, 450, 0), "images/2014-11-30-action.png", scale = 0.9, follow = True, index = -2),
-              Image((24.667, 25, 450, 0), "images/2014-11-30-basement.png", scale = 0.9, follow = True),
-              Image((337.334, 25, 450, 0), "images/2014-11-30-dungeon.png", scale = 0.9, follow = True, index = -2),
+              Image((35.333, 0, 450, 0), "images/2014-11-30-loading.png", scale = 0.85, follow = True),
+              Image((342.667, 0, 450, 0), "images/2014-11-30-action.png", scale = 0.85, follow = True, index = -2),
+              Image((35.333, 25, 450, 0), "images/2014-11-30-basement.png", scale = 0.85, follow = True),
+              Image((342.667, 25, 450, 0), "images/2014-11-30-dungeon.png", scale = 0.85, follow = True, index = -2),
               TextBox((25, 45, 600, 0),
                       [Text(back_cover_centred,
                             u"Copyright \u00a9 2014 David Boddie\n"
                             u"An Infukor production for Retro Software\n"
                             u"http://www.retrosoftware.co.uk/")], follow = True),
-              TextBox((25, 15, 600, 0),
+              TextBox((35, 15, 580, 0),
                       [Text(regular,
                             "This program is free software: you can redistribute it and/or modify "
                             "it under the terms of the GNU General Public License as published by "
@@ -693,60 +776,58 @@ if __name__ == "__main__":
     bw = 550
     bh = bw
     
-    logo = []
-    w = h = 50
-    cx = bx + bw/2.0
-    x = cx - (len("RETRO") * w)/2.0
-    y = 25
-    lr = 5
-    lhr = 2.5
-    
-    for ch in "RETRO":
-        logo.append(curved_box(x, y + lr, w, h,
-                               {"fill": "#ff4040", "stroke": "#000000",
-                                "stroke-width": 1}))
-        logo.append(curved_box(x + lr, y, w, h,
-                               {"fill": "#ffffc0", "stroke": "#000000",
-                                "stroke-width": 1}))
-        logo.append(TextBox((x + lr, y + lr + h/2, w - (lr * 2), h),
-                            [Text(front_cover_publisher1, ch)]))
-        x += w
-    
-    x = cx - (len("SOFTWARE") * w)/2.0
-    y += h
-    
-    for ch in "SOFTWARE":
-        logo.append(curved_box(x, y + lr, w, h,
-                               {"fill": "#ff4040", "stroke": "#000000",
-                                "stroke-width": 1}))
-        logo.append(curved_box(x + lr, y, w, h,
-                               {"fill": "#202020", "stroke": "#000000",
-                                "stroke-width": 1}))
-        logo.append(TextBox((x + lr, y + lr + h/2, w - (lr * 2), h),
-                            [Text(front_cover_publisher2, ch)]))
-        x += w
-    
-    checkered = []
-    x = 10
-    while x < 650:
-        checkered += [("M",x,0), ("l",0,1000)]
-        x += 20
-    
-    y = 10
-    while y < 1000:
-        checkered += [("M",0,y), ("l",650,0)]
-        y += 20
-    
+    # Shadow offset and castle position
     o = 0.32 # 1 - 1/(2**0.5)
     cax = 265
+    
+    if inlay:
+    
+        # Add a label to the side of the box.
+        sbx = 300
+        sbw = 400
+        sbh = 60
+        
+        pages.append(
+            Page((100, 1000),
+                [Path((0, 0, 100, 1000),
+                      [("M",0,0), ("l",650,0), ("l",0,1000), ("l",-650,0), ("l",0,-1000)],
+                       {"fill": "#ffdd77", "stroke": "#000000", "stroke-width": 1}),
+                 Path((0, 0, 650, 1000), make_checkered(100, 1000),
+                   {"stroke": "#a0a0a0", "stroke-width": 1}),
+                 
+                 Transform({"rotate": 90},
+                     [Transform({"translate": "0,-105"},
+                          make_logo(150, 30, 30, spine_publisher1, spine_publisher2) + \
+                          make_logo(850, 30, 30, spine_publisher1, spine_publisher2) + \
+                          [Path((sbx-r+(r*o)+10, 15, sbw+r-(r*o*2), sbh+r-(r*o)),
+                                [("M",sbw+r-(r*o*2),sbh-(r*o)),
+                                 ("l",-r*0.5,r*0.5), ("c",-r*0.5,r*0.5,-r*0.5,r*0.5,-r,r*0.5),
+                                 ("l",-sbw+(r*o*2)+(r*1.5),0), ("c",-hr,0,-r,-r+hr,-r,-r),
+                                 ("l",0,-sbh+(r*o*2)+(r*1.5)), ("c",0,-r*0.5,0,-r*0.5,r*0.5,-r),
+                                 ("l",r*0.5,-r*0.5), ("z",)],
+                                {"fill": "#ffb060", "stroke": "#000000", "stroke-width": 4}),
+
+                           Path((sbx+10, 15, sbw, sbh),
+                                [("M",r,0), ("l",sbw-(r*2),0), ("c",hr,0,r,r-hr,r,r),
+                                 ("l",0,sbh-(r*2)), ("c",0,hr,-r+hr,r,-r,r),
+                                 ("l",-(sbw-(r*2)),0), ("c",-hr,0,-r,-r+hr,-r,-r),
+                                 ("l",0,-(sbh-(r*2))), ("c",0,-hr,r-hr,-r,r,-r)],
+                                {"fill": "#ffffff", "stroke": "#000000", "stroke-width": 4}),
+
+                           TextBox((sbx+10, sbh, sbw, sbh-(r*2)),
+                               [Text(spine_title, "CASTLE RAIDER")])
+                          ])
+                     ]),
+                ]))
     
     pages += [
         Page((650, 1000),
              [Path((0, 0, 650, 1000),
                    [("M",0,0), ("l",650,0), ("l",0,1000), ("l",-650,0), ("l",0,-1000)],
                    {"fill": "#ffdd77", "stroke": "#000000", "stroke-width": 1}),
-              Path((0, 0, 650, 1000), checkered, {"stroke": "#a0a0a0",
-                                                  "stroke-width": 1}),
+              Path((0, 0, 650, 1000), make_checkered(650, 1000),
+                   {"stroke": "#a0a0a0", "stroke-width": 1}),
+              
               Path((bx-r+(r*o), 60, bw+r-(r*o*2), 240+r-(r*o)),
                    [("M",bw+r-(r*o*2),240-(r*o)),
                     ("l",-r*0.5,r*0.5), ("c",-r*0.5,r*0.5,-r*0.5,r*0.5,-r,r*0.5),
@@ -766,7 +847,7 @@ if __name__ == "__main__":
                   [Text(front_cover_platforms, "ACORN ELECTRON\nBBC MODEL B\n\n"),
                    Text(front_cover_title, "CASTLE RAIDER")])
 
-             ] + logo + \
+             ] + make_logo(bx + bw/2.0, 50, 50, front_cover_publisher1, front_cover_publisher2) + \
 
              [Path((bx-r+(r*o), 370, bw+r-(r*o*2), bh+r-(r*o)),
                    [("M",bw+r-(r*o*2),bh-(r*o)),
