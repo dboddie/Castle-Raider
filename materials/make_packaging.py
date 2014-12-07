@@ -662,23 +662,23 @@ if __name__ == "__main__":
                   follow = True)
              ]),
         Page((650, 1000),
-             [TextBox((25, 35, 600, 0),
+             [TextBox((35, 45, 580, 0),
                   [Text(subtitle, "Loading the Game from Cassette\n"),
                    Text(regular, "Insert the cassette and type\n")]),
-              TextBox((25, -2, 600, 0),
+              TextBox((35, -2, 580, 0),
                   [Text(monospace_quote, 'CHAIN "CASTLE"\n')], follow = True),
-              TextBox((25, -2, 600, 0),
+              TextBox((35, -2, 580, 0),
                   [Text(regular,
                         "then press Return. Press play on the cassette recorder. "
                         "The game should now load.\n\n")], follow = True),
               
-              TextBox((25, 12, 600, 0),
+              TextBox((35, 12, 580, 0),
                   [Text(subtitle, "Loading the Game from Disk\n"),
                    Text(regular,
                         "Insert the disk and press Shift-Break. The game should now load.\n")],
                   follow = True),
               
-              TextBox((25, 20, 600, 0),
+              TextBox((35, 20, 580, 0),
                   [Text(subtitle, "Playing the Game\n"),
                    Text(regular,
                         "The player must help their character escape the castle, "
