@@ -110,12 +110,17 @@ class SVG:
 
 class Inlay(SVG):
 
-    def __init__(self, path):
+    def __init__(self, path, layout = "enclosed"):
     
         SVG.__init__(self, path)
         
-        self.page_offsets = [(0, 0), (650, 0), (2 * 650, 0), (3 * 650, 0),
-                             ((3 * 650) + 100, 0)]
+        if layout == "enclosed":
+            self.page_offsets = [(0, 0), (650, 0), (2 * 650, 0), (3 * 650, 0),
+                                 ((3 * 650) + 100, 0)]
+        else:
+            self.page_offsets = [(0, 0), (100, 0), (750, 0), (100 + (2 * 650), 0),
+                                 (100 + (3 * 650), 0)]
+        self.layout = layout
         self.page_number = 0
     
     def open(self):
@@ -512,6 +517,172 @@ def make_logo(cx, w, h, font1, font2):
     
     return logo
 
+def make_spine(r, hr, o):
+
+    sbx = 300
+    sbw = 400
+    sbh = 60
+    
+    return Page((100, 1000),
+                [Path((0, 0, 100, 1000),
+                      [("M",0,0), ("l",650,0), ("l",0,1000), ("l",-650,0), ("l",0,-1000)],
+                       {"fill": "#ffdd77", "stroke": "#000000", "stroke-width": 1}),
+                 Path((0, 0, 650, 1000), make_checkered(100, 1000),
+                   {"stroke": "#a0a0a0", "stroke-width": 1}),
+
+                 Transform({"rotate": 90},
+                     [Transform({"translate": "0,-105"},
+                          make_logo(150, 30, 30, spine_publisher1, spine_publisher2) + \
+                          make_logo(850, 30, 30, spine_publisher1, spine_publisher2) + \
+                          [Path((sbx-r+(r*o)+10, 15, sbw+r-(r*o*2), sbh+r-(r*o)),
+                                [("M",sbw+r-(r*o*2),sbh-(r*o)),
+                                 ("l",-r*0.5,r*0.5), ("c",-r*0.5,r*0.5,-r*0.5,r*0.5,-r,r*0.5),
+                                 ("l",-sbw+(r*o*2)+(r*1.5),0), ("c",-hr,0,-r,-r+hr,-r,-r),
+                                 ("l",0,-sbh+(r*o*2)+(r*1.5)), ("c",0,-r*0.5,0,-r*0.5,r*0.5,-r),
+                                 ("l",r*0.5,-r*0.5), ("z",)],
+                                {"fill": "#ffb060", "stroke": "#000000", "stroke-width": 4}),
+                            Path((sbx+10, 15, sbw, sbh),
+                                [("M",r,0), ("l",sbw-(r*2),0), ("c",hr,0,r,r-hr,r,r),
+                                 ("l",0,sbh-(r*2)), ("c",0,hr,-r+hr,r,-r,r),
+                                 ("l",-(sbw-(r*2)),0), ("c",-hr,0,-r,-r+hr,-r,-r),
+                                 ("l",0,-(sbh-(r*2))), ("c",0,-hr,r-hr,-r,r,-r)],
+                                {"fill": "#ffffff", "stroke": "#000000", "stroke-width": 4}),
+                            TextBox((sbx+10, sbh, sbw, sbh-(r*2)),
+                               [Text(spine_title, "CASTLE RAIDER")])
+                          ])
+                     ]),
+                ])
+
+def make_front_cover(bx, bw, r, hr, o):
+
+    cax = 265
+    return Page((650, 1000),
+                [Path((0, 0, 650, 1000),
+                      [("M",0,0), ("l",650,0), ("l",0,1000), ("l",-650,0), ("l",0,-1000)],
+                      {"fill": "#ffdd77", "stroke": "#000000", "stroke-width": 1}),
+                 Path((0, 0, 650, 1000), make_checkered(650, 1000),
+                      {"stroke": "#a0a0a0", "stroke-width": 1}),
+
+                 Path((bx-r+(r*o), 60, bw+r-(r*o*2), 240+r-(r*o)),
+                      [("M",bw+r-(r*o*2),240-(r*o)),
+                       ("l",-r*0.5,r*0.5), ("c",-r*0.5,r*0.5,-r*0.5,r*0.5,-r,r*0.5),
+                       ("l",-bw+(r*o*2)+(r*1.5),0), ("c",-hr,0,-r,-r+hr,-r,-r),
+                       ("l",0,-240+(r*o*2)+(r*1.5)), ("c",0,-r*0.5,0,-r*0.5,r*0.5,-r),
+                       ("l",r*0.5,-r*0.5), ("z",)],
+                      {"fill": "#ffb060", "stroke": "#000000", "stroke-width": 4}),
+
+                 Path((bx, 60, bw, 240),
+                      [("M",r,0), ("l",bw-(r*2),0), ("c",hr,0,r,r-hr,r,r),
+                       ("l",0,240-(r*2)), ("c",0,hr,-r+hr,r,-r,r),
+                       ("l",-(bw-(r*2)),0), ("c",-hr,0,-r,-r+hr,-r,-r),
+                       ("l",0,-(240-(r*2))), ("c",0,-hr,r-hr,-r,r,-r)],
+                      {"fill": "#ffffff", "stroke": "#000000", "stroke-width": 4}),
+
+                 TextBox((bx, 170, bw, 240-(r*2)),
+                     [Text(front_cover_platforms, "ACORN ELECTRON\nBBC MODEL B\n\n"),
+                      Text(front_cover_title, "CASTLE RAIDER")])
+
+                ] + make_logo(bx + bw/2.0, 50, 50, front_cover_publisher1, front_cover_publisher2) + \
+
+                [Path((bx-r+(r*o), 370, bw+r-(r*o*2), bh+r-(r*o)),
+                      [("M",bw+r-(r*o*2),bh-(r*o)),
+                       ("l",-r*0.5,r*0.5), ("c",-r*0.5,r*0.5,-r*0.5,r*0.5,-r,r*0.5),
+                       ("l",-bw+(r*o*2)+(r*1.5),0), ("c",-hr,0,-r,-r+hr,-r,-r),
+                       ("l",0,-bh+(r*o*2)+(r*1.5)), ("c",0,-r*0.5,0,-r*0.5,r*0.5,-r),
+                       ("l",r*0.5,-r*0.5), ("z",)],
+                      {"fill": "#ffb060", "stroke": "#000000", "stroke-width": 4}),
+
+                 Path((bx, 370, bw, bh),
+                      [("M",r,0), ("l",bw-(r*2),0), ("c",hr,0,r,r-hr,r,r),
+                       ("l",0,bh-(r*2)), ("c",0,hr,-r+hr,r,-r,r),
+                       ("l",-(bw-(r*2)),0), ("c",-hr,0,-r,-r+hr,-r,-r),
+                       ("l",0,-(bh-(r*2))), ("c",0,-hr,r-hr,-r,r,-r)],
+                      {"fill": "url(#box-background)", "stroke": "none", "stroke-width": 4}),
+
+                 # Hills
+                 Path((bx, 370, 550, 550),
+                      [("M",80,320), ("c",70,-15,150,-30,220,-35),
+                       ("c",100,5,150,10,210,25),
+                       ("L",550,320), ("z",)],
+                      {"stroke": "black", "fill": "url(#distant-hills)"}),
+
+                 Path((bx, 370, 550, 550),
+                      [("M",0,300), ("c",90,10,120,20,170,30),
+                       ("L",0,350), ("z",)],
+                      {"stroke": "black", "fill": "url(#distant-hills)"}),
+
+                 Path((bx, 370, 550, 550),
+                      [("M",400,320), ("c",70,-10,110,-15,150,-20),
+                       ("L",550,350), ("L",400,350), ("z",)],
+                      {"stroke": "black", "fill": "url(#distant-hills)"}),
+
+                 Path((bx, 370, 550, 550),
+                      [("M",0,350), ("c",80,-10,130,-25,280,-30),
+                       ("c",120,0,220,5,270,15),
+                       ("L",550,550-r), ("c",0,hr,-r+hr,r,-r,r),
+                       ("L",r,550), ("c",-hr,0,-r,-r+hr,-r,-r),
+                       ("z",)],
+                      {"stroke": "black", "fill": "url(#hills)"}),
+
+                 # Castle
+
+                 # Base
+                 Path((bx, 370, 550, 550),
+                      [("M",cax-45,350), ("L",cax+75,370), ("L",cax+195,350),
+                       ("L",cax+75,330), ("Z",)],
+                      {"stroke": "none", "fill": "#001000"}),
+
+                 # Left wall
+                 Path((bx, 370, 550, 550),
+                      [("M",cax,350), ("l",0,-200),
+                       ("l",15,-3), ("l",0,9), ("l",15,-3), ("l",0,-9),
+                       ("l",15,-3), ("l",0,9), ("l",15,-3), ("l",0,-9),
+                       ("l",15,-3), ("l",0,224), ("z",)],
+                      {"stroke": "black", "fill": "url(#walls)", "stroke-width": 2}),
+
+                 # Left window and doorway
+                 Path((bx, 370, 550, 550),
+                      [("M",cax+26,200), ("l",10,-15), ("l",10,10), ("l",0,50), ("l",-20,2), ("z",)],
+                      {"stroke": "none", "fill": "black"}),
+
+                 Path((bx, 370, 550, 550),
+                      [("M",cax+21,300), ("l",10,-15), ("l",10,0), ("l",10,17), ("l",0,53), ("l",-30,-2), ("z",)],
+                      {"stroke": "black", "stroke-width": 2, "fill": "black"}),
+
+                 # Shadow
+                 Path((bx, 370, 550, 550),
+                      [("M",cax+75,359), ("L",550,389), ("L",550,349),
+                       ("L",cax+150,339), ("z",)],
+                      {"stroke": "none", "fill": "black", "opacity": 0.5}),
+
+                 # Right wall
+                 Path((bx, 370, 550, 550),
+                      [("M",cax+75,359), ("l",0,-224),
+                       ("l",15,3), ("l",0,9), ("l",15,3), ("l",0,-9),
+                       ("l",15,3), ("l",0,9), ("l",15,3), ("l",0,-9),
+                       ("l",15,3), ("l",0,200), ("z",)],
+                      {"stroke": "black", "fill": "url(#dark-walls)", "stroke-width": 2}),
+
+                 # Right window
+                 Path((bx, 370, 550, 550),
+                      [("M",cax+124,200), ("l",-10,-15), ("l",-10,10), ("l",0,50), ("l",20,2), ("z",)],
+                      {"stroke": "none", "fill": "black"}),
+
+                 # Path
+                 Path((bx, 370, 550, 550),
+                      [("M",cax+21,353), ("C",120,400,90,450,50,550),
+                       ("L",200,550), ("C",160,450,200,400,cax+51,353), ("Z",)],
+                      {"stroke": "black", "fill": "url(#path)", "stroke-width": 2}),
+
+                 # Drawing border
+                 Path((bx, 370, bw, bh),
+                      [("M",r,0), ("l",bw-(r*2),0), ("c",hr,0,r,r-hr,r,r),
+                       ("l",0,bh-(r*2)), ("c",0,hr,-r+hr,r,-r,r),
+                       ("l",-(bw-(r*2)),0), ("c",-hr,0,-r,-r+hr,-r,-r),
+                       ("l",0,-(bh-(r*2))), ("c",0,-hr,r-hr,-r,r,-r)],
+                      {"fill": "none", "stroke": "#000000", "stroke-width": 4})
+                ])
+
 
 if __name__ == "__main__":
 
@@ -528,6 +699,8 @@ if __name__ == "__main__":
     else:
         output_dir = sys.argv[1]
         inlay = False
+    
+    inlay_layout = ""
     
     if not os.path.exists(output_dir):
         os.mkdir(output_dir)
@@ -616,7 +789,28 @@ if __name__ == "__main__":
     spine_title = {"family": "FreeSans", "size": 44,
                    "weight": "bold", "align": "centre"}
     
-    pages = [
+    r = 25
+    hr = 0.5*r
+    
+    bx = 60
+    bw = 550
+    bh = bw
+    
+    # Shadow offset and castle position
+    o = 0.32 # 1 - 1/(2**0.5)
+    
+    pages = []
+    
+    if inlay and inlay_layout != "enclosed":
+    
+        # Add a label to the side of the box.
+        pages.append(make_spine(r, hr, o))
+    
+    if not inlay or inlay_layout != "enclosed":
+    
+        pages.append(make_front_cover(bx, bw, r, hr, o))
+    
+    pages += [
         Page((650, 1000),
             [TextBox((25, 90, 600, 0), 
                  [Text(title, "Castle Raider")]),
@@ -770,185 +964,13 @@ if __name__ == "__main__":
              ])
         ]
     
-    r = 25
-    hr = 0.5*r
-    
-    bx = 60
-    bw = 550
-    bh = bw
-    
-    # Shadow offset and castle position
-    o = 0.32 # 1 - 1/(2**0.5)
-    cax = 265
-    
-    if inlay:
+    if inlay and inlay_layout == "enclosed":
     
         # Add a label to the side of the box.
-        sbx = 300
-        sbw = 400
-        sbh = 60
+        pages.append(make_spine(r, hr, o))
         
-        pages.append(
-            Page((100, 1000),
-                [Path((0, 0, 100, 1000),
-                      [("M",0,0), ("l",650,0), ("l",0,1000), ("l",-650,0), ("l",0,-1000)],
-                       {"fill": "#ffdd77", "stroke": "#000000", "stroke-width": 1}),
-                 Path((0, 0, 650, 1000), make_checkered(100, 1000),
-                   {"stroke": "#a0a0a0", "stroke-width": 1}),
-                 
-                 Transform({"rotate": 90},
-                     [Transform({"translate": "0,-105"},
-                          make_logo(150, 30, 30, spine_publisher1, spine_publisher2) + \
-                          make_logo(850, 30, 30, spine_publisher1, spine_publisher2) + \
-                          [Path((sbx-r+(r*o)+10, 15, sbw+r-(r*o*2), sbh+r-(r*o)),
-                                [("M",sbw+r-(r*o*2),sbh-(r*o)),
-                                 ("l",-r*0.5,r*0.5), ("c",-r*0.5,r*0.5,-r*0.5,r*0.5,-r,r*0.5),
-                                 ("l",-sbw+(r*o*2)+(r*1.5),0), ("c",-hr,0,-r,-r+hr,-r,-r),
-                                 ("l",0,-sbh+(r*o*2)+(r*1.5)), ("c",0,-r*0.5,0,-r*0.5,r*0.5,-r),
-                                 ("l",r*0.5,-r*0.5), ("z",)],
-                                {"fill": "#ffb060", "stroke": "#000000", "stroke-width": 4}),
-
-                           Path((sbx+10, 15, sbw, sbh),
-                                [("M",r,0), ("l",sbw-(r*2),0), ("c",hr,0,r,r-hr,r,r),
-                                 ("l",0,sbh-(r*2)), ("c",0,hr,-r+hr,r,-r,r),
-                                 ("l",-(sbw-(r*2)),0), ("c",-hr,0,-r,-r+hr,-r,-r),
-                                 ("l",0,-(sbh-(r*2))), ("c",0,-hr,r-hr,-r,r,-r)],
-                                {"fill": "#ffffff", "stroke": "#000000", "stroke-width": 4}),
-
-                           TextBox((sbx+10, sbh, sbw, sbh-(r*2)),
-                               [Text(spine_title, "CASTLE RAIDER")])
-                          ])
-                     ]),
-                ]))
-    
-    pages += [
-        Page((650, 1000),
-             [Path((0, 0, 650, 1000),
-                   [("M",0,0), ("l",650,0), ("l",0,1000), ("l",-650,0), ("l",0,-1000)],
-                   {"fill": "#ffdd77", "stroke": "#000000", "stroke-width": 1}),
-              Path((0, 0, 650, 1000), make_checkered(650, 1000),
-                   {"stroke": "#a0a0a0", "stroke-width": 1}),
-              
-              Path((bx-r+(r*o), 60, bw+r-(r*o*2), 240+r-(r*o)),
-                   [("M",bw+r-(r*o*2),240-(r*o)),
-                    ("l",-r*0.5,r*0.5), ("c",-r*0.5,r*0.5,-r*0.5,r*0.5,-r,r*0.5),
-                    ("l",-bw+(r*o*2)+(r*1.5),0), ("c",-hr,0,-r,-r+hr,-r,-r),
-                    ("l",0,-240+(r*o*2)+(r*1.5)), ("c",0,-r*0.5,0,-r*0.5,r*0.5,-r),
-                    ("l",r*0.5,-r*0.5), ("z",)],
-                   {"fill": "#ffb060", "stroke": "#000000", "stroke-width": 4}),
-
-              Path((bx, 60, bw, 240),
-                   [("M",r,0), ("l",bw-(r*2),0), ("c",hr,0,r,r-hr,r,r),
-                    ("l",0,240-(r*2)), ("c",0,hr,-r+hr,r,-r,r),
-                    ("l",-(bw-(r*2)),0), ("c",-hr,0,-r,-r+hr,-r,-r),
-                    ("l",0,-(240-(r*2))), ("c",0,-hr,r-hr,-r,r,-r)],
-                   {"fill": "#ffffff", "stroke": "#000000", "stroke-width": 4}),
-
-              TextBox((bx, 170, bw, 240-(r*2)),
-                  [Text(front_cover_platforms, "ACORN ELECTRON\nBBC MODEL B\n\n"),
-                   Text(front_cover_title, "CASTLE RAIDER")])
-
-             ] + make_logo(bx + bw/2.0, 50, 50, front_cover_publisher1, front_cover_publisher2) + \
-
-             [Path((bx-r+(r*o), 370, bw+r-(r*o*2), bh+r-(r*o)),
-                   [("M",bw+r-(r*o*2),bh-(r*o)),
-                    ("l",-r*0.5,r*0.5), ("c",-r*0.5,r*0.5,-r*0.5,r*0.5,-r,r*0.5),
-                    ("l",-bw+(r*o*2)+(r*1.5),0), ("c",-hr,0,-r,-r+hr,-r,-r),
-                    ("l",0,-bh+(r*o*2)+(r*1.5)), ("c",0,-r*0.5,0,-r*0.5,r*0.5,-r),
-                    ("l",r*0.5,-r*0.5), ("z",)],
-                   {"fill": "#ffb060", "stroke": "#000000", "stroke-width": 4}),
-              
-              Path((bx, 370, bw, bh),
-                   [("M",r,0), ("l",bw-(r*2),0), ("c",hr,0,r,r-hr,r,r),
-                    ("l",0,bh-(r*2)), ("c",0,hr,-r+hr,r,-r,r),
-                    ("l",-(bw-(r*2)),0), ("c",-hr,0,-r,-r+hr,-r,-r),
-                    ("l",0,-(bh-(r*2))), ("c",0,-hr,r-hr,-r,r,-r)],
-                   {"fill": "url(#box-background)", "stroke": "none", "stroke-width": 4}),
-              
-              # Hills
-              Path((bx, 370, 550, 550),
-                   [("M",80,320), ("c",70,-15,150,-30,220,-35),
-                    ("c",100,5,150,10,210,25),
-                    ("L",550,320), ("z",)],
-                   {"stroke": "black", "fill": "url(#distant-hills)"}),
-              
-              Path((bx, 370, 550, 550),
-                   [("M",0,300), ("c",90,10,120,20,170,30),
-                    ("L",0,350), ("z",)],
-                   {"stroke": "black", "fill": "url(#distant-hills)"}),
-              
-              Path((bx, 370, 550, 550),
-                   [("M",400,320), ("c",70,-10,110,-15,150,-20),
-                    ("L",550,350), ("L",400,350), ("z",)],
-                   {"stroke": "black", "fill": "url(#distant-hills)"}),
-              
-              Path((bx, 370, 550, 550),
-                   [("M",0,350), ("c",80,-10,130,-25,280,-30),
-                    ("c",120,0,220,5,270,15),
-                    ("L",550,550-r), ("c",0,hr,-r+hr,r,-r,r),
-                    ("L",r,550), ("c",-hr,0,-r,-r+hr,-r,-r),
-                    ("z",)],
-                   {"stroke": "black", "fill": "url(#hills)"}),
-              
-              # Castle
-              
-              # Base
-              Path((bx, 370, 550, 550),
-                   [("M",cax-45,350), ("L",cax+75,370), ("L",cax+195,350),
-                    ("L",cax+75,330), ("Z",)],
-                   {"stroke": "none", "fill": "#001000"}),
-              
-              # Left wall
-              Path((bx, 370, 550, 550),
-                   [("M",cax,350), ("l",0,-200),
-                    ("l",15,-3), ("l",0,9), ("l",15,-3), ("l",0,-9),
-                    ("l",15,-3), ("l",0,9), ("l",15,-3), ("l",0,-9),
-                    ("l",15,-3), ("l",0,224), ("z",)],
-                   {"stroke": "black", "fill": "url(#walls)", "stroke-width": 2}),
-              
-              # Left window and doorway
-              Path((bx, 370, 550, 550),
-                   [("M",cax+26,200), ("l",10,-15), ("l",10,10), ("l",0,50), ("l",-20,2), ("z",)],
-                   {"stroke": "none", "fill": "black"}),
-              
-              Path((bx, 370, 550, 550),
-                   [("M",cax+21,300), ("l",10,-15), ("l",10,0), ("l",10,17), ("l",0,53), ("l",-30,-2), ("z",)],
-                   {"stroke": "black", "stroke-width": 2, "fill": "black"}),
-              
-              # Shadow
-              Path((bx, 370, 550, 550),
-                   [("M",cax+75,359), ("L",550,389), ("L",550,349),
-                    ("L",cax+150,339), ("z",)],
-                   {"stroke": "none", "fill": "black", "opacity": 0.5}),
-              
-              # Right wall
-              Path((bx, 370, 550, 550),
-                   [("M",cax+75,359), ("l",0,-224),
-                    ("l",15,3), ("l",0,9), ("l",15,3), ("l",0,-9),
-                    ("l",15,3), ("l",0,9), ("l",15,3), ("l",0,-9),
-                    ("l",15,3), ("l",0,200), ("z",)],
-                   {"stroke": "black", "fill": "url(#dark-walls)", "stroke-width": 2}),
-              
-              # Right window
-              Path((bx, 370, 550, 550),
-                   [("M",cax+124,200), ("l",-10,-15), ("l",-10,10), ("l",0,50), ("l",20,2), ("z",)],
-                   {"stroke": "none", "fill": "black"}),
-              
-              # Path
-              Path((bx, 370, 550, 550),
-                   [("M",cax+21,353), ("C",120,400,90,450,50,550),
-                    ("L",200,550), ("C",160,450,200,400,cax+51,353), ("Z",)],
-                   {"stroke": "black", "fill": "url(#path)", "stroke-width": 2}),
-              
-              # Drawing border
-              Path((bx, 370, bw, bh),
-                   [("M",r,0), ("l",bw-(r*2),0), ("c",hr,0,r,r-hr,r,r),
-                    ("l",0,bh-(r*2)), ("c",0,hr,-r+hr,r,-r,r),
-                    ("l",-(bw-(r*2)),0), ("c",-hr,0,-r,-r+hr,-r,-r),
-                    ("l",0,-(bh-(r*2))), ("c",0,-hr,r-hr,-r,r,-r)],
-                   {"fill": "none", "stroke": "#000000", "stroke-width": 4})
-             ])
-        ]
+        # Add the front cover.
+        pages.append(make_front_cover(bx, bw, r, hr, o))
     
     defs = ('<linearGradient id="box-background" x1="20%" y1="0%" x2="80%" y2="100%">\n'
             '  <stop offset="0%" stop-color="#000060" />\n'
@@ -977,7 +999,7 @@ if __name__ == "__main__":
     
     if inlay:
         path = os.path.join(output_dir, "inlay.svg")
-        inlay = Inlay(path)
+        inlay = Inlay(path, inlay_layout)
         inlay.open()
         inlay.add_defs(defs)
         
