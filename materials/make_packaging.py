@@ -131,10 +131,11 @@ class Inlay(SVG):
     
         if self.page_number == 0:
             self.text += '<defs>\n' + defs + '\n</defs>\n'
+        else:
+            self.text += ('<rect x="%i" y="0" width="0.1" height="1000"\n'
+                          '      stroke="black" fill="none" stroke-width="0.1" />\n' % self.ox)
         
         self.ox, self.oy = self.page_offsets[self.page_number]
-        self.text += ('<rect x="%i" y="0" width="0.1" height="1000"\n'
-                      '      stroke="black" fill="none" stroke-width="0.1" />\n' % self.ox)
         self.page_number += 1
     
     def add_image(self, x, y, width, height, path):
