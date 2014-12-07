@@ -443,7 +443,7 @@ class Transform:
     def render(self, svg, positions):
     
         svg.text += '<g transform="translate(%f,%f) ' % (svg.ox, svg.oy)
-        svg.text += ' '.join(map(lambda (k,v): '%s(%s)' % (k, v), self.transformation.items()))
+        svg.text += ' '.join(map(lambda (k,v): '%s(%s)' % (k, v), self.transformation))
         svg.text += '">\n'
         
         ox, oy = svg.ox, svg.oy
@@ -454,6 +454,7 @@ class Transform:
             x, y = element.render(svg, positions)
         
         svg.text += '</g>\n'
+        svg.ox, svg.oy = ox, oy
         return x, y
 
 def curved_box(x, y, w, h, style):
@@ -534,8 +535,8 @@ def make_spine(r, hr, o, background):
                        {"fill": background, "stroke": "#000000", "stroke-width": 1}),
                  make_checkered(100, 1000, background),
 
-                 Transform({"rotate": 90},
-                     [Transform({"translate": "0,-105"},
+                 Transform([("rotate", 90)],
+                     [Transform([("translate", "0,-105")],
                           make_logo(150, 25, 30, 30, spine_publisher1, spine_publisher2) + \
                           make_logo(850, 25, 30, 30, spine_publisher1, spine_publisher2) + \
                           [Path((sbx-r+(r*o)+10, 15, sbw+r-(r*o*2), sbh+r-(r*o)),
@@ -560,6 +561,10 @@ def make_spine(r, hr, o, background):
 def make_front_cover(bx, bw, bh, title_by, title_bh, py, r, hr, o, background):
 
     cax = 265
+    bat = [("M",0,15), ("l",12,-10), ("l",3,0), ("l",5,5), ("l",5,-5), ("l",3,0),
+           ("l",12,10), ("l",-12,-2),
+           ("l",-4,6), ("l",-4,-6), ("l",-4,6), ("l",-4,-6), ("l",-12,2), ("z",)]
+    
     return Page((650, 1000),
                 [Path((0, 0, 650, 1000),
                       [("M",0,0), ("l",650,0), ("l",0,1000), ("l",-650,0), ("l",0,-1000)],
@@ -672,11 +677,31 @@ def make_front_cover(bx, bw, bh, title_by, title_bh, py, r, hr, o, background):
                       [("M",cax+124,200), ("l",-10,-15), ("l",-10,10), ("l",0,50), ("l",20,2), ("z",)],
                       {"stroke": "none", "fill": "black"}),
 
+                 Path((bx, py, 550, 550),
+                      [("M",cax+121,200), ("l",-7,-11), ("l",-6.5,6), ("l",0,47.5), ("l",13.5,1.5), ("z",)],
+                      {"stroke": "none", "fill": "url(#lit-window)"}),
+
                  # Path
                  Path((bx, py, 550, 550),
                       [("M",cax+21,353), ("C",120,400,90,450,50,550),
                        ("L",200,550), ("C",160,450,200,400,cax+51,353), ("Z",)],
                       {"stroke": "black", "fill": "url(#path)", "stroke-width": 2}),
+
+                 # Bats
+                 Transform([("translate", "%i,%i" % (bx + 70, py + 90)),
+                            ("scale", 0.65)],
+                           [Path((0, 0, 40, 23), bat,
+                                 {"stroke": "none", "fill": "black"}),
+                            Path((30, 60, 40, 23), bat,
+                                 {"stroke": "none", "fill": "black"}),
+                            Path((40, 20, 40, 23), bat,
+                                 {"stroke": "none", "fill": "black"})]),
+                 Transform([("translate", "%i,%i" % (bx + 140, py + 150)),
+                            ("scale", 0.8)],
+                           [Path((0, 0, 40, 23), bat,
+                                 {"stroke": "none", "fill": "black"})]),
+                 Path((bx + 210, py + 180, 40, 23), bat,
+                      {"stroke": "none", "fill": "#1c1c1c"}),
 
                  # Drawing border
                  Path((bx, py, bw, bh),
@@ -1001,7 +1026,7 @@ if __name__ == "__main__":
         pages.append(make_front_cover(bx, bw, bh, tby, tbh, py, r, hr, o, background))
     
     defs = ('<linearGradient id="box-background" x1="20%" y1="0%" x2="80%" y2="100%">\n'
-            '  <stop offset="0%" stop-color="#000060" />\n'
+            '  <stop offset="0%" stop-color="#4040a0" />\n'
             '  <stop offset="40%" stop-color="#000000" />\n'
             '</linearGradient>\n'
             '<linearGradient id="hills" x1="0%" y1="0%" x2="100%" y2="100%">\n'
@@ -1023,6 +1048,10 @@ if __name__ == "__main__":
             '<linearGradient id="path" x1="100%" y1="0%" x2="0%" y2="100%">\n'
             '  <stop offset="0%" stop-color="#303030" />\n'
             '  <stop offset="100%" stop-color="#404040" />\n'
+            '</linearGradient>\n'
+            '<linearGradient id="lit-window" x1="0%" y1="0%" x2="0%" y2="100%">\n'
+            '  <stop offset="50%" stop-color="#00000" />\n'
+            '  <stop offset="100%" stop-color="#de8600" />\n'
             '</linearGradient>\n')
     
     if inlay:
