@@ -909,8 +909,8 @@ if __name__ == "__main__":
                   follow = True)
              ]),
         Page((650, 1000),
-             [TextBox((35, 45, 580, 0),
-                  [Text(subtitle, "Loading the Game from Cassette\n"),
+             [TextBox((35, 50, 580, 0),
+                  [Text(subtitle, "Loading the Game\n"),
                    Text(regular, "Insert the cassette and type\n")]),
               TextBox((35, -2, 580, 0),
                   [Text(monospace_quote, 'CHAIN "CASTLE"\n')], follow = True),
@@ -919,13 +919,7 @@ if __name__ == "__main__":
                         "then press Return. Press play on the cassette recorder. "
                         "The game should now load.\n\n")], follow = True),
               
-              TextBox((35, 12, 580, 0),
-                  [Text(subtitle, "Loading the Game from Disk\n"),
-                   Text(regular,
-                        "Insert the disk and press Shift-Break. The game should now load.\n")],
-                  follow = True),
-              
-              TextBox((35, 20, 580, 0),
+              TextBox((35, 40, 580, 0),
                   [Text(subtitle, "Playing the Game\n"),
                    Text(regular,
                         "The player must help their character escape the castle, "
@@ -984,7 +978,9 @@ if __name__ == "__main__":
                         "pause the game\n"
                         "resume the game\n"
                         "quit the game, returning to the title screen\n")],
-                  follow = True, index = -2)
+                  follow = True, index = -2),
+              TextBox((35, 9, 580, 0),
+                  [Text(regular, "Good luck!")], follow = True)
              ]),
         Page((650, 1000),
              [TextBox((25, 50, 600, 0),
@@ -994,7 +990,7 @@ if __name__ == "__main__":
               Image((342.667, 0, 450, 0), "images/2014-11-30-action.png", scale = 0.85, follow = True, index = -2),
               Image((35.333, 25, 450, 0), "images/2014-11-30-basement.png", scale = 0.85, follow = True),
               Image((342.667, 25, 450, 0), "images/2014-11-30-dungeon.png", scale = 0.85, follow = True, index = -2),
-              TextBox((25, 45, 600, 0),
+              TextBox((25, 52, 600, 0),
                       [Text(back_cover_centred,
                             u"Copyright \u00a9 2014 David Boddie\n"
                             u"An Infukor production for Retro Software\n"
