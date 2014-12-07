@@ -178,10 +178,11 @@ class Page:
 
 class TextBox:
 
-    def __init__(self, bbox, text_items, follow = False, index = -1):
+    def __init__(self, bbox, text_items, line_spacing = 1.0, follow = False, index = -1):
     
         self.bbox = bbox
         self.text_items = text_items
+        self.line_spacing = line_spacing
         self.follow = follow
         self.index = index
     
@@ -205,7 +206,7 @@ class TextBox:
                 
                     svg.add_text(item_x + word_x, y, font, text)
                 
-                y += line_height
+                y += line_height * self.line_spacing
         
         return x, y
 
@@ -467,7 +468,7 @@ def curved_box(x, y, w, h, style):
                   ("l",-ll,0), ("c",-hr,0,-r,-hr,-r,-r),
                   ("l",0,-ll), ("c",0,-hr,hr,-r,r,-r)], style)
 
-def make_checkered(w, h):
+def make_checkered(w, h, background = "#ffdd77"):
 
     checkered = []
     x = 10
@@ -480,13 +481,17 @@ def make_checkered(w, h):
         checkered += [("M",0,y), ("l",w,0)]
         y += 20
     
-    return checkered
+    components = [int(background[1:][:2], 16),
+                  int(background[1:][2:4], 16),
+                  int(background[1:][4:], 16)]
+    c = (min(components)/16) * 8
+    line_colour = "#%02x%02x%02x" % (c, c, c)
+    return Path((0, 0, w, h), checkered, {"stroke": line_colour, "stroke-width": 1})
 
-def make_logo(cx, w, h, font1, font2):
+def make_logo(cx, y, w, h, font1, font2):
 
     logo = []
     x = cx - (len("RETRO") * w)/2.0
-    y = 25
     lr = 5
     lhr = 2.5
     
@@ -517,7 +522,7 @@ def make_logo(cx, w, h, font1, font2):
     
     return logo
 
-def make_spine(r, hr, o):
+def make_spine(r, hr, o, background):
 
     sbx = 300
     sbw = 400
@@ -526,14 +531,13 @@ def make_spine(r, hr, o):
     return Page((100, 1000),
                 [Path((0, 0, 100, 1000),
                       [("M",0,0), ("l",650,0), ("l",0,1000), ("l",-650,0), ("l",0,-1000)],
-                       {"fill": "#ffdd77", "stroke": "#000000", "stroke-width": 1}),
-                 Path((0, 0, 650, 1000), make_checkered(100, 1000),
-                   {"stroke": "#a0a0a0", "stroke-width": 1}),
+                       {"fill": background, "stroke": "#000000", "stroke-width": 1}),
+                 make_checkered(100, 1000, background),
 
                  Transform({"rotate": 90},
                      [Transform({"translate": "0,-105"},
-                          make_logo(150, 30, 30, spine_publisher1, spine_publisher2) + \
-                          make_logo(850, 30, 30, spine_publisher1, spine_publisher2) + \
+                          make_logo(150, 25, 30, 30, spine_publisher1, spine_publisher2) + \
+                          make_logo(850, 25, 30, 30, spine_publisher1, spine_publisher2) + \
                           [Path((sbx-r+(r*o)+10, 15, sbw+r-(r*o*2), sbh+r-(r*o)),
                                 [("M",sbw+r-(r*o*2),sbh-(r*o)),
                                  ("l",-r*0.5,r*0.5), ("c",-r*0.5,r*0.5,-r*0.5,r*0.5,-r,r*0.5),
@@ -553,38 +557,38 @@ def make_spine(r, hr, o):
                      ]),
                 ])
 
-def make_front_cover(bx, bw, r, hr, o):
+def make_front_cover(bx, bw, bh, title_by, title_bh, py, r, hr, o, background):
 
     cax = 265
     return Page((650, 1000),
                 [Path((0, 0, 650, 1000),
                       [("M",0,0), ("l",650,0), ("l",0,1000), ("l",-650,0), ("l",0,-1000)],
-                      {"fill": "#ffdd77", "stroke": "#000000", "stroke-width": 1}),
-                 Path((0, 0, 650, 1000), make_checkered(650, 1000),
-                      {"stroke": "#a0a0a0", "stroke-width": 1}),
+                      {"fill": background, "stroke": "#000000", "stroke-width": 1}),
+                 make_checkered(650, 1000, background),
 
-                 Path((bx-r+(r*o), 60, bw+r-(r*o*2), 240+r-(r*o)),
-                      [("M",bw+r-(r*o*2),240-(r*o)),
+                 Path((bx-r+(r*o), title_by, bw+r-(r*o*2), title_bh+r-(r*o)),
+                      [("M",bw+r-(r*o*2),title_bh-(r*o)),
                        ("l",-r*0.5,r*0.5), ("c",-r*0.5,r*0.5,-r*0.5,r*0.5,-r,r*0.5),
                        ("l",-bw+(r*o*2)+(r*1.5),0), ("c",-hr,0,-r,-r+hr,-r,-r),
-                       ("l",0,-240+(r*o*2)+(r*1.5)), ("c",0,-r*0.5,0,-r*0.5,r*0.5,-r),
+                       ("l",0,-title_bh+(r*o*2)+(r*1.5)), ("c",0,-r*0.5,0,-r*0.5,r*0.5,-r),
                        ("l",r*0.5,-r*0.5), ("z",)],
                       {"fill": "#ffb060", "stroke": "#000000", "stroke-width": 4}),
 
-                 Path((bx, 60, bw, 240),
+                 Path((bx, title_by, bw, title_bh),
                       [("M",r,0), ("l",bw-(r*2),0), ("c",hr,0,r,r-hr,r,r),
-                       ("l",0,240-(r*2)), ("c",0,hr,-r+hr,r,-r,r),
+                       ("l",0,title_bh-(r*2)), ("c",0,hr,-r+hr,r,-r,r),
                        ("l",-(bw-(r*2)),0), ("c",-hr,0,-r,-r+hr,-r,-r),
-                       ("l",0,-(240-(r*2))), ("c",0,-hr,r-hr,-r,r,-r)],
+                       ("l",0,-(title_bh-(r*2))), ("c",0,-hr,r-hr,-r,r,-r)],
                       {"fill": "#ffffff", "stroke": "#000000", "stroke-width": 4}),
 
-                 TextBox((bx, 170, bw, 240-(r*2)),
-                     [Text(front_cover_platforms, "ACORN ELECTRON\nBBC MODEL B\n\n"),
-                      Text(front_cover_title, "CASTLE RAIDER")])
+                 TextBox((bx, title_by + 115, bw, title_bh-(r*2)),
+                     [Text(front_cover_platforms, "%s" % platform.upper()),
+                      Text(front_cover_title, "CASTLE RAIDER")],
+                      line_spacing = 1.25)
 
-                ] + make_logo(bx + bw/2.0, 50, 50, front_cover_publisher1, front_cover_publisher2) + \
+                ] + make_logo(bx + bw/2.0, 40, 50, 50, front_cover_publisher1, front_cover_publisher2) + \
 
-                [Path((bx-r+(r*o), 370, bw+r-(r*o*2), bh+r-(r*o)),
+                [Path((bx-r+(r*o), py, bw+r-(r*o*2), bh+r-(r*o)),
                       [("M",bw+r-(r*o*2),bh-(r*o)),
                        ("l",-r*0.5,r*0.5), ("c",-r*0.5,r*0.5,-r*0.5,r*0.5,-r,r*0.5),
                        ("l",-bw+(r*o*2)+(r*1.5),0), ("c",-hr,0,-r,-r+hr,-r,-r),
@@ -592,7 +596,7 @@ def make_front_cover(bx, bw, r, hr, o):
                        ("l",r*0.5,-r*0.5), ("z",)],
                       {"fill": "#ffb060", "stroke": "#000000", "stroke-width": 4}),
 
-                 Path((bx, 370, bw, bh),
+                 Path((bx, py, bw, bh),
                       [("M",r,0), ("l",bw-(r*2),0), ("c",hr,0,r,r-hr,r,r),
                        ("l",0,bh-(r*2)), ("c",0,hr,-r+hr,r,-r,r),
                        ("l",-(bw-(r*2)),0), ("c",-hr,0,-r,-r+hr,-r,-r),
@@ -600,23 +604,23 @@ def make_front_cover(bx, bw, r, hr, o):
                       {"fill": "url(#box-background)", "stroke": "none", "stroke-width": 4}),
 
                  # Hills
-                 Path((bx, 370, 550, 550),
+                 Path((bx, py, 550, 550),
                       [("M",80,320), ("c",70,-15,150,-30,220,-35),
                        ("c",100,5,150,10,210,25),
                        ("L",550,320), ("z",)],
                       {"stroke": "black", "fill": "url(#distant-hills)"}),
 
-                 Path((bx, 370, 550, 550),
+                 Path((bx, py, 550, 550),
                       [("M",0,300), ("c",90,10,120,20,170,30),
                        ("L",0,350), ("z",)],
                       {"stroke": "black", "fill": "url(#distant-hills)"}),
 
-                 Path((bx, 370, 550, 550),
+                 Path((bx, py, 550, 550),
                       [("M",400,320), ("c",70,-10,110,-15,150,-20),
                        ("L",550,350), ("L",400,350), ("z",)],
                       {"stroke": "black", "fill": "url(#distant-hills)"}),
 
-                 Path((bx, 370, 550, 550),
+                 Path((bx, py, 550, 550),
                       [("M",0,350), ("c",80,-10,130,-25,280,-30),
                        ("c",120,0,220,5,270,15),
                        ("L",550,550-r), ("c",0,hr,-r+hr,r,-r,r),
@@ -627,13 +631,13 @@ def make_front_cover(bx, bw, r, hr, o):
                  # Castle
 
                  # Base
-                 Path((bx, 370, 550, 550),
+                 Path((bx, py, 550, 550),
                       [("M",cax-45,350), ("L",cax+75,370), ("L",cax+195,350),
                        ("L",cax+75,330), ("Z",)],
                       {"stroke": "none", "fill": "#001000"}),
 
                  # Left wall
-                 Path((bx, 370, 550, 550),
+                 Path((bx, py, 550, 550),
                       [("M",cax,350), ("l",0,-200),
                        ("l",15,-3), ("l",0,9), ("l",15,-3), ("l",0,-9),
                        ("l",15,-3), ("l",0,9), ("l",15,-3), ("l",0,-9),
@@ -641,22 +645,22 @@ def make_front_cover(bx, bw, r, hr, o):
                       {"stroke": "black", "fill": "url(#walls)", "stroke-width": 2}),
 
                  # Left window and doorway
-                 Path((bx, 370, 550, 550),
+                 Path((bx, py, 550, 550),
                       [("M",cax+26,200), ("l",10,-15), ("l",10,10), ("l",0,50), ("l",-20,2), ("z",)],
                       {"stroke": "none", "fill": "black"}),
 
-                 Path((bx, 370, 550, 550),
+                 Path((bx, py, 550, 550),
                       [("M",cax+21,300), ("l",10,-15), ("l",10,0), ("l",10,17), ("l",0,53), ("l",-30,-2), ("z",)],
                       {"stroke": "black", "stroke-width": 2, "fill": "black"}),
 
                  # Shadow
-                 Path((bx, 370, 550, 550),
+                 Path((bx, py, 550, 550),
                       [("M",cax+75,359), ("L",550,389), ("L",550,349),
                        ("L",cax+150,339), ("z",)],
                       {"stroke": "none", "fill": "black", "opacity": 0.5}),
 
                  # Right wall
-                 Path((bx, 370, 550, 550),
+                 Path((bx, py, 550, 550),
                       [("M",cax+75,359), ("l",0,-224),
                        ("l",15,3), ("l",0,9), ("l",15,3), ("l",0,-9),
                        ("l",15,3), ("l",0,9), ("l",15,3), ("l",0,-9),
@@ -664,18 +668,18 @@ def make_front_cover(bx, bw, r, hr, o):
                       {"stroke": "black", "fill": "url(#dark-walls)", "stroke-width": 2}),
 
                  # Right window
-                 Path((bx, 370, 550, 550),
+                 Path((bx, py, 550, 550),
                       [("M",cax+124,200), ("l",-10,-15), ("l",-10,10), ("l",0,50), ("l",20,2), ("z",)],
                       {"stroke": "none", "fill": "black"}),
 
                  # Path
-                 Path((bx, 370, 550, 550),
+                 Path((bx, py, 550, 550),
                       [("M",cax+21,353), ("C",120,400,90,450,50,550),
                        ("L",200,550), ("C",160,450,200,400,cax+51,353), ("Z",)],
                       {"stroke": "black", "fill": "url(#path)", "stroke-width": 2}),
 
                  # Drawing border
-                 Path((bx, 370, bw, bh),
+                 Path((bx, py, bw, bh),
                       [("M",r,0), ("l",bw-(r*2),0), ("c",hr,0,r,r-hr,r,r),
                        ("l",0,bh-(r*2)), ("c",0,hr,-r+hr,r,-r,r),
                        ("l",-(bw-(r*2)),0), ("c",-hr,0,-r,-r+hr,-r,-r),
@@ -686,24 +690,33 @@ def make_front_cover(bx, bw, r, hr, o):
 
 if __name__ == "__main__":
 
-    app = QApplication(sys.argv)
+    app = QApplication([])
     
-    if not 2 <= len(app.arguments()) <= 3:
+    if not 3 <= len(sys.argv) <= 4:
     
-        sys.stderr.write("Usage: %s [--inlay] <output directory>\n" % app.arguments()[0])
+        sys.stderr.write("Usage: %s [--inlay=type] <platform> <output directory>\n" % sys.argv[0])
         sys.exit(1)
     
-    if app.arguments()[1] == "--inlay":
-        output_dir = sys.argv[2]
+    if sys.argv[1].startswith("--inlay"):
+        pieces = sys.argv[1].split("=")
+        if len(pieces) == 1:
+            inlay_layout = "enclosed"
+        else:
+            inlay_layout = pieces[1]
+        platform = sys.argv[2]
+        output_dir = sys.argv[3]
         inlay = True
     else:
-        output_dir = sys.argv[1]
+        platform = sys.argv[1]
+        output_dir = sys.argv[2]
         inlay = False
-    
-    inlay_layout = ""
+        inlay_layout = ""
     
     if not os.path.exists(output_dir):
         os.mkdir(output_dir)
+    
+    #sans = "FreeSans"
+    sans = "Futura Md BT"
     
     regular = {"family": "FreeSerif",
                "size": 20,
@@ -764,37 +777,52 @@ if __name__ == "__main__":
                           "size": 24,
                           "align": "centre"}
     
-    front_cover_publisher1 = {"family": "FreeSans", "size": 32,
+    front_cover_publisher1 = {"family": sans, "size": 32,
                               "weight": "bold", "align": "centre",
                               "colour": "#202020"}
     
-    front_cover_publisher2 = {"family": "FreeSans", "size": 32,
+    front_cover_publisher2 = {"family": sans, "size": 32,
                               "weight": "bold", "align": "centre",
                               "colour": "#ffffc0"}
     
-    spine_publisher1 = {"family": "FreeSans", "size": 20,
+    spine_publisher1 = {"family": sans, "size": 20,
                         "weight": "bold", "align": "centre",
                         "colour": "#202020"}
     
-    spine_publisher2 = {"family": "FreeSans", "size": 20,
+    spine_publisher2 = {"family": sans, "size": 20,
                         "weight": "bold", "align": "centre",
                         "colour": "#ffffc0"}
     
-    front_cover_platforms = {"family": "FreeSans", "size": 30,
+    front_cover_platforms = {"family": sans, "size": 42,
                              "weight": "bold", "align": "centre"}
     
-    front_cover_title = {"family": "FreeSans", "size": 56,
+    front_cover_title = {"family": sans, "size": 66,
                          "weight": "bold", "align": "centre"}
     
-    spine_title = {"family": "FreeSans", "size": 44,
+    spine_title = {"family": sans, "size": 44,
                    "weight": "bold", "align": "centre"}
     
     r = 25
     hr = 0.5*r
     
+    # Background colour
+    if platform == "Acorn Electron":
+        background = "#509040"
+    elif platform == "BBC Model B":
+        background = "#10b0f0"
+    else:
+        background = "#ffdd77"
+    
+    # Placement of boxes on the front cover
     bx = 60
     bw = 550
     bh = bw
+    # Title box vertical position and height
+    tby = 70
+    tbh = 200
+    
+    # Picture position
+    py = 360
     
     # Shadow offset and castle position
     o = 0.32 # 1 - 1/(2**0.5)
@@ -804,11 +832,11 @@ if __name__ == "__main__":
     if inlay and inlay_layout != "enclosed":
     
         # Add a label to the side of the box.
-        pages.append(make_spine(r, hr, o))
+        pages.append(make_spine(r, hr, o, background))
     
     if not inlay or inlay_layout != "enclosed":
     
-        pages.append(make_front_cover(bx, bw, r, hr, o))
+        pages.append(make_front_cover(bx, bw, bh, tby, tbh, py, r, hr, o, background))
     
     pages += [
         Page((650, 1000),
@@ -936,7 +964,7 @@ if __name__ == "__main__":
         Page((650, 1000),
              [TextBox((25, 50, 600, 0),
                       [Text(back_cover_title, "Castle Raider"),
-                       Text(back_cover_subtitle, "for the Acorn Electron and BBC Model B")]),
+                       Text(back_cover_subtitle, "for the " + platform)]),
               Image((35.333, 0, 450, 0), "images/2014-11-30-loading.png", scale = 0.85, follow = True),
               Image((342.667, 0, 450, 0), "images/2014-11-30-action.png", scale = 0.85, follow = True, index = -2),
               Image((35.333, 25, 450, 0), "images/2014-11-30-basement.png", scale = 0.85, follow = True),
@@ -967,10 +995,10 @@ if __name__ == "__main__":
     if inlay and inlay_layout == "enclosed":
     
         # Add a label to the side of the box.
-        pages.append(make_spine(r, hr, o))
+        pages.append(make_spine(r, hr, o, background))
         
         # Add the front cover.
-        pages.append(make_front_cover(bx, bw, r, hr, o))
+        pages.append(make_front_cover(bx, bw, bh, tby, tbh, py, r, hr, o, background))
     
     defs = ('<linearGradient id="box-background" x1="20%" y1="0%" x2="80%" y2="100%">\n'
             '  <stop offset="0%" stop-color="#000060" />\n'
