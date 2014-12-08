@@ -118,9 +118,10 @@ class Inlay(SVG):
             self.page_offsets = [(0, 0), (650, 0), (2 * 650, 0), (3 * 650, 0),
                                  ((3 * 650) + 100, 0)]
         else:
-            self.page_offsets = [(0, 0), (150, 0), (150 + 100, 0),
-                                 (150 + 100 + 650, 0), (150 + 100 + (2 * 650), 0),
-                                 (150 + 100 + (3 * 650), 0)]
+            bfw = self.back_flap_width = 200
+            self.page_offsets = [(0, 0), (bfw, 0), (bfw + 100, 0),
+                                 (bfw + 100 + 650, 0), (bfw + 100 + (2 * 650), 0),
+                                 (bfw + 100 + (3 * 650), 0)]
         self.layout = layout
         self.page_number = 0
     
@@ -129,9 +130,15 @@ class Inlay(SVG):
         SVG.open(self)
         self.text += ('<svg version="1.1"\n'
                       '     xmlns="http://www.w3.org/2000/svg"\n'
-                      '     xmlns:xlink="http://www.w3.org/1999/xlink"\n'
-                      '     width="27.0cm" height="10cm"\n'
-                      '     viewBox="0 0 2700 1000">\n')
+                      '     xmlns:xlink="http://www.w3.org/1999/xlink"\n')
+        
+        if self.layout == "enclosed":
+            self.text += ('     width="27.0cm" height="10cm"\n'
+                          '     viewBox="0 0 2700 1000">\n')
+        else:
+            w = 2700 + self.back_flap_width
+            self.text += ('     width="%fcm" height="10cm"\n'
+                          '     viewBox="0 0 %i 1000">\n' % (w/100.0, w))
     
     def add_page(self, width, height):
     
@@ -458,6 +465,102 @@ class Transform:
         svg.ox, svg.oy = ox, oy
         return x, y
 
+# Font definitions
+
+#sans = "FreeSans"
+sans = "Futura Md BT"
+
+regular = {"family": "FreeSerif",
+           "size": 20,
+           "align": "justify"}
+
+title = {"family": "FreeSerif",
+         "size": 64,
+         "weight": "bold",
+         "align": "centre"}
+
+subtitle = {"family": "FreeSerif",
+         "size": 22,
+         "weight": "bold"}
+
+italic_quote = {"family": "FreeSerif",
+                "size": 22,
+                "style": "italic",
+                "left indent": 40,
+                "right indent": 40}
+
+quote = {"family": "FreeSerif",
+         "size": 22,
+         "left indent": 40,
+         "right indent": 40}
+
+monospace_quote = {"family": "FreeMono",
+                   "size": 22,
+                   "left indent": 40,
+                   "right indent": 40}
+
+keys_quote = {"family": "FreeSerif",
+              "size": regular["size"],
+              "left indent": 40,
+              "right indent": 40}
+
+key_descriptions_quote = {"family": "FreeSerif",
+                          "size": regular["size"],
+                          "left indent": 160,
+                          "right indent": 0}
+
+exclamation = {"family": "FreeSerif",
+               "size": 28,
+               "style": "italic",
+               "weight": "bold",
+               "align": "centre"}
+
+back_cover_title = {"family": "FreeSerif",
+                    "size": 36,
+                    "weight": "bold",
+                    "align": "centre"}
+
+back_cover_subtitle = {"family": "FreeSerif",
+                       "size": 28,
+                       "weight": "bold",
+                       "align": "centre"}
+
+back_cover_centred = {"family": "FreeSerif",
+                      "size": 24,
+                      "align": "centre"}
+
+front_cover_publisher1 = {"family": sans, "size": 32,
+                          "weight": "bold", "align": "centre",
+                          "colour": "#202020"}
+
+front_cover_publisher2 = {"family": sans, "size": 32,
+                          "weight": "bold", "align": "centre",
+                          "colour": "#ffffc0"}
+
+spine_publisher1 = {"family": sans, "size": 20,
+                    "weight": "bold", "align": "centre",
+                    "colour": "#202020"}
+
+spine_publisher2 = {"family": sans, "size": 20,
+                    "weight": "bold", "align": "centre",
+                    "colour": "#ffffc0"}
+
+front_cover_platforms = {"family": sans, "size": 42,
+                         "weight": "bold", "align": "centre"}
+
+front_cover_title = {"family": sans, "size": 66,
+                     "weight": "bold", "align": "centre"}
+
+spine_title = {"family": sans, "size": 44,
+               "weight": "bold", "align": "centre"}
+
+back_flap_text = {"family": "FreeSerif", "size": 32, "align": "centre"}
+
+back_flap_bold_text = {"family": "FreeSerif", "size": 32,
+                       "weight": "bold", "align": "centre"}
+
+# Functions to generate common elements
+
 def curved_box(x, y, w, h, style):
 
     r = w/10.0
@@ -526,14 +629,32 @@ def make_logo(cx, y, w, h, font1, font2):
 
 def make_back_flap(r, hr, o, background):
 
-    return Page((150, 1000),
-                [Path((0, 0, 150, 1000),
+    sbx = 200
+    sbw = 600
+    sbh = 200
+    
+    return Page((200, 1000),
+                [Path((0, 0, 200, 1000),
                       [("M",0,0), ("l",650,0), ("l",0,1000), ("l",-650,0), ("l",0,-1000)],
                       {"fill": background, "stroke": "#000000", "stroke-width": 1}),
-                 make_checkered(150, 1000, background),
-                 Path((0, 0, 150, 1000),
-                      [("M",150,0), ("l",-150,150), ("l",0,700), ("l",150,150), ("z",)],
+                 make_checkered(200, 1000, background),
+                 Path((0, 0, 200, 1000),
+                      [("M",200,0), ("l",-200,200), ("l",0,600), ("l",200,200), ("z",)],
                       {"fill": "white", "stroke": "#000000", "stroke-width": 1}),
+
+                 Transform([("rotate", 90)],
+                     [Transform([("translate", "0,-200")],
+                          [TextBox((sbx - 20, 56, sbw + 40, sbh),
+                               [Text(back_flap_text,
+                                     u"Copyright \u00a9 2014 David Boddie"),
+                                Text(back_flap_text,
+                                     u"Licensed under the GNU GPL version 3 or later"),
+                                Text(back_flap_text,
+                                     u"An Infukor production for Retro Software"),
+                                Text(back_flap_bold_text,
+                                     u"http://www.retrosoftware.co.uk/")])
+                          ])
+                     ]),
                 ])
 
 def make_spine(r, hr, o, background):
@@ -565,7 +686,7 @@ def make_spine(r, hr, o, background):
                                  ("l",-(sbw-(r*2)),0), ("c",-hr,0,-r,-r+hr,-r,-r),
                                  ("l",0,-(sbh-(r*2))), ("c",0,-hr,r-hr,-r,r,-r)],
                                 {"fill": "#ffffff", "stroke": "#000000", "stroke-width": 4}),
-                            TextBox((sbx+10, sbh, sbw, sbh-(r*2)),
+                            TextBox((sbx+10, 61, sbw, sbh),
                                [Text(spine_title, "CASTLE RAIDER")])
                           ])
                      ]),
@@ -752,93 +873,6 @@ if __name__ == "__main__":
     
     if not os.path.exists(output_dir):
         os.mkdir(output_dir)
-    
-    #sans = "FreeSans"
-    sans = "Futura Md BT"
-    
-    regular = {"family": "FreeSerif",
-               "size": 20,
-               "align": "justify"}
-    
-    title = {"family": "FreeSerif",
-             "size": 64,
-             "weight": "bold",
-             "align": "centre"}
-    
-    subtitle = {"family": "FreeSerif",
-             "size": 22,
-             "weight": "bold"}
-    
-    italic_quote = {"family": "FreeSerif",
-                    "size": 22,
-                    "style": "italic",
-                    "left indent": 40,
-                    "right indent": 40}
-    
-    quote = {"family": "FreeSerif",
-             "size": 22,
-             "left indent": 40,
-             "right indent": 40}
-    
-    monospace_quote = {"family": "FreeMono",
-                       "size": 22,
-                       "left indent": 40,
-                       "right indent": 40}
-    
-    keys_quote = {"family": "FreeSerif",
-                  "size": regular["size"],
-                  "left indent": 40,
-                  "right indent": 40}
-    
-    key_descriptions_quote = {"family": "FreeSerif",
-                              "size": regular["size"],
-                              "left indent": 160,
-                              "right indent": 0}
-    
-    exclamation = {"family": "FreeSerif",
-                   "size": 28,
-                   "style": "italic",
-                   "weight": "bold",
-                   "align": "centre"}
-
-    back_cover_title = {"family": "FreeSerif",
-                        "size": 36,
-                        "weight": "bold",
-                        "align": "centre"}
-    
-    back_cover_subtitle = {"family": "FreeSerif",
-                           "size": 28,
-                           "weight": "bold",
-                           "align": "centre"}
-    
-    back_cover_centred = {"family": "FreeSerif",
-                          "size": 24,
-                          "align": "centre"}
-    
-    front_cover_publisher1 = {"family": sans, "size": 32,
-                              "weight": "bold", "align": "centre",
-                              "colour": "#202020"}
-    
-    front_cover_publisher2 = {"family": sans, "size": 32,
-                              "weight": "bold", "align": "centre",
-                              "colour": "#ffffc0"}
-    
-    spine_publisher1 = {"family": sans, "size": 20,
-                        "weight": "bold", "align": "centre",
-                        "colour": "#202020"}
-    
-    spine_publisher2 = {"family": sans, "size": 20,
-                        "weight": "bold", "align": "centre",
-                        "colour": "#ffffc0"}
-    
-    front_cover_platforms = {"family": sans, "size": 42,
-                             "weight": "bold", "align": "centre"}
-    
-    front_cover_title = {"family": sans, "size": 66,
-                         "weight": "bold", "align": "centre"}
-    
-    spine_title = {"family": sans, "size": 44,
-                   "weight": "bold", "align": "centre"}
     
     r = 25
     hr = 0.5*r
