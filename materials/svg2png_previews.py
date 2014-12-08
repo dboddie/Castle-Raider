@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import os, sys
+import glob, os, sys
 
 if __name__ == "__main__":
 
@@ -20,4 +20,7 @@ if __name__ == "__main__":
     for i in range(4):
         os.system("inkscape -e png/page-%i.png -d %i -y 255 svg/page-%i.svg" % (i, resolution, i))
     
+    for name in glob.glob("svg/*-inlay.svg"):
+        os.system("inkscape -e %s -d %i -y 255 %s" % (name.replace("svg", "png"), resolution, name))
+        
     sys.exit()

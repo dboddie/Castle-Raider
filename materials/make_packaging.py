@@ -529,7 +529,11 @@ def make_back_flap(r, hr, o, background):
     return Page((150, 1000),
                 [Path((0, 0, 150, 1000),
                       [("M",0,0), ("l",650,0), ("l",0,1000), ("l",-650,0), ("l",0,-1000)],
-                       {"fill": "white", "stroke": "#000000", "stroke-width": 1})
+                      {"fill": background, "stroke": "#000000", "stroke-width": 1}),
+                 make_checkered(150, 1000, background),
+                 Path((0, 0, 150, 1000),
+                      [("M",150,0), ("l",-150,150), ("l",0,700), ("l",150,150), ("z",)],
+                      {"fill": "white", "stroke": "#000000", "stroke-width": 1}),
                 ])
 
 def make_spine(r, hr, o, background):
@@ -861,21 +865,11 @@ if __name__ == "__main__":
     # Shadow offset and castle position
     o = 0.32 # 1 - 1/(2**0.5)
     
-    pages = []
+    back_flap = make_back_flap(r, hr, o, background)
+    spine = make_spine(r, hr, o, background)
+    front_cover = make_front_cover(bx, bw, bh, tby, tbh, py, r, hr, o, background)
     
-    if inlay and inlay_layout != "enclosed":
-    
-        # Add a tab/flap to the back of the box.
-        pages.append(make_back_flap(r, hr, o, background))
-        
-        # Add a label to the side of the box.
-        pages.append(make_spine(r, hr, o, background))
-    
-    if not inlay or inlay_layout != "enclosed":
-    
-        pages.append(make_front_cover(bx, bw, bh, tby, tbh, py, r, hr, o, background))
-    
-    pages += [
+    instructions = [
         Page((650, 1000),
             [TextBox((25, 90, 600, 0), 
                  [Text(title, "Castle Raider")]),
@@ -1025,13 +1019,14 @@ if __name__ == "__main__":
              ])
         ]
     
-    if inlay and inlay_layout == "enclosed":
-    
-        # Add a label to the side of the box.
-        pages.append(make_spine(r, hr, o, background))
-        
-        # Add the front cover.
-        pages.append(make_front_cover(bx, bw, bh, tby, tbh, py, r, hr, o, background))
+    if inlay:
+        if inlay_layout == "enclosed":
+            pages = instructions + [spine, front_cover]
+        else:
+            # Add a tab/flap to the back of the box and a label to the side.
+            pages = [back_flap, spine, front_cover] + instructions
+    else:
+        pages = [front_cover] + instructions
     
     defs = ('<linearGradient id="box-background" x1="20%" y1="0%" x2="80%" y2="100%">\n'
             '  <stop offset="0%" stop-color="#4040a0" />\n'
