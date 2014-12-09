@@ -110,19 +110,13 @@ class SVG:
 
 class Inlay(SVG):
 
-    def __init__(self, path, layout = "enclosed"):
+    def __init__(self, path, page_rects, total_size, reverse = False):
     
         SVG.__init__(self, path)
         
-        if layout == "enclosed":
-            self.page_offsets = [(0, 0), (650, 0), (2 * 650, 0), (3 * 650, 0),
-                                 ((3 * 650) + 100, 0)]
-        else:
-            bfw = self.back_flap_width = 200
-            self.page_offsets = [(0, 0), (bfw, 0), (bfw + 100, 0),
-                                 (bfw + 100 + 650, 0), (bfw + 100 + (2 * 650), 0),
-                                 (bfw + 100 + (3 * 650), 0)]
-        self.layout = layout
+        self.page_rects = page_rects
+        self.total_size = total_size
+        self.reverse = reverse
         self.page_number = 0
     
     def open(self):
@@ -132,23 +126,23 @@ class Inlay(SVG):
                       '     xmlns="http://www.w3.org/2000/svg"\n'
                       '     xmlns:xlink="http://www.w3.org/1999/xlink"\n')
         
-        if self.layout == "enclosed":
-            self.text += ('     width="27.0cm" height="10cm"\n'
-                          '     viewBox="0 0 2700 1000">\n')
-        else:
-            w = 2700 + self.back_flap_width
-            self.text += ('     width="%fcm" height="10cm"\n'
-                          '     viewBox="0 0 %i 1000">\n' % (w/100.0, w))
+        w, h = self.total_size
+        self.text += ('     width="%fcm" height="%fcm"\n'
+                      '     viewBox="0 0 %i %i">\n' % (w/100.0, h/100.0, w, h))
+        
+        self.text += '<defs>\n' + defs + '\n</defs>\n'
+        
+        if self.reverse:
+            self.text += '<g transform="rotate(180) translate(%f, %f)">\n' % (-w, -h)
     
     def add_page(self, width, height):
     
-        if self.page_number == 0:
-            self.text += '<defs>\n' + defs + '\n</defs>\n'
-        else:
-            self.text += ('<rect x="%i" y="0" width="0.1" height="1000"\n'
-                          '      stroke="black" fill="none" stroke-width="0.1" />\n' % self.ox)
+        if self.page_number > 0:
+            self.text += ('<rect x="%f" y="%f" width="%f" height="%f"\n'
+                          '      stroke="black" fill="none" stroke-width="0.1" />\n' % \
+                          self.page_rects[self.page_number])
         
-        self.ox, self.oy = self.page_offsets[self.page_number]
+        self.ox, self.oy = self.page_rects[self.page_number][:2]
         self.page_number += 1
     
     def add_image(self, x, y, width, height, path):
@@ -161,6 +155,9 @@ class Inlay(SVG):
     
     def close(self):
     
+        if self.reverse:
+            self.text += '</g>\n'
+        
         SVG.close(self)
 
 
@@ -853,15 +850,10 @@ if __name__ == "__main__":
     
     if not 3 <= len(sys.argv) <= 4:
     
-        sys.stderr.write("Usage: %s [--inlay=type] <platform> <output directory>\n" % sys.argv[0])
+        sys.stderr.write("Usage: %s [--inlay] <platform> <output directory>\n" % sys.argv[0])
         sys.exit(1)
     
-    if sys.argv[1].startswith("--inlay"):
-        pieces = sys.argv[1].split("=")
-        if len(pieces) == 1:
-            inlay_layout = "enclosed"
-        else:
-            inlay_layout = pieces[1]
+    if sys.argv[1] == "--inlay":
         platform = sys.argv[2]
         output_dir = sys.argv[3]
         inlay = True
@@ -869,7 +861,6 @@ if __name__ == "__main__":
         platform = sys.argv[1]
         output_dir = sys.argv[2]
         inlay = False
-        inlay_layout = ""
     
     if not os.path.exists(output_dir):
         os.mkdir(output_dir)
@@ -901,6 +892,10 @@ if __name__ == "__main__":
     
     back_flap = make_back_flap(r, hr, o, background)
     spine = make_spine(r, hr, o, background)
+    blank_spine = Page((100, 1000),
+                       [Path((0, 0, 100, 1000),
+                             [("M",0,0), ("l",100,0), ("l",0,1000), ("l",-100,0), ("z",)],
+                             {"stroke": "none", "fill": "none"})])
     front_cover = make_front_cover(bx, bw, bh, tby, tbh, py, r, hr, o, background)
     
     instructions = [
@@ -1053,15 +1048,6 @@ if __name__ == "__main__":
              ])
         ]
     
-    if inlay:
-        if inlay_layout == "enclosed":
-            pages = instructions + [spine, front_cover]
-        else:
-            # Add a tab/flap to the back of the box and a label to the side.
-            pages = [back_flap, spine, front_cover] + instructions
-    else:
-        pages = [front_cover] + instructions
-    
     defs = ('<linearGradient id="box-background" x1="20%" y1="0%" x2="80%" y2="100%">\n'
             '  <stop offset="0%" stop-color="#4040a0" />\n'
             '  <stop offset="40%" stop-color="#000000" />\n'
@@ -1092,21 +1078,34 @@ if __name__ == "__main__":
             '</linearGradient>\n')
     
     if inlay:
-        path = os.path.join(output_dir, "%s-%s-inlay.svg" % (platform.replace(" ", "-"),
-                                                       inlay_layout))
-        inlay = Inlay(path, inlay_layout)
-        inlay.open()
-        inlay.add_defs(defs)
-        
-        i = 0
-        for page in pages:
-        
-            page.render(inlay)
-            i += 1
-        
-        inlay.close()
     
+        front_pages = [instructions[-1], spine, front_cover]
+        reverse_pages = [instructions[0], blank_spine, instructions[1]]
+        
+        front_name = "%s-inlay-front.svg" % platform.replace(" ", "-")
+        reverse_name = "%s-inlay-reverse.svg" % platform.replace(" ", "-")
+        
+        page_rects = [(0, 0, 650, 1000), (650, 0, 100, 1000), (100 + 650, 0, 650, 1000)]
+        total_size = (1400, 1000)
+        
+        for name, pages, reverse in [(front_name, front_pages, False),
+                                     (reverse_name, reverse_pages, True)]:
+        
+            path = os.path.join(output_dir, name)
+            
+            inlay = Inlay(path, page_rects, total_size, reverse)
+            inlay.open()
+            inlay.add_defs(defs)
+            
+            i = 0
+            for page in pages:
+                page.render(inlay)
+                i += 1
+            
+            inlay.close()
     else:
+        pages = [front_cover] + instructions
+        
         i = 0
         for page in pages:
         
