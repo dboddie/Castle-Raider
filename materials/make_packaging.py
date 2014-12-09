@@ -134,18 +134,18 @@ class Inlay(SVG):
     
     def add_page(self, width, height):
     
-        rect, reverse = self.page_rects[self.page_number]
-        
         if self.page_number > 0:
         
-            if self.reverse:
+            rect, reverse = self.page_rects[self.page_number - 1]
+        
+            if reverse:
                 self.text += '</g>\n'
             
             self.text += ('<rect x="%f" y="%f" width="%f" height="%f"\n'
                           '      stroke="black" fill="none" stroke-width="0.1" />\n' % rect)
         
+        rect, self.reverse = self.page_rects[self.page_number]
         self.ox, self.oy, w, h = rect
-        self.reverse = reverse
         self.page_number += 1
         
         if self.reverse:
@@ -162,8 +162,15 @@ class Inlay(SVG):
     
     def close(self):
     
-        if self.reverse:
-            self.text += '</g>\n'
+        if self.page_number > 0:
+        
+            rect, reverse = self.page_rects[self.page_number - 1]
+            
+            if self.reverse:
+                self.text += '</g>\n'
+            
+            self.text += ('<rect x="%f" y="%f" width="%f" height="%f"\n'
+                          '      stroke="black" fill="none" stroke-width="0.1" />\n' % rect)
         
         SVG.close(self)
 
@@ -1102,6 +1109,13 @@ if __name__ == "__main__":
         total_size = (2970, 2100)
         
         path = os.path.join(output_dir, file_name)
+        dx = (2970 - 2800 - 50)/2.0
+        
+        for i in range(len(page_rects)):
+            rect, rev = page_rects[i]
+            page_rects[i] = ((rect[0] + dx, rect[1] + 50,) + rect[2:], rev)
+            page_rects.append(((rect[0] + dx + 1400 + 50, rect[1] + 50) + rect[2:], rev))
+            pages.append(pages[i])
         
         inlay = Inlay(path, page_rects, total_size)
         inlay.open()
