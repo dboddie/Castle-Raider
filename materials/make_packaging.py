@@ -110,14 +110,14 @@ class SVG:
 
 class Inlay(SVG):
 
-    def __init__(self, path, page_rects, total_size, reverse = False):
+    def __init__(self, path, page_rects, total_size):
     
         SVG.__init__(self, path)
         
         self.page_rects = page_rects
         self.total_size = total_size
-        self.reverse = reverse
         self.page_number = 0
+        self.reverse = False
     
     def open(self):
     
@@ -131,19 +131,26 @@ class Inlay(SVG):
                       '     viewBox="0 0 %i %i">\n' % (w/100.0, h/100.0, w, h))
         
         self.text += '<defs>\n' + defs + '\n</defs>\n'
-        
-        if self.reverse:
-            self.text += '<g transform="rotate(180) translate(%f, %f)">\n' % (-w, -h)
     
     def add_page(self, width, height):
     
-        if self.page_number > 0:
-            self.text += ('<rect x="%f" y="%f" width="%f" height="%f"\n'
-                          '      stroke="black" fill="none" stroke-width="0.1" />\n' % \
-                          self.page_rects[self.page_number])
+        rect, reverse = self.page_rects[self.page_number]
         
-        self.ox, self.oy = self.page_rects[self.page_number][:2]
+        if self.page_number > 0:
+        
+            if self.reverse:
+                self.text += '</g>\n'
+            
+            self.text += ('<rect x="%f" y="%f" width="%f" height="%f"\n'
+                          '      stroke="black" fill="none" stroke-width="0.1" />\n' % rect)
+        
+        self.ox, self.oy, w, h = rect
+        self.reverse = reverse
         self.page_number += 1
+        
+        if self.reverse:
+            self.text += '<g transform="rotate(180) translate(%f, %f)">\n' % \
+                         (-(self.ox*2 + w), -(self.oy*2 + h))
     
     def add_image(self, x, y, width, height, path):
     
@@ -1079,30 +1086,33 @@ if __name__ == "__main__":
     
     if inlay:
     
-        front_pages = [instructions[-1], spine, front_cover]
-        reverse_pages = [instructions[0], blank_spine, instructions[1]]
+        pages = [instructions[-1], spine, front_cover,
+                 instructions[0], blank_spine, instructions[1]]
         
-        front_name = "%s-inlay-front.svg" % platform.replace(" ", "-")
-        reverse_name = "%s-inlay-reverse.svg" % platform.replace(" ", "-")
+        file_name = "%s-inlay.svg" % platform.replace(" ", "-")
         
-        page_rects = [(0, 0, 650, 1000), (650, 0, 100, 1000), (100 + 650, 0, 650, 1000)]
-        total_size = (1400, 1000)
+        page_rects = [((0, 0, 650, 1000), False),
+                      ((650, 0, 100, 1000), False),
+                      ((100 + 650, 0, 650, 1000), False),
+                      ((100 + 650, 1000, 650, 1000), True),
+                      ((650, 1000, 100, 1000), True),
+                      ((0, 1000, 650, 1000), True)]
         
-        for name, pages, reverse in [(front_name, front_pages, False),
-                                     (reverse_name, reverse_pages, True)]:
+        # A4 paper
+        total_size = (2970, 2100)
         
-            path = os.path.join(output_dir, name)
-            
-            inlay = Inlay(path, page_rects, total_size, reverse)
-            inlay.open()
-            inlay.add_defs(defs)
-            
-            i = 0
-            for page in pages:
-                page.render(inlay)
-                i += 1
-            
-            inlay.close()
+        path = os.path.join(output_dir, file_name)
+        
+        inlay = Inlay(path, page_rects, total_size)
+        inlay.open()
+        inlay.add_defs(defs)
+        
+        i = 0
+        for page in pages:
+            page.render(inlay)
+            i += 1
+        
+        inlay.close()
     else:
         pages = [front_cover] + instructions
         
