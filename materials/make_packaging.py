@@ -481,14 +481,13 @@ class Transform:
 #sans = "FreeSans"
 sans = "Futura Md BT"
 
-regular = {"family": "FreeSerif",
+regular = {"family": "FreeSans",
            "size": 20,
            "align": "justify"}
 
-title = {"family": "FreeSerif",
-         "size": 64,
-         "weight": "bold",
-         "align": "centre"}
+title = {"family": sans,
+         "size": 28,
+         "weight": "bold"}
 
 subtitle = {"family": "FreeSerif",
          "size": 22,
@@ -510,12 +509,12 @@ monospace_quote = {"family": "FreeMono",
                    "left indent": 40,
                    "right indent": 40}
 
-keys_quote = {"family": "FreeSerif",
+keys_quote = {"family": "FreeSans",
               "size": regular["size"],
               "left indent": 40,
               "right indent": 40}
 
-key_descriptions_quote = {"family": "FreeSerif",
+key_descriptions_quote = {"family": "FreeSans",
                           "size": regular["size"],
                           "left indent": 160,
                           "right indent": 0}
@@ -536,15 +535,26 @@ back_cover_subtitle = {"family": "FreeSerif",
                        "weight": "bold",
                        "align": "centre"}
 
-back_cover_centred = {"family": "FreeSerif",
-                      "size": 24,
+back_cover_centred = {"family": sans,
+                      "size": 22,
                       "align": "centre"}
 
-front_cover_publisher1 = {"family": sans, "size": 32,
+back_cover_regular = {"family": sans,
+                      "size": 20}
+
+back_cover_publisher1 = {"family": sans, "size": 46,
+                         "weight": "bold", "align": "centre",
+                         "colour": "#202020"}
+
+back_cover_publisher2 = {"family": sans, "size": 46,
+                         "weight": "bold", "align": "centre",
+                         "colour": "#ffffc0"}
+
+front_cover_publisher1 = {"family": sans, "size": 34,
                           "weight": "bold", "align": "centre",
                           "colour": "#202020"}
 
-front_cover_publisher2 = {"family": sans, "size": 32,
+front_cover_publisher2 = {"family": sans, "size": 34,
                           "weight": "bold", "align": "centre",
                           "colour": "#ffffc0"}
 
@@ -608,17 +618,17 @@ def make_logo(cx, y, w, h, font1, font2):
 
     logo = []
     x = cx - (len("RETRO") * w)/2.0
-    lr = 5
-    lhr = 2.5
+    lr = h/10.0
+    lhr = lr/2.0
     
     for ch in "RETRO":
-        logo.append(curved_box(x, y + lr, w, h,
+        logo.append(curved_box(x - lhr, y + lr + lhr, w, h,
                                {"fill": "#ff4040", "stroke": "#000000",
                                 "stroke-width": 1}))
         logo.append(curved_box(x + lr, y, w, h,
                                {"fill": "#ffffc0", "stroke": "#000000",
                                 "stroke-width": 1}))
-        logo.append(TextBox((x + lr, y + lr + h/2, w - (lr * 2), h),
+        logo.append(TextBox((x + lr, y + lr + h/2 + 1, w - (lr * 2), h),
                             [Text(font1, ch)]))
         x += w
     
@@ -626,7 +636,7 @@ def make_logo(cx, y, w, h, font1, font2):
     y += h
     
     for ch in "SOFTWARE":
-        logo.append(curved_box(x, y + lr, w, h,
+        logo.append(curved_box(x - lhr, y + lr + lhr, w, h,
                                {"fill": "#ff4040", "stroke": "#000000",
                                 "stroke-width": 1}))
         logo.append(curved_box(x + lr, y, w, h,
@@ -703,6 +713,24 @@ def make_spine(r, hr, o, background):
                      ]),
                 ])
 
+def make_title_box(bx, by, bw, bh, r, hr, o):
+
+    return [Path((bx-r+(r*o), by, bw+r-(r*o*2), bh+r-(r*o)),
+                 [("M",bw+r-(r*o*2),bh-(r*o)),
+                  ("l",-r*0.5,r*0.5), ("c",-r*0.5,r*0.5,-r*0.5,r*0.5,-r,r*0.5),
+                  ("l",-bw+(r*o*2)+(r*1.5),0), ("c",-hr,0,-r,-r+hr,-r,-r),
+                  ("l",0,-bh+(r*o*2)+(r*1.5)), ("c",0,-r*0.5,0,-r*0.5,r*0.5,-r),
+                  ("l",r*0.5,-r*0.5), ("z",)],
+                 {"fill": "#ffb060", "stroke": "#000000", "stroke-width": 4}),
+
+            Path((bx, by, bw, bh),
+                 [("M",r,0), ("l",bw-(r*2),0), ("c",hr,0,r,r-hr,r,r),
+                  ("l",0,bh-(r*2)), ("c",0,hr,-r+hr,r,-r,r),
+                  ("l",-(bw-(r*2)),0), ("c",-hr,0,-r,-r+hr,-r,-r),
+                  ("l",0,-(bh-(r*2))), ("c",0,-hr,r-hr,-r,r,-r)],
+                 {"fill": "#ffffff", "stroke": "#000000", "stroke-width": 4})]
+
+
 def make_front_cover(bx, bw, bh, title_by, title_bh, py, r, hr, o, background):
 
     cax = 265
@@ -714,22 +742,9 @@ def make_front_cover(bx, bw, bh, title_by, title_bh, py, r, hr, o, background):
                 [Path((0, 0, 650, 1000),
                       [("M",0,0), ("l",650,0), ("l",0,1000), ("l",-650,0), ("l",0,-1000)],
                       {"fill": background, "stroke": "#000000", "stroke-width": 1}),
-                 make_checkered(650, 1000, background),
+                 make_checkered(650, 1000, background)
 
-                 Path((bx-r+(r*o), title_by, bw+r-(r*o*2), title_bh+r-(r*o)),
-                      [("M",bw+r-(r*o*2),title_bh-(r*o)),
-                       ("l",-r*0.5,r*0.5), ("c",-r*0.5,r*0.5,-r*0.5,r*0.5,-r,r*0.5),
-                       ("l",-bw+(r*o*2)+(r*1.5),0), ("c",-hr,0,-r,-r+hr,-r,-r),
-                       ("l",0,-title_bh+(r*o*2)+(r*1.5)), ("c",0,-r*0.5,0,-r*0.5,r*0.5,-r),
-                       ("l",r*0.5,-r*0.5), ("z",)],
-                      {"fill": "#ffb060", "stroke": "#000000", "stroke-width": 4}),
-
-                 Path((bx, title_by, bw, title_bh),
-                      [("M",r,0), ("l",bw-(r*2),0), ("c",hr,0,r,r-hr,r,r),
-                       ("l",0,title_bh-(r*2)), ("c",0,hr,-r+hr,r,-r,r),
-                       ("l",-(bw-(r*2)),0), ("c",-hr,0,-r,-r+hr,-r,-r),
-                       ("l",0,-(title_bh-(r*2))), ("c",0,-hr,r-hr,-r,r,-r)],
-                      {"fill": "#ffffff", "stroke": "#000000", "stroke-width": 4}),
+                ] + make_title_box(bx, title_by, bw, title_bh, r, hr, o) + [
 
                  TextBox((bx, title_by + 115, bw, title_bh-(r*2)),
                      [Text(front_cover_platforms, "%s" % platform.upper()),
@@ -857,6 +872,68 @@ def make_front_cover(bx, bw, bh, title_by, title_bh, py, r, hr, o, background):
                       {"fill": "none", "stroke": "#000000", "stroke-width": 4})
                 ])
 
+def inner_instructions_decoration(sx, sy, w, h, offset, size):
+
+    text = "RETROSOFTWARE"
+    i = 0
+    decor = []
+    x = sx + offset
+    y = offset
+    font = {"family": sans, "size": size * 0.7, "weight": "bold", "align": "centre"}
+    
+    while True:
+        
+        decor.append(curved_box(x, y, size, size,
+                                {"fill": "none", "stroke": "#000000", "stroke-width": 2}))
+        decor.append(TextBox((x, y + size * 0.65, size * 0.8, size * 0.8),
+                             [Text(font, text[i])]))
+        x += size * 0.96
+        i = (i + 1) % len(text)
+        
+        if x + (size * 1.8) >= w:
+            break
+    
+    while True:
+    
+        decor.append(curved_box(x, y, size, size,
+                                {"fill": "none", "stroke": "#000000", "stroke-width": 2}))
+        decor.append(Transform([("translate", "%f,%f" % (x, y)), ("rotate", 90)],
+                               [TextBox((0, -size * 0.8 + size * 0.65, size * 0.8, size * 0.8),
+                                        [Text(font, text[i])])]))
+        y += size * 0.94
+        i = (i + 1) % len(text)
+        
+        if y + (size * 1.8) >= h:
+            break
+    
+    while True:
+    
+        decor.append(curved_box(x, y, size, size,
+                                {"fill": "none", "stroke": "#000000", "stroke-width": 2}))
+        decor.append(Transform([("translate", "%f,%f" % (x, y)), ("rotate", 180)],
+                               [TextBox((-size * 0.8, -size * 0.8 + size * 0.65, size * 0.8, size * 0.8),
+                                        [Text(font, text[i])])]))
+        x -= size * 0.96
+        i = (i + 1) % len(text)
+        
+        if x - size <= 0:
+            break
+    
+    while True:
+    
+        decor.append(curved_box(x, y, size, size,
+                                {"fill": "none", "stroke": "#000000", "stroke-width": 2}))
+        decor.append(Transform([("translate", "%f,%f" % (x, y)), ("rotate", 270)],
+                               [TextBox((-size * 0.8, size * 0.65, size * 0.8, size * 0.8),
+                                        [Text(font, text[i])])]))
+        y -= size * 0.94
+        i = (i + 1) % len(text)
+        
+        if y - size <= 0:
+            break
+    
+    return decor
+
 
 if __name__ == "__main__":
 
@@ -914,40 +991,48 @@ if __name__ == "__main__":
     
     instructions = [
         Page((650, 1000),
-            [TextBox((25, 90, 600, 0), 
+            [TextBox((57, 77, 570, 0), 
                  [Text(title, "Castle Raider")]),
-             TextBox((35, -15, 580, 0),
+             TextBox((57, -5, 570, 0),
                  [Text(regular,
                        "As the sun dips below the ramparts of the old town, the last of the troops file "
                        "in. As they make their way through the narrow, cobbled streets, small groups of "
                        "them quietly slink away into the many taverns that give this district its bad "
                        "reputation. The lamps are lit and the merriment spills out onto the streets "
                        "with laughing, singing, pushing and shoving. There will be trouble later, but "
-                       "by then you will be long gone.\n"),
-                  Text(regular,
+                       "by then you will be long gone.")], follow = True),
+             TextBox((57, 8, 570, 0),
+                 [Text(regular,
                        "It is time for the guard to change, time for the night watch to begin their "
                        "duties, but they are in no hurry; though the outlaws in the countryside know "
                        "the force stationed here will be no threat tonight, they gave them a wide "
                        "berth during their march here. The people in the nearby villages can sleep "
-                       "soundly for a change.\n"),
-                  Text(regular,
+                       "soundly for a change.")], follow = True),
+             TextBox((57, 8, 570, 0),
+                 [Text(regular,
                        "As the members of the night watch slowly begin to take their places on the "
                        "ramparts you take your chance and slip through the open gate, taking refuge in "
                        "the long shadows fleeing the sunset. The few eyes looking in your direction are "
-                       "hardly able to make out your form as you wait for the approaching nightfall.\n"),
-                  Text(regular,
+                       "hardly able to make out your form as you wait for the approaching nightfall.")],
+                       follow = True),
+             TextBox((57, 8, 570, 0),
+                 [Text(regular,
                        "You recall the stories told when you were young. When the town itself was "
                        "already old, the last of the elders told of a time when it was still a village, "
                        "not much more than a few houses and shelters. The road that ran through it went "
-                       "to the castle on the edge of the wasteland that now lies derelict and deserted.\n"),
-                  Text(regular,
+                       "to the castle on the edge of the wasteland that now lies derelict and deserted.")],
+                       follow = True),
+             TextBox((57, 8, 570, 0),
+                 [Text(regular,
                        "Night falls quickly in this season at the edge of the kingdom. Memories of "
                        "fireside tales about the king's lost crown and the hidden treasure of the old "
                        "kingdom make the journey across the plains more bearable. Soon you arrive at "
                        "the outer fortifications. Crossing a bridge, you enter. As you pass beneath the "
                        "outer gate it suddenly crashes into place, cutting off your exit. It was just "
-                       "as well you hadn't planned to return that way.\n"),
-                  Text(regular,
+                       "as well you hadn't planned to return that way.")],
+                       follow = True),
+             TextBox((57, 8, 570, 0),
+                 [Text(regular,
                        "Nature has reclaimed parts of the castle, its ruins crumbling in places and "
                        "crawling with creatures that people once knew well to leave alone. To make your "
                        "way through it to the lands beyond, you will need to unlock the few doors and "
@@ -956,19 +1041,10 @@ if __name__ == "__main__":
                        "pass through the outer gate then the story alone will have made the journey "
                        "worthwhile.")],
                   follow = True)
-             ]),
+
+             ] + inner_instructions_decoration(0, 0, 650*2, 1000, 7, 48)),
         Page((650, 1000),
-             [TextBox((35, 50, 580, 0),
-                  [Text(subtitle, "Loading the Game\n"),
-                   Text(regular, "Insert the cassette and type\n")]),
-              TextBox((35, -2, 580, 0),
-                  [Text(monospace_quote, 'CHAIN "CASTLE"\n')], follow = True),
-              TextBox((35, -2, 580, 0),
-                  [Text(regular,
-                        "then press Return. Press play on the cassette recorder. "
-                        "The game should now load.\n\n")], follow = True),
-              
-              TextBox((35, 40, 580, 0),
+             [TextBox((25, 85, 555, 0),
                   [Text(subtitle, "Playing the Game\n"),
                    Text(regular,
                         "The player must help their character escape the castle, "
@@ -977,13 +1053,13 @@ if __name__ == "__main__":
                         "Your character can roam the castle and its surroundings using the following "
                         "control keys:\n")],
                   follow = True),
-              TextBox((35, 0, 580, 0),
+              TextBox((25, 0, 555, 0),
                   [Text(keys_quote,
                         "Z\n"
                         "X\n"
                         "Return\n"
                         "/")], follow = True),
-              TextBox((35, 0, 580, 0),
+              TextBox((25, 0, 555, 0),
                   [Text(key_descriptions_quote,
                         "left\n"
                         "right\n"
@@ -996,13 +1072,13 @@ if __name__ == "__main__":
                         "Alternatively, you may may use an analogue joystick with the following "
                         "controls:\n")],
                         follow = True, index = -2),
-              TextBox((35, 0, 580, 0),
+              TextBox((25, 0, 555, 0),
                   [Text(keys_quote,
                         "Left\n"
                         "Right\n"
                         "Fire\n"
                         "Down\n")], follow = True),
-              TextBox((35, 0, 580, 0),
+              TextBox((25, 0, 555, 0),
                   [Text(key_descriptions_quote,
                         "left\n"
                         "right\n"
@@ -1013,14 +1089,14 @@ if __name__ == "__main__":
                         "the game. Press Space to start the game with keyboard controls.\n\n"
                         "Other keys are used to control features of the game:\n")],
                         follow = True, index = -2),
-              TextBox((35, 0, 580, 0),
+              TextBox((25, 0, 555, 0),
                   [Text(keys_quote,
                         "S\n"
                         "Q\n"
                         "P\n"
                         "O\n"
                         "Escape")], follow = True),
-              TextBox((35, 0, 580, 0),
+              TextBox((25, 0, 555, 0),
                   [Text(key_descriptions_quote,
                         "enable sound effects\n"
                         "disable sound effects\n"
@@ -1028,24 +1104,34 @@ if __name__ == "__main__":
                         "resume the game\n"
                         "quit the game, returning to the title screen\n")],
                   follow = True, index = -2),
-              TextBox((35, 9, 580, 0),
+              TextBox((25, 9, 555, 0),
                   [Text(regular, "Good luck!")], follow = True)
              ]),
         Page((650, 1000),
-             [TextBox((25, 50, 600, 0),
-                      [Text(back_cover_title, "Castle Raider"),
-                       Text(back_cover_subtitle, "for the " + platform)]),
-              Image((35.333, 0, 450, 0), "images/2014-11-30-loading.png", scale = 0.85, follow = True),
-              Image((342.667, 0, 450, 0), "images/2014-11-30-action.png", scale = 0.85, follow = True, index = -2),
-              Image((35.333, 25, 450, 0), "images/2014-11-30-basement.png", scale = 0.85, follow = True),
-              Image((342.667, 25, 450, 0), "images/2014-11-30-dungeon.png", scale = 0.85, follow = True, index = -2),
-              TextBox((25, 52, 600, 0),
+             [Path((0, 0, 650, 1000),
+                   [("M",0,0), ("l",650,0), ("l",0,1000), ("l",-650,0), ("l",0,-1000)],
+                   {"fill": background, "stroke": "#000000", "stroke-width": 1}),
+              make_checkered(650, 1000, background),
+
+             ] + make_logo(bx + bw/2.0, 40, 70, 70, back_cover_publisher1, back_cover_publisher2) + [
+
+              #Image((35.333, 0, 450, 0), "images/2014-11-30-loading.png", scale = 0.85, follow = True),
+              #Image((342.667, 0, 450, 0), "images/2014-11-30-action.png", scale = 0.85, follow = True, index = -2),
+              #Image((35.333, 25, 450, 0), "images/2014-11-30-basement.png", scale = 0.85, follow = True),
+              #Image((342.667, 25, 450, 0), "images/2014-11-30-dungeon.png", scale = 0.85, follow = True, index = -2),
+
+             ] + make_title_box(bx, 200, bw, 110, r, hr, o) + [
+
+              TextBox((bx, 234, bw, 0),
                       [Text(back_cover_centred,
                             u"Copyright \u00a9 2014 David Boddie\n"
                             u"An Infukor production for Retro Software\n"
-                            u"http://www.retrosoftware.co.uk/")], follow = True),
-              TextBox((35, 15, 580, 0),
-                      [Text(regular,
+                            u"http://www.retrosoftware.co.uk/")])
+
+             ] + make_title_box(bx, 341, bw, 380, r, hr, o) + [
+
+              TextBox((bx + 25, 375, bw - 50, 0),
+                      [Text(back_cover_regular,
                             "This program is free software: you can redistribute it and/or modify "
                             "it under the terms of the GNU General Public License as published by "
                             "the Free Software Foundation, either version 3 of the License, or "
@@ -1057,8 +1143,17 @@ if __name__ == "__main__":
                             "GNU General Public License for more details.\n"
                             "\n"
                             "You should have received a copy of the GNU General Public License "
-                            "along with this program. If not, see <http://www.gnu.org/licenses/>.")],
-                      follow = True)
+                            "along with this program.\nIf not, see <http://www.gnu.org/licenses/>.")])
+
+             ] + make_title_box(bx, 752, bw, 158, r, hr, o) + [
+
+              TextBox((bx + 25, 787, bw - 50, 0),
+                      [Text(back_cover_regular,
+                            u"To load the game, insert the cassette and type\n"),
+                       Text(back_cover_centred,
+                            u'CHAIN "CASTLE"\n'),
+                       Text(back_cover_regular,
+                            u"then press Return. Press play on the cassette recorder.")])
              ])
         ]
     
@@ -1093,28 +1188,27 @@ if __name__ == "__main__":
     
     if inlay:
     
-        pages = [instructions[-1], spine, front_cover,
-                 instructions[0], blank_spine, instructions[1]]
+        pages = instructions + [spine, front_cover]
         
         file_name = "%s-inlay.svg" % platform.replace(" ", "-")
         
         page_rects = [((0, 0, 650, 1000), False),
-                      ((650, 0, 100, 1000), False),
-                      ((100 + 650, 0, 650, 1000), False),
-                      ((100 + 650, 1000, 650, 1000), True),
-                      ((650, 1000, 100, 1000), True),
-                      ((0, 1000, 650, 1000), True)]
+                      ((650, 0, 650, 1000), False),
+                      ((650*2, 0, 650, 1000), False),
+                      ((650*3, 0, 100, 1000), False),
+                      ((650*3 + 100, 0, 650, 1000), False)]
         
         # A4 paper
         total_size = (2970, 2100)
         
         path = os.path.join(output_dir, file_name)
-        dx = (2970 - 2800 - 50)/2.0
+        dx = (2970 - 1400*2 - 50)/2.0
+        dy = (2100 - 1000*2 - 50)/2.0
         
         for i in range(len(page_rects)):
             rect, rev = page_rects[i]
-            page_rects[i] = ((rect[0] + dx, rect[1] + 50,) + rect[2:], rev)
-            page_rects.append(((rect[0] + dx + 1400 + 50, rect[1] + 50) + rect[2:], rev))
+            page_rects[i] = ((rect[0] + dx, rect[1] + dy,) + rect[2:], rev)
+            page_rects.append(((rect[0] + dx, rect[1] + dy + 1050) + rect[2:], rev))
             pages.append(pages[i])
         
         inlay = Inlay(path, page_rects, total_size)
