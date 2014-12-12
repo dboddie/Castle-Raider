@@ -606,15 +606,15 @@ def curved_box(x, y, w, h, style):
                   ("l",-ll,0), ("c",-hr,0,-r,-hr,-r,-r),
                   ("l",0,-ll), ("c",0,-hr,hr,-r,r,-r)], style)
 
-def make_checkered(w, h, background = "#ffdd77"):
+def make_checkered(w, h, sx, sy, background = "#ffdd77"):
 
     checkered = []
-    x = 10
+    x = sx
     while x < w:
         checkered += [("M",x,0), ("l",0,h)]
         x += 20
     
-    y = 10
+    y = sy
     while y < h:
         checkered += [("M",0,y), ("l",w,0)]
         y += 20
@@ -638,7 +638,7 @@ def make_logo(cx, y, w, h, font1, font2):
     
     for ch in "RETRO":
         logo.append(curved_box(x - lhr, y + lr + lhr, w, h,
-                               {"fill": "#ff4040", "stroke": "#000000",
+                               {"fill": logo_shadow, "stroke": "#000000",
                                 "stroke-width": 2}))
         logo.append(curved_box(x + lr, y, w, h,
                                {"fill": logo_background, "stroke": "#000000",
@@ -652,7 +652,7 @@ def make_logo(cx, y, w, h, font1, font2):
     
     for ch in "SOFTWARE":
         logo.append(curved_box(x - lhr, y + lr + lhr, w, h,
-                               {"fill": "#ff4040", "stroke": "#000000",
+                               {"fill": logo_shadow, "stroke": "#000000",
                                 "stroke-width": 2}))
         logo.append(curved_box(x + lr, y, w, h,
                                {"fill": "#202020", "stroke": "#000000",
@@ -673,7 +673,7 @@ def make_back_flap(r, hr, o, background):
                 [Path((0, 0, 200, 1000),
                       [("M",0,0), ("l",650,0), ("l",0,1000), ("l",-650,0), ("l",0,-1000)],
                       {"fill": background, "stroke": "#000000", "stroke-width": 1}),
-                 make_checkered(200, 1000, background),
+                 make_checkered(200, 1000, 10, 10, background),
                  Path((0, 0, 200, 1000),
                       [("M",200,0), ("l",-200,200), ("l",0,600), ("l",200,200), ("z",)],
                       {"fill": "white", "stroke": "#000000", "stroke-width": 1}),
@@ -702,8 +702,8 @@ def make_spine(r, hr, o, background):
     return Page((100, 1000),
                 [Path((0, 0, 100, 1000),
                       [("M",0,0), ("l",650,0), ("l",0,1000), ("l",-650,0), ("l",0,-1000)],
-                       {"fill": background, "stroke": "#000000", "stroke-width": 1}),
-                 make_checkered(100, 1000, background),
+                       {"fill": background, "stroke": "none"}),
+                 make_checkered(100, 1000, 10, 10, background),
 
                  Transform([("rotate", 90)],
                      [Transform([("translate", "0,-105")],
@@ -756,8 +756,8 @@ def make_front_cover(bx, bw, bh, title_by, title_bh, py, r, hr, o, background):
     return Page((650, 1000),
                 [Path((0, 0, 650, 1000),
                       [("M",0,0), ("l",650,0), ("l",0,1000), ("l",-650,0), ("l",0,-1000)],
-                      {"fill": background, "stroke": "#000000", "stroke-width": 1}),
-                 make_checkered(650, 1000, background)
+                      {"fill": background, "stroke": "none"}),
+                 make_checkered(650, 1000, 10, 10, background)
 
                 ] + make_title_box(bx, title_by, bw, title_bh, r, hr, o) + [
 
@@ -980,16 +980,19 @@ if __name__ == "__main__":
         box_background = "#ffffff"
         box_shadow = "#ffb060"
         logo_background = "#ffffc0"
+        logo_shadow = "#ff4040"
     elif platform == "BBC Model B":
         background = "#00a0ff"
         box_background = "#ffff30"
-        box_shadow = "#ff7030"
+        box_shadow = "#ff4040"
         logo_background = box_background
+        logo_shadow = box_shadow
     else:
         background = "#ffdd77"
         box_background = "#ffffff"
         box_shadow = "#ffb060"
         logo_background = "#ffffc0"
+        logo_shadow = box_shadow
     
     # Placement of boxes on the front cover
     bx = 60
@@ -1004,6 +1007,13 @@ if __name__ == "__main__":
     
     # Shadow offset and castle position
     o = 0.32 # 1 - 1/(2**0.5)
+    
+    # Screenshot scale and horizontal positions
+    scale = 200/256.0
+    sw = scale * 320
+    sr = (bw - (2 * sw))/3.0
+    sx1 = bx + sr
+    sx2 = bx + sw + (2 * sr)
     
     back_flap = make_back_flap(r, hr, o, background)
     spine = make_spine(r, hr, o, background)
@@ -1069,6 +1079,16 @@ if __name__ == "__main__":
              ] + inner_instructions_decoration(0, 0, 650*2, 1000, 7, 48)),
         Page((650, 1000),
              [TextBox((25, 85, 555, 0),
+                  [Text(subtitle, "Loading the Game\n"),
+                   Text(regular, "Insert the cassette and type\n")]),
+              TextBox((25, -2, 555, 0),
+                  [Text(monospace_quote, 'CHAIN "CASTLE"\n')], follow = True),
+              TextBox((25, -2, 555, 0),
+                  [Text(regular,
+                        "then press Return. Press play on the cassette recorder.")],
+                        follow = True),
+
+              TextBox((25, 20, 555, 0),
                   [Text(subtitle, "Playing the Game\n"),
                    Text(regular,
                         "The player must help their character escape the castle, "
@@ -1128,33 +1148,33 @@ if __name__ == "__main__":
                         "resume the game\n"
                         "quit the game, returning to the title screen\n")],
                   follow = True, index = -2),
-              TextBox((25, 9, 555, 0),
+              TextBox((25, 6, 555, 0),
                   [Text(regular, "Good luck!")], follow = True)
              ]),
         Page((650, 1000),
              [Path((0, 0, 650, 1000),
                    [("M",0,0), ("l",650,0), ("l",0,1000), ("l",-650,0), ("l",0,-1000)],
-                   {"fill": background, "stroke": "#000000", "stroke-width": 1}),
-              make_checkered(650, 1000, background),
+                   {"fill": background, "stroke": "none"}),
+              make_checkered(650, 1000, 0, 10, background),
 
              ] + make_logo(bx + bw/2.0, 40, 70, 70, back_cover_publisher1, back_cover_publisher2) + [
 
+             ] + make_title_box(bx, 190, bw, 230, r, hr, o) + [
+
               #Image((35.333, 0, 450, 0), "images/2014-11-30-loading.png", scale = 0.85, follow = True),
-              #Image((342.667, 0, 450, 0), "images/2014-11-30-action.png", scale = 0.85, follow = True, index = -2),
+              Image((sx1, 205, sw, 0), "images/2014-11-30-action.png", scale = scale),
               #Image((35.333, 25, 450, 0), "images/2014-11-30-basement.png", scale = 0.85, follow = True),
-              #Image((342.667, 25, 450, 0), "images/2014-11-30-dungeon.png", scale = 0.85, follow = True, index = -2),
+              Image((sx2, 205, sw, 0), "images/2014-11-30-dungeon.png", scale = scale),
 
-             ] + make_title_box(bx, 200, bw, 110, r, hr, o) + [
+             ] + make_title_box(bx, 445, bw, 465, r, hr, o) + [
 
-              TextBox((bx, 234, bw, 0),
+              TextBox((bx, 479, bw, 0),
                       [Text(back_cover_centred,
                             u"Copyright \u00a9 2014 David Boddie\n"
                             u"An Infukor production for Retro Software\n"
-                            u"http://www.retrosoftware.co.uk/")])
+                            u"http://www.retrosoftware.co.uk/")]),
 
-             ] + make_title_box(bx, 341, bw, 380, r, hr, o) + [
-
-              TextBox((bx + 25, 375, bw - 50, 0),
+              TextBox((bx + 25, 5, bw - 50, 0),
                       [Text(back_cover_regular,
                             "This program is free software: you can redistribute it and/or modify "
                             "it under the terms of the GNU General Public License as published by "
@@ -1167,17 +1187,9 @@ if __name__ == "__main__":
                             "GNU General Public License for more details.\n"
                             "\n"
                             "You should have received a copy of the GNU General Public License "
-                            "along with this program.\nIf not, see <http://www.gnu.org/licenses/>.")])
+                            "along with this program.\nIf not, see <http://www.gnu.org/licenses/>.")],
+                      follow = True)
 
-             ] + make_title_box(bx, 752, bw, 158, r, hr, o) + [
-
-              TextBox((bx + 25, 787, bw - 50, 0),
-                      [Text(back_cover_regular,
-                            u"To load the game, insert the cassette and type\n"),
-                       Text(back_cover_centred,
-                            u'CHAIN "CASTLE"\n'),
-                       Text(back_cover_regular,
-                            u"then press Return. Press play on the cassette recorder.")])
              ])
         ]
     
