@@ -141,8 +141,7 @@ class Inlay(SVG):
             if reverse:
                 self.text += '</g>\n'
             
-            self.text += ('<rect x="%f" y="%f" width="%f" height="%f"\n'
-                          '      stroke="black" fill="none" stroke-width="0.1" />\n' % rect)
+            self.text += self.crop_marks(rect)
         
         rect, self.reverse = self.page_rects[self.page_number]
         self.ox, self.oy, w, h = rect
@@ -169,10 +168,23 @@ class Inlay(SVG):
             if self.reverse:
                 self.text += '</g>\n'
             
-            self.text += ('<rect x="%f" y="%f" width="%f" height="%f"\n'
-                          '      stroke="black" fill="none" stroke-width="0.1" />\n' % rect)
+            self.text += self.crop_marks(rect)
         
         SVG.close(self)
+    
+    def crop_marks(self, rect):
+    
+        return ('<path d="M %f %f l 0 16 l 0 -8 l 8 0" '
+                          'stroke="black" fill="none" stroke-width="0.5" />\n'
+                          '<path d="M %f %f l 0 -16 l 0 8 l 8 0" '
+                          'stroke="black" fill="none" stroke-width="0.5" />\n'
+                          '<path d="M %f %f l 0 16 l 0 -8 l -8 0" '
+                          'stroke="black" fill="none" stroke-width="0.5" />\n'
+                          '<path d="M %f %f l 0 -16 l 0 8 l -8 0" '
+                          'stroke="black" fill="none" stroke-width="0.5" />\n' % \
+                          (rect[0], rect[1] - 8, rect[0], rect[1] + rect[3] + 8,
+                           rect[0] + rect[2], rect[1] - 8, rect[0] + rect[2],
+                           rect[1] + rect[3] + 8))
 
 
 class Page:
@@ -489,7 +501,7 @@ title = {"family": sans,
          "size": 28,
          "weight": "bold"}
 
-subtitle = {"family": "FreeSerif",
+subtitle = {"family": "FreeSans",
          "size": 22,
          "weight": "bold"}
 
@@ -621,13 +633,16 @@ def make_logo(cx, y, w, h, font1, font2):
     lr = h/10.0
     lhr = lr/2.0
     
+    font2 = font2.copy()
+    font2["colour"] = logo_background
+    
     for ch in "RETRO":
         logo.append(curved_box(x - lhr, y + lr + lhr, w, h,
                                {"fill": "#ff4040", "stroke": "#000000",
-                                "stroke-width": 1}))
+                                "stroke-width": 2}))
         logo.append(curved_box(x + lr, y, w, h,
-                               {"fill": "#ffffc0", "stroke": "#000000",
-                                "stroke-width": 1}))
+                               {"fill": logo_background, "stroke": "#000000",
+                                "stroke-width": 2}))
         logo.append(TextBox((x + lr, y + lr + h/2 + 1, w - (lr * 2), h),
                             [Text(font1, ch)]))
         x += w
@@ -638,10 +653,10 @@ def make_logo(cx, y, w, h, font1, font2):
     for ch in "SOFTWARE":
         logo.append(curved_box(x - lhr, y + lr + lhr, w, h,
                                {"fill": "#ff4040", "stroke": "#000000",
-                                "stroke-width": 1}))
+                                "stroke-width": 2}))
         logo.append(curved_box(x + lr, y, w, h,
                                {"fill": "#202020", "stroke": "#000000",
-                                "stroke-width": 1}))
+                                "stroke-width": 2}))
         logo.append(TextBox((x + lr, y + lr + h/2, w - (lr * 2), h),
                             [Text(font2, ch)]))
         x += w
@@ -700,13 +715,13 @@ def make_spine(r, hr, o, background):
                                  ("l",-sbw+(r*o*2)+(r*1.5),0), ("c",-hr,0,-r,-r+hr,-r,-r),
                                  ("l",0,-sbh+(r*o*2)+(r*1.5)), ("c",0,-r*0.5,0,-r*0.5,r*0.5,-r),
                                  ("l",r*0.5,-r*0.5), ("z",)],
-                                {"fill": "#ffb060", "stroke": "#000000", "stroke-width": 4}),
+                                {"fill": box_shadow, "stroke": "#000000", "stroke-width": 4}),
                             Path((sbx+10, 15, sbw, sbh),
                                 [("M",r,0), ("l",sbw-(r*2),0), ("c",hr,0,r,r-hr,r,r),
                                  ("l",0,sbh-(r*2)), ("c",0,hr,-r+hr,r,-r,r),
                                  ("l",-(sbw-(r*2)),0), ("c",-hr,0,-r,-r+hr,-r,-r),
                                  ("l",0,-(sbh-(r*2))), ("c",0,-hr,r-hr,-r,r,-r)],
-                                {"fill": "#ffffff", "stroke": "#000000", "stroke-width": 4}),
+                                {"fill": box_background, "stroke": "#000000", "stroke-width": 4}),
                             TextBox((sbx+10, 61, sbw, sbh),
                                [Text(spine_title, "CASTLE RAIDER")])
                           ])
@@ -721,14 +736,14 @@ def make_title_box(bx, by, bw, bh, r, hr, o):
                   ("l",-bw+(r*o*2)+(r*1.5),0), ("c",-hr,0,-r,-r+hr,-r,-r),
                   ("l",0,-bh+(r*o*2)+(r*1.5)), ("c",0,-r*0.5,0,-r*0.5,r*0.5,-r),
                   ("l",r*0.5,-r*0.5), ("z",)],
-                 {"fill": "#ffb060", "stroke": "#000000", "stroke-width": 4}),
+                 {"fill": box_shadow, "stroke": "#000000", "stroke-width": 4}),
 
             Path((bx, by, bw, bh),
                  [("M",r,0), ("l",bw-(r*2),0), ("c",hr,0,r,r-hr,r,r),
                   ("l",0,bh-(r*2)), ("c",0,hr,-r+hr,r,-r,r),
                   ("l",-(bw-(r*2)),0), ("c",-hr,0,-r,-r+hr,-r,-r),
                   ("l",0,-(bh-(r*2))), ("c",0,-hr,r-hr,-r,r,-r)],
-                 {"fill": "#ffffff", "stroke": "#000000", "stroke-width": 4})]
+                 {"fill": box_background, "stroke": "#000000", "stroke-width": 4})]
 
 
 def make_front_cover(bx, bw, bh, title_by, title_bh, py, r, hr, o, background):
@@ -759,7 +774,7 @@ def make_front_cover(bx, bw, bh, title_by, title_bh, py, r, hr, o, background):
                        ("l",-bw+(r*o*2)+(r*1.5),0), ("c",-hr,0,-r,-r+hr,-r,-r),
                        ("l",0,-bh+(r*o*2)+(r*1.5)), ("c",0,-r*0.5,0,-r*0.5,r*0.5,-r),
                        ("l",r*0.5,-r*0.5), ("z",)],
-                      {"fill": "#ffb060", "stroke": "#000000", "stroke-width": 4}),
+                      {"fill": box_shadow, "stroke": "#000000", "stroke-width": 4}),
 
                  Path((bx, py, bw, bh),
                       [("M",r,0), ("l",bw-(r*2),0), ("c",hr,0,r,r-hr,r,r),
@@ -962,10 +977,19 @@ if __name__ == "__main__":
     # Background colour
     if platform == "Acorn Electron":
         background = "#509040"
+        box_background = "#ffffff"
+        box_shadow = "#ffb060"
+        logo_background = "#ffffc0"
     elif platform == "BBC Model B":
-        background = "#10b0f0"
+        background = "#00a0ff"
+        box_background = "#ffff30"
+        box_shadow = "#ff7030"
+        logo_background = box_background
     else:
         background = "#ffdd77"
+        box_background = "#ffffff"
+        box_shadow = "#ffb060"
+        logo_background = "#ffffc0"
     
     # Placement of boxes on the front cover
     bx = 60
