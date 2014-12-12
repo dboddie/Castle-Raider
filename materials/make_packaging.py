@@ -1012,8 +1012,6 @@ if __name__ == "__main__":
     scale = 200/256.0
     sw = scale * 320
     sr = (bw - (2 * sw))/3.0
-    sx1 = bx + sr
-    sx2 = bx + sw + (2 * sr)
     
     back_flap = make_back_flap(r, hr, o, background)
     spine = make_spine(r, hr, o, background)
@@ -1159,12 +1157,13 @@ if __name__ == "__main__":
 
              ] + make_logo(bx + bw/2.0, 40, 70, 70, back_cover_publisher1, back_cover_publisher2) + [
 
-             ] + make_title_box(bx, 190, bw, 230, r, hr, o) + [
+             ] + make_title_box(bx + bw - sw - 22, 190, sw + 20, 222, r, hr, o) + \
+                 make_title_box(bx, 190, sw + 22, 222, r, hr, o) + [
 
               #Image((35.333, 0, 450, 0), "images/2014-11-30-loading.png", scale = 0.85, follow = True),
-              Image((sx1, 205, sw, 0), "images/2014-11-30-action.png", scale = scale),
+              Image((bx + 11, 201, sw, 0), "images/2014-11-30-action.png", scale = scale),
               #Image((35.333, 25, 450, 0), "images/2014-11-30-basement.png", scale = 0.85, follow = True),
-              Image((sx2, 205, sw, 0), "images/2014-11-30-dungeon.png", scale = scale),
+              Image((bx + bw - sw - 11, 201, sw, 0), "images/2014-11-30-basement.png", scale = scale),
 
              ] + make_title_box(bx, 445, bw, 465, r, hr, o) + [
 
