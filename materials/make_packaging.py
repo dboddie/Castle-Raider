@@ -1012,7 +1012,8 @@ if __name__ == "__main__":
     o = 0.32 # 1 - 1/(2**0.5)
     
     # Screenshot scale and horizontal positions
-    scale = 200/256.0
+    sh = 192
+    scale = sh/256.0
     sw = scale * 320
     sr = (bw - (2 * sw))/3.0
     
@@ -1160,13 +1161,13 @@ if __name__ == "__main__":
 
              ] + make_logo(bx + bw/2.0, 40, 70, 70, back_cover_publisher1, back_cover_publisher2) + [
 
-             ] + make_title_box(bx + bw - sw - 18, 190, sw + 18, 222, r, hr, o, "black") + \
-                 make_title_box(bx, 190, sw + 18, 222, r, hr, o, "black") + [
+             ] + make_title_box(bx + bw - sw - 18, 199, sw + 18, sh + 14, r, hr, o, "black") + \
+                 make_title_box(bx, 199, sw + 18, sh + 14, r, hr, o, "black") + [
 
               #Image((35.333, 0, 450, 0), "images/2014-11-30-loading.png", scale = 0.85, follow = True),
-              Image((bx + 9, 201, sw, 0), "images/2014-11-30-action.png", scale = scale),
+              Image((bx + 9, 199 + 9, sw, 0), "images/2014-11-30-action.png", scale = scale),
               #Image((35.333, 25, 450, 0), "images/2014-11-30-basement.png", scale = 0.85, follow = True),
-              Image((bx + bw - sw - 9, 201, sw, 0), "images/2014-11-30-basement.png", scale = scale),
+              Image((bx + bw - sw - 9, 199 + 9, sw, 0), "images/2014-11-30-basement.png", scale = scale),
 
              ] + make_title_box(bx, 445, bw, 465, r, hr, o) + [
 
