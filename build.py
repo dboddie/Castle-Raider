@@ -276,7 +276,7 @@ if __name__ == "__main__":
 
     if not 3 <= len(sys.argv) <= 4:
     
-        sys.stderr.write("Usage: %s -e|-b -t|-a|-d <new UEF or ADF file> [level file]\n" % sys.argv[0])
+        sys.stderr.write("Usage: %s -e|-b -t|-a|-d <new UEF, SSD or ADF file> [level file]\n" % sys.argv[0])
         sys.exit(1)
     
     machine_type = sys.argv[1]
