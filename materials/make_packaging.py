@@ -958,18 +958,22 @@ if __name__ == "__main__":
     app = QApplication([])
     
     if not 3 <= len(sys.argv) <= 4:
-    
         sys.stderr.write("Usage: %s [--inlay] <platform> <output directory>\n" % sys.argv[0])
         sys.exit(1)
     
-    if len(sys.argv) == 4 and sys.argv[1] == "--inlay":
+    elif len(sys.argv) == 4 and sys.argv[1] == "--inlay":
         platform = sys.argv[2]
         output_dir = sys.argv[3]
         inlay = True
-    else:
+    
+    elif len(sys.argv) == 3:
         platform = sys.argv[1]
         output_dir = sys.argv[2]
         inlay = False
+    
+    else:
+        sys.stderr.write("Usage: %s [--inlay] <platform> <output directory>\n" % sys.argv[0])
+        sys.exit(1)
     
     if not os.path.exists(output_dir):
         os.mkdir(output_dir)
@@ -991,6 +995,9 @@ if __name__ == "__main__":
         logo_background = box_background
         logo_shadow = box_shadow
     else:
+        sys.stderr.write('The platform must be either "Acorn Electron" or "BBC Micro".\n')
+        sys.exit(1)
+        
         background = "#ffdd77"
         box_background = "#ffffff"
         box_shadow = "#ffb060"
