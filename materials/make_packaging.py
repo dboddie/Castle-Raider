@@ -728,8 +728,11 @@ def make_spine(r, hr, o, background):
                      ]),
                 ])
 
-def make_title_box(bx, by, bw, bh, r, hr, o):
+def make_title_box(bx, by, bw, bh, r, hr, o, background = None):
 
+    if not background:
+        background = box_background
+    
     return [Path((bx-r+(r*o), by, bw+r-(r*o*2), bh+r-(r*o)),
                  [("M",bw+r-(r*o*2),bh-(r*o)),
                   ("l",-r*0.5,r*0.5), ("c",-r*0.5,r*0.5,-r*0.5,r*0.5,-r,r*0.5),
@@ -743,7 +746,7 @@ def make_title_box(bx, by, bw, bh, r, hr, o):
                   ("l",0,bh-(r*2)), ("c",0,hr,-r+hr,r,-r,r),
                   ("l",-(bw-(r*2)),0), ("c",-hr,0,-r,-r+hr,-r,-r),
                   ("l",0,-(bh-(r*2))), ("c",0,-hr,r-hr,-r,r,-r)],
-                 {"fill": box_background, "stroke": "#000000", "stroke-width": 4})]
+                 {"fill": background, "stroke": "#000000", "stroke-width": 4})]
 
 
 def make_front_cover(bx, bw, bh, title_by, title_bh, py, r, hr, o, background):
@@ -981,7 +984,7 @@ if __name__ == "__main__":
         box_shadow = "#ffb060"
         logo_background = "#ffffc0"
         logo_shadow = "#ff4040"
-    elif platform == "BBC Model B":
+    elif platform == "BBC Micro":
         background = "#00a0ff"
         box_background = "#ffff30"
         box_shadow = "#ff4040"
@@ -1157,8 +1160,8 @@ if __name__ == "__main__":
 
              ] + make_logo(bx + bw/2.0, 40, 70, 70, back_cover_publisher1, back_cover_publisher2) + [
 
-             ] + make_title_box(bx + bw - sw - 22, 190, sw + 20, 222, r, hr, o) + \
-                 make_title_box(bx, 190, sw + 22, 222, r, hr, o) + [
+             ] + make_title_box(bx + bw - sw - 22, 190, sw + 20, 222, r, hr, o, "black") + \
+                 make_title_box(bx, 190, sw + 22, 222, r, hr, o, "black") + [
 
               #Image((35.333, 0, 450, 0), "images/2014-11-30-loading.png", scale = 0.85, follow = True),
               Image((bx + 11, 201, sw, 0), "images/2014-11-30-action.png", scale = scale),
