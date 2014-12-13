@@ -1160,13 +1160,13 @@ if __name__ == "__main__":
 
              ] + make_logo(bx + bw/2.0, 40, 70, 70, back_cover_publisher1, back_cover_publisher2) + [
 
-             ] + make_title_box(bx + bw - sw - 22, 190, sw + 20, 222, r, hr, o, "black") + \
-                 make_title_box(bx, 190, sw + 22, 222, r, hr, o, "black") + [
+             ] + make_title_box(bx + bw - sw - 18, 190, sw + 18, 222, r, hr, o, "black") + \
+                 make_title_box(bx, 190, sw + 18, 222, r, hr, o, "black") + [
 
               #Image((35.333, 0, 450, 0), "images/2014-11-30-loading.png", scale = 0.85, follow = True),
-              Image((bx + 11, 201, sw, 0), "images/2014-11-30-action.png", scale = scale),
+              Image((bx + 9, 201, sw, 0), "images/2014-11-30-action.png", scale = scale),
               #Image((35.333, 25, 450, 0), "images/2014-11-30-basement.png", scale = 0.85, follow = True),
-              Image((bx + bw - sw - 11, 201, sw, 0), "images/2014-11-30-basement.png", scale = scale),
+              Image((bx + bw - sw - 9, 201, sw, 0), "images/2014-11-30-basement.png", scale = scale),
 
              ] + make_title_box(bx, 445, bw, 465, r, hr, o) + [
 
