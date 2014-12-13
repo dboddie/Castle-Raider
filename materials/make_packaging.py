@@ -962,7 +962,7 @@ if __name__ == "__main__":
         sys.stderr.write("Usage: %s [--inlay] <platform> <output directory>\n" % sys.argv[0])
         sys.exit(1)
     
-    if sys.argv[1] == "--inlay":
+    if len(sys.argv) == 4 and sys.argv[1] == "--inlay":
         platform = sys.argv[2]
         output_dir = sys.argv[3]
         inlay = True
