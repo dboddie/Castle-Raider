@@ -890,6 +890,9 @@ if __name__ == "__main__":
             f["position"] += offset
             f["last position"] += offset
         
+        # Add a high tone and gap at the end.
+        u.chunks += [(0x110, "\xdc\x02"), (0x112, "\xdc\x02")]
+        
         # Write the new UEF file.
         try:
             u.write(out_file, write_emulator_info = False)
