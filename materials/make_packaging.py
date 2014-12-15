@@ -669,12 +669,12 @@ def make_back_flap(r, hr, o, background):
     sbw = 600
     sbh = 200
     
-    return Page((200, 1000),
-                [Path((0, 0, 200, 1000),
-                      [("M",0,0), ("l",650,0), ("l",0,1000), ("l",-650,0), ("l",0,-1000)],
+    return Page((200, 1020),
+                [Path((0, 0, 200, 1020),
+                      [("M",0,0), ("l",670,0), ("l",0,1020), ("l",-670,0), ("l",0,-1020)],
                       {"fill": background, "stroke": "#000000", "stroke-width": 1}),
-                 make_checkered(200, 1000, 10, 10, background),
-                 Path((0, 0, 200, 1000),
+                 make_checkered(200, 1020, 10, 10, background),
+                 Path((0, 0, 200, 1020),
                       [("M",200,0), ("l",-200,200), ("l",0,600), ("l",200,200), ("z",)],
                       {"fill": "white", "stroke": "#000000", "stroke-width": 1}),
 
@@ -695,20 +695,20 @@ def make_back_flap(r, hr, o, background):
 
 def make_spine(r, hr, o, background):
 
-    sbx = 300
+    sbx = 310
     sbw = 400
     sbh = 60
     
-    return Page((100, 1000),
-                [Path((0, 0, 100, 1000),
-                      [("M",0,0), ("l",650,0), ("l",0,1000), ("l",-650,0), ("l",0,-1000)],
+    return Page((120, 1020),
+                [Path((0, 0, 120, 1020),
+                      [("M",0,0), ("l",120,0), ("l",0,1020), ("l",-120,0), ("l",0,-1020)],
                        {"fill": background, "stroke": "none"}),
-                 make_checkered(100, 1000, 10, 10, background),
+                 make_checkered(120, 1020, 10, 10, background),
 
                  Transform([("rotate", 90)],
-                     [Transform([("translate", "0,-105")],
+                     [Transform([("translate", "0,-115")],
                           make_logo(150, 25, 30, 30, spine_publisher1, spine_publisher2) + \
-                          make_logo(850, 25, 30, 30, spine_publisher1, spine_publisher2) + \
+                          make_logo(1020 - 150, 25, 30, 30, spine_publisher1, spine_publisher2) + \
                           [Path((sbx-r+(r*o)+10, 15, sbw+r-(r*o*2), sbh+r-(r*o)),
                                 [("M",sbw+r-(r*o*2),sbh-(r*o)),
                                  ("l",-r*0.5,r*0.5), ("c",-r*0.5,r*0.5,-r*0.5,r*0.5,-r,r*0.5),
@@ -756,11 +756,11 @@ def make_front_cover(bx, bw, bh, title_by, title_bh, py, r, hr, o, background):
            ("l",12,10), ("l",-12,-2),
            ("l",-4,6), ("l",-4,-6), ("l",-4,6), ("l",-4,-6), ("l",-12,2), ("z",)]
     
-    return Page((650, 1000),
-                [Path((0, 0, 650, 1000),
-                      [("M",0,0), ("l",650,0), ("l",0,1000), ("l",-650,0), ("l",0,-1000)],
+    return Page((670, 1020),
+                [Path((0, 0, 670, 1020),
+                      [("M",0,0), ("l",670,0), ("l",0,1020), ("l",-670,0), ("l",0,-1020)],
                       {"fill": background, "stroke": "none"}),
-                 make_checkered(650, 1000, 10, 10, background)
+                 make_checkered(670, 1020, 10, 10, background)
 
                 ] + make_title_box(bx, title_by, bw, title_bh, r, hr, o) + [
 
@@ -905,7 +905,7 @@ def inner_instructions_decoration(sx, sy, w, h, offset, size):
                                 {"fill": "none", "stroke": "#000000", "stroke-width": 2}))
         decor.append(TextBox((x, y + size * 0.65, size * 0.8, size * 0.8),
                              [Text(font, text[i])]))
-        x += size * 0.96
+        x += size * 0.9575
         i = (i + 1) % len(text)
         
         if x + (size * 1.8) >= w:
@@ -918,7 +918,7 @@ def inner_instructions_decoration(sx, sy, w, h, offset, size):
         decor.append(Transform([("translate", "%f,%f" % (x, y)), ("rotate", 90)],
                                [TextBox((0, -size * 0.8 + size * 0.65, size * 0.8, size * 0.8),
                                         [Text(font, text[i])])]))
-        y += size * 0.94
+        y += size * 0.96
         i = (i + 1) % len(text)
         
         if y + (size * 1.8) >= h:
@@ -931,7 +931,7 @@ def inner_instructions_decoration(sx, sy, w, h, offset, size):
         decor.append(Transform([("translate", "%f,%f" % (x, y)), ("rotate", 180)],
                                [TextBox((-size * 0.8, -size * 0.8 + size * 0.65, size * 0.8, size * 0.8),
                                         [Text(font, text[i])])]))
-        x -= size * 0.96
+        x -= size * 0.9575
         i = (i + 1) % len(text)
         
         if x - size <= 0:
@@ -944,7 +944,7 @@ def inner_instructions_decoration(sx, sy, w, h, offset, size):
         decor.append(Transform([("translate", "%f,%f" % (x, y)), ("rotate", 270)],
                                [TextBox((-size * 0.8, size * 0.65, size * 0.8, size * 0.8),
                                         [Text(font, text[i])])]))
-        y -= size * 0.94
+        y -= size * 0.96
         i = (i + 1) % len(text)
         
         if y - size <= 0:
@@ -1005,15 +1005,15 @@ if __name__ == "__main__":
         logo_shadow = box_shadow
     
     # Placement of boxes on the front cover
-    bx = 60
+    bx = 70
     bw = 550
     bh = bw
     # Title box vertical position and height
-    tby = 70
+    tby = 80
     tbh = 200
     
     # Picture position
-    py = 360
+    py = 370
     
     # Shadow offset and castle position
     o = 0.32 # 1 - 1/(2**0.5)
@@ -1026,14 +1026,14 @@ if __name__ == "__main__":
     
     back_flap = make_back_flap(r, hr, o, background)
     spine = make_spine(r, hr, o, background)
-    blank_spine = Page((100, 1000),
-                       [Path((0, 0, 100, 1000),
-                             [("M",0,0), ("l",100,0), ("l",0,1000), ("l",-100,0), ("z",)],
+    blank_spine = Page((120, 1020),
+                       [Path((0, 0, 120, 1020),
+                             [("M",0,0), ("l",120,0), ("l",0,1020), ("l",-120,0), ("z",)],
                              {"stroke": "none", "fill": "none"})])
     front_cover = make_front_cover(bx, bw, bh, tby, tbh, py, r, hr, o, background)
     
     instructions = [
-        Page((650, 1000),
+        Page((670, 1020),
             [TextBox((57, 77, 570, 0), 
                  [Text(title, "Castle Raider")]),
              TextBox((57, -5, 570, 0),
@@ -1085,8 +1085,8 @@ if __name__ == "__main__":
                        "worthwhile.")],
                   follow = True)
 
-             ] + inner_instructions_decoration(0, 0, 650*2, 1000, 7, 48)),
-        Page((650, 1000),
+             ] + inner_instructions_decoration(0, 0, 670*2, 1020, 7, 48)),
+        Page((670, 1020),
              [TextBox((25, 85, 555, 0),
                   [Text(subtitle, "Loading the Game\n"),
                    Text(regular, "Insert the cassette and type\n")]),
@@ -1160,25 +1160,25 @@ if __name__ == "__main__":
               TextBox((25, 6, 555, 0),
                   [Text(regular, "Good luck!")], follow = True)
              ]),
-        Page((650, 1000),
-             [Path((0, 0, 650, 1000),
-                   [("M",0,0), ("l",650,0), ("l",0,1000), ("l",-650,0), ("l",0,-1000)],
+        Page((670, 1020),
+             [Path((0, 0, 670, 1020),
+                   [("M",0,0), ("l",670,0), ("l",0,1020), ("l",-670,0), ("l",0,-1020)],
                    {"fill": background, "stroke": "none"}),
-              make_checkered(650, 1000, 0, 10, background),
+              make_checkered(670, 1020, 0, 10, background),
 
-             ] + make_logo(bx + bw/2.0, 40, 70, 70, back_cover_publisher1, back_cover_publisher2) + [
+             ] + make_logo(bx + bw/2.0, 50, 70, 70, back_cover_publisher1, back_cover_publisher2) + [
 
-             ] + make_title_box(bx + bw - sw - 18, 199, sw + 18, sh + 14, r, hr, o, "black") + \
-                 make_title_box(bx, 199, sw + 18, sh + 14, r, hr, o, "black") + [
+             ] + make_title_box(bx + bw - sw - 18, 209, sw + 18, sh + 14, r, hr, o, "black") + \
+                 make_title_box(bx, 209, sw + 18, sh + 14, r, hr, o, "black") + [
 
               #Image((35.333, 0, 450, 0), "images/2014-11-30-loading.png", scale = 0.85, follow = True),
-              Image((bx + 9, 199 + 9, sw, 0), "images/2014-11-30-action.png", scale = scale),
+              Image((bx + 9, 209 + 9, sw, 0), "images/2014-11-30-action.png", scale = scale),
               #Image((35.333, 25, 450, 0), "images/2014-11-30-basement.png", scale = 0.85, follow = True),
-              Image((bx + bw - sw - 9, 199 + 9, sw, 0), "images/2014-11-30-basement.png", scale = scale),
+              Image((bx + bw - sw - 9, 209 + 9, sw, 0), "images/2014-11-30-basement.png", scale = scale),
 
-             ] + make_title_box(bx, 445, bw, 465, r, hr, o) + [
+             ] + make_title_box(bx, 452, bw, 468, r, hr, o) + [
 
-              TextBox((bx, 479, bw, 0),
+              TextBox((bx, 486, bw, 0),
                       [Text(back_cover_centred,
                             u"Copyright \u00a9 2014 David Boddie\n"
                             u"An Infukor production for Retro Software\n"
@@ -1238,23 +1238,23 @@ if __name__ == "__main__":
         
         file_name = "%s-inlay.svg" % platform.replace(" ", "-")
         
-        page_rects = [((0, 0, 650, 1000), False),
-                      ((650, 0, 650, 1000), False),
-                      ((650*2, 0, 650, 1000), False),
-                      ((650*3, 0, 100, 1000), False),
-                      ((650*3 + 100, 0, 650, 1000), False)]
+        page_rects = [((0, 0, 670, 1020), False),
+                      ((670, 0, 670, 1020), False),
+                      ((670*2, 0, 670, 1020), False),
+                      ((670*3, 0, 120, 1020), False),
+                      ((670*3 + 120, 0, 670, 1020), False)]
         
         # A4 paper
         total_size = (2970, 2100)
         
         path = os.path.join(output_dir, file_name)
-        dx = (2970 - 1400*2 - 50)/2.0
-        dy = (2100 - 1000*2 - 50)/2.0
+        dx = (2970 - 670*4 - 120)/2.0
+        dy = (2100 - 1020*2 - 10)/2.0
         
         for i in range(len(page_rects)):
             rect, rev = page_rects[i]
             page_rects[i] = ((rect[0] + dx, rect[1] + dy,) + rect[2:], rev)
-            page_rects.append(((rect[0] + dx, rect[1] + dy + 1050) + rect[2:], rev))
+            page_rects.append(((rect[0] + dx, rect[1] + dy + 1020 + 10) + rect[2:], rev))
             pages.append(pages[i])
         
         inlay = Inlay(path, page_rects, total_size)
