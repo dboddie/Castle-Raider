@@ -64,7 +64,7 @@ a sound file with one of the UEF utilities available online.
 
 Loading the Game from Cassette
 
-Insert the cassette and type
+Insert the cassette in the cassette recorder and type
 
   CHAIN "CASTLE"
 

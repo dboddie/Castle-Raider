@@ -174,17 +174,17 @@ class Inlay(SVG):
     
     def crop_marks(self, rect):
     
-        return ('<path d="M %f %f l 0 16 l 0 -8 l 8 0" '
-                          'stroke="black" fill="none" stroke-width="0.5" />\n'
-                          '<path d="M %f %f l 0 -16 l 0 8 l 8 0" '
-                          'stroke="black" fill="none" stroke-width="0.5" />\n'
-                          '<path d="M %f %f l 0 16 l 0 -8 l -8 0" '
-                          'stroke="black" fill="none" stroke-width="0.5" />\n'
-                          '<path d="M %f %f l 0 -16 l 0 8 l -8 0" '
-                          'stroke="black" fill="none" stroke-width="0.5" />\n' % \
-                          (rect[0], rect[1] - 8, rect[0], rect[1] + rect[3] + 8,
-                           rect[0] + rect[2], rect[1] - 8, rect[0] + rect[2],
-                           rect[1] + rect[3] + 8))
+        return ('<path d="M %f %f l 0 8 l 8 0" '
+                'stroke="black" fill="none" stroke-width="0.5" />\n'
+                '<path d="M %f %f l 0 -8 l 8 0" '
+                'stroke="black" fill="none" stroke-width="0.5" />\n'
+                '<path d="M %f %f l 0 8 l -8 0" '
+                'stroke="black" fill="none" stroke-width="0.5" />\n'
+                '<path d="M %f %f l 0 -8 l -8 0" '
+                'stroke="black" fill="none" stroke-width="0.5" />\n' % \
+                (rect[0], rect[1] - 8, rect[0], rect[1] + rect[3] + 8,
+                 rect[0] + rect[2], rect[1] - 8, rect[0] + rect[2],
+                 rect[1] + rect[3] + 8))
 
 
 class Page:
@@ -669,12 +669,12 @@ def make_back_flap(r, hr, o, background):
     sbw = 600
     sbh = 200
     
-    return Page((200, 1020),
-                [Path((0, 0, 200, 1020),
-                      [("M",0,0), ("l",670,0), ("l",0,1020), ("l",-670,0), ("l",0,-1020)],
+    return Page((200, inlay_height),
+                [Path((0, 0, 200, inlay_height),
+                      [("M",0,0), ("l",670,0), ("l",0,inlay_height), ("l",-670,0), ("l",0,-inlay_height)],
                       {"fill": background, "stroke": "#000000", "stroke-width": 1}),
-                 make_checkered(200, 1020, 10, 10, background),
-                 Path((0, 0, 200, 1020),
+                 make_checkered(200, inlay_height, 10, 10, background),
+                 Path((0, 0, 200, inlay_height),
                       [("M",200,0), ("l",-200,200), ("l",0,600), ("l",200,200), ("z",)],
                       {"fill": "white", "stroke": "#000000", "stroke-width": 1}),
 
@@ -695,20 +695,20 @@ def make_back_flap(r, hr, o, background):
 
 def make_spine(r, hr, o, background):
 
-    sbx = 310
+    sbx = 300
     sbw = 400
     sbh = 60
     
-    return Page((120, 1020),
-                [Path((0, 0, 120, 1020),
-                      [("M",0,0), ("l",120,0), ("l",0,1020), ("l",-120,0), ("l",0,-1020)],
+    return Page((120, inlay_height),
+                [Path((0, 0, 120, inlay_height),
+                      [("M",0,0), ("l",120,0), ("l",0,inlay_height), ("l",-120,0), ("l",0,-inlay_height)],
                        {"fill": background, "stroke": "none"}),
-                 make_checkered(120, 1020, 10, 10, background),
+                 make_checkered(120, inlay_height, 10, 10, background),
 
                  Transform([("rotate", 90)],
                      [Transform([("translate", "0,-115")],
                           make_logo(150, 25, 30, 30, spine_publisher1, spine_publisher2) + \
-                          make_logo(1020 - 150, 25, 30, 30, spine_publisher1, spine_publisher2) + \
+                          make_logo(inlay_height - 150, 25, 30, 30, spine_publisher1, spine_publisher2) + \
                           [Path((sbx-r+(r*o)+10, 15, sbw+r-(r*o*2), sbh+r-(r*o)),
                                 [("M",sbw+r-(r*o*2),sbh-(r*o)),
                                  ("l",-r*0.5,r*0.5), ("c",-r*0.5,r*0.5,-r*0.5,r*0.5,-r,r*0.5),
@@ -756,11 +756,11 @@ def make_front_cover(bx, bw, bh, title_by, title_bh, py, r, hr, o, background):
            ("l",12,10), ("l",-12,-2),
            ("l",-4,6), ("l",-4,-6), ("l",-4,6), ("l",-4,-6), ("l",-12,2), ("z",)]
     
-    return Page((670, 1020),
-                [Path((0, 0, 670, 1020),
-                      [("M",0,0), ("l",670,0), ("l",0,1020), ("l",-670,0), ("l",0,-1020)],
+    return Page((670, inlay_height),
+                [Path((0, 0, 670, inlay_height),
+                      [("M",0,0), ("l",670,0), ("l",0,inlay_height), ("l",-670,0), ("l",0,-inlay_height)],
                       {"fill": background, "stroke": "none"}),
-                 make_checkered(670, 1020, 10, 10, background)
+                 make_checkered(670, inlay_height, 10, 10, background)
 
                 ] + make_title_box(bx, title_by, bw, title_bh, r, hr, o) + [
 
@@ -918,7 +918,7 @@ def inner_instructions_decoration(sx, sy, w, h, offset, size):
         decor.append(Transform([("translate", "%f,%f" % (x, y)), ("rotate", 90)],
                                [TextBox((0, -size * 0.8 + size * 0.65, size * 0.8, size * 0.8),
                                         [Text(font, text[i])])]))
-        y += size * 0.96
+        y += size * 0.94
         i = (i + 1) % len(text)
         
         if y + (size * 1.8) >= h:
@@ -944,7 +944,7 @@ def inner_instructions_decoration(sx, sy, w, h, offset, size):
         decor.append(Transform([("translate", "%f,%f" % (x, y)), ("rotate", 270)],
                                [TextBox((-size * 0.8, size * 0.65, size * 0.8, size * 0.8),
                                         [Text(font, text[i])])]))
-        y -= size * 0.96
+        y -= size * 0.94
         i = (i + 1) % len(text)
         
         if y - size <= 0:
@@ -981,6 +981,9 @@ if __name__ == "__main__":
     r = 25
     hr = 0.5*r
     
+    # Inlay/page height
+    inlay_height = 1000
+    
     # Background colour
     if platform == "Acorn Electron":
         background = "#509040"
@@ -1009,11 +1012,11 @@ if __name__ == "__main__":
     bw = 550
     bh = bw
     # Title box vertical position and height
-    tby = 80
+    tby = 70
     tbh = 200
     
     # Picture position
-    py = 370
+    py = 360
     
     # Shadow offset and castle position
     o = 0.32 # 1 - 1/(2**0.5)
@@ -1026,17 +1029,17 @@ if __name__ == "__main__":
     
     back_flap = make_back_flap(r, hr, o, background)
     spine = make_spine(r, hr, o, background)
-    blank_spine = Page((120, 1020),
-                       [Path((0, 0, 120, 1020),
-                             [("M",0,0), ("l",120,0), ("l",0,1020), ("l",-120,0), ("z",)],
+    blank_spine = Page((120, inlay_height),
+                       [Path((0, 0, 120, inlay_height),
+                             [("M",0,0), ("l",120,0), ("l",0,inlay_height), ("l",-120,0), ("z",)],
                              {"stroke": "none", "fill": "none"})])
     front_cover = make_front_cover(bx, bw, bh, tby, tbh, py, r, hr, o, background)
     
     instructions = [
-        Page((670, 1020),
-            [TextBox((57, 77, 570, 0), 
+        Page((670, inlay_height),
+            [TextBox((62, 85, 590, 0), 
                  [Text(title, "Castle Raider")]),
-             TextBox((57, -5, 570, 0),
+             TextBox((62, -5, 590, 0),
                  [Text(regular,
                        "As the sun dips below the ramparts of the old town, the last of the troops file "
                        "in. As they make their way through the narrow, cobbled streets, small groups of "
@@ -1044,28 +1047,28 @@ if __name__ == "__main__":
                        "reputation. The lamps are lit and the merriment spills out onto the streets "
                        "with laughing, singing, pushing and shoving. There will be trouble later, but "
                        "by then you will be long gone.")], follow = True),
-             TextBox((57, 8, 570, 0),
+             TextBox((62, 9, 590, 0),
                  [Text(regular,
                        "It is time for the guard to change, time for the night watch to begin their "
                        "duties, but they are in no hurry; though the outlaws in the countryside know "
                        "the force stationed here will be no threat tonight, they gave them a wide "
                        "berth during their march here. The people in the nearby villages can sleep "
                        "soundly for a change.")], follow = True),
-             TextBox((57, 8, 570, 0),
+             TextBox((62, 9, 590, 0),
                  [Text(regular,
                        "As the members of the night watch slowly begin to take their places on the "
                        "ramparts you take your chance and slip through the open gate, taking refuge in "
                        "the long shadows fleeing the sunset. The few eyes looking in your direction are "
                        "hardly able to make out your form as you wait for the approaching nightfall.")],
                        follow = True),
-             TextBox((57, 8, 570, 0),
+             TextBox((62, 9, 590, 0),
                  [Text(regular,
                        "You recall the stories told when you were young. When the town itself was "
                        "already old, the last of the elders told of a time when it was still a village, "
                        "not much more than a few houses and shelters. The road that ran through it went "
                        "to the castle on the edge of the wasteland that now lies derelict and deserted.")],
                        follow = True),
-             TextBox((57, 8, 570, 0),
+             TextBox((62, 9, 590, 0),
                  [Text(regular,
                        "Night falls quickly in this season at the edge of the kingdom. Memories of "
                        "fireside tales about the king's lost crown and the hidden treasure of the old "
@@ -1074,7 +1077,7 @@ if __name__ == "__main__":
                        "outer gate it suddenly crashes into place, cutting off your exit. It was just "
                        "as well you hadn't planned to return that way.")],
                        follow = True),
-             TextBox((57, 8, 570, 0),
+             TextBox((62, 9, 590, 0),
                  [Text(regular,
                        "Nature has reclaimed parts of the castle, its ruins crumbling in places and "
                        "crawling with creatures that people once knew well to leave alone. To make your "
@@ -1085,34 +1088,36 @@ if __name__ == "__main__":
                        "worthwhile.")],
                   follow = True)
 
-             ] + inner_instructions_decoration(0, 0, 670*2, 1020, 7, 48)),
-        Page((670, 1020),
-             [TextBox((25, 85, 555, 0),
+             ] + inner_instructions_decoration(0, 0, 670*2, inlay_height, 7, 48)),
+        Page((670, inlay_height),
+             [TextBox((30, 83, 560, 0),
                   [Text(subtitle, "Loading the Game\n"),
-                   Text(regular, "Insert the cassette and type\n")]),
-              TextBox((25, -2, 555, 0),
+                   Text(regular, "Insert the cassette in the cassette recorder and type\n")]),
+              TextBox((30, -2, 560, 0),
                   [Text(monospace_quote, 'CHAIN "CASTLE"\n')], follow = True),
-              TextBox((25, -2, 555, 0),
+              TextBox((30, -2, 560, 0),
                   [Text(regular,
                         "then press Return. Press play on the cassette recorder.")],
                         follow = True),
 
-              TextBox((25, 20, 555, 0),
+              TextBox((30, 24, 560, 0),
                   [Text(subtitle, "Playing the Game\n"),
                    Text(regular,
                         "The player must help their character escape the castle, "
-                        "ideally with some hidden treasure.\n"),
-                   Text(regular,
+                        "ideally with some hidden treasure.")],
+                  follow = True),
+              TextBox((30, 7, 560, 0),
+                  [Text(regular,
                         "Your character can roam the castle and its surroundings using the following "
                         "control keys:\n")],
                   follow = True),
-              TextBox((25, 0, 555, 0),
+              TextBox((30, 0, 560, 0),
                   [Text(keys_quote,
                         "Z\n"
                         "X\n"
                         "Return\n"
                         "/")], follow = True),
-              TextBox((25, 0, 555, 0),
+              TextBox((30, 0, 560, 0),
                   [Text(key_descriptions_quote,
                         "left\n"
                         "right\n"
@@ -1121,17 +1126,20 @@ if __name__ == "__main__":
                    Text(regular,
                         "The character may enter different parts of the castle by entering the arched "
                         "doorways that can be found in various places. While standing in a doorway, "
-                        "press the / key to enter.\n\n"
+                        "press the / key to enter.")],
+                        follow = True, index = -2),
+              TextBox((30, 7, 560, 0),
+                  [Text(regular,
                         "Alternatively, you may may use an analogue joystick with the following "
                         "controls:\n")],
-                        follow = True, index = -2),
-              TextBox((25, 0, 555, 0),
+                  follow = True),
+              TextBox((30, 0, 560, 0),
                   [Text(keys_quote,
                         "Left\n"
                         "Right\n"
                         "Fire\n"
                         "Down\n")], follow = True),
-              TextBox((25, 0, 555, 0),
+              TextBox((30, 0, 560, 0),
                   [Text(key_descriptions_quote,
                         "left\n"
                         "right\n"
@@ -1139,17 +1147,20 @@ if __name__ == "__main__":
                         "enter\n"),
                    Text(regular,
                         "Select joystick controls by pressing the Fire button on the title page to start "
-                        "the game. Press Space to start the game with keyboard controls.\n\n"
-                        "Other keys are used to control features of the game:\n")],
+                        "the game. Press Space to start the game with keyboard controls.")],
                         follow = True, index = -2),
-              TextBox((25, 0, 555, 0),
+              TextBox((30, 7, 560, 0),
+                  [Text(regular,
+                        "Other keys are used to control features of the game:\n")],
+                  follow = True),
+              TextBox((30, 0, 560, 0),
                   [Text(keys_quote,
                         "S\n"
                         "Q\n"
                         "P\n"
                         "O\n"
                         "Escape")], follow = True),
-              TextBox((25, 0, 555, 0),
+              TextBox((30, 0, 560, 0),
                   [Text(key_descriptions_quote,
                         "enable sound effects\n"
                         "disable sound effects\n"
@@ -1157,28 +1168,28 @@ if __name__ == "__main__":
                         "resume the game\n"
                         "quit the game, returning to the title screen\n")],
                   follow = True, index = -2),
-              TextBox((25, 6, 555, 0),
+              TextBox((30, 7, 560, 0),
                   [Text(regular, "Good luck!")], follow = True)
              ]),
-        Page((670, 1020),
-             [Path((0, 0, 670, 1020),
-                   [("M",0,0), ("l",670,0), ("l",0,1020), ("l",-670,0), ("l",0,-1020)],
+        Page((670, inlay_height),
+             [Path((0, 0, 670, inlay_height),
+                   [("M",0,0), ("l",670,0), ("l",0,inlay_height), ("l",-670,0), ("l",0,-inlay_height)],
                    {"fill": background, "stroke": "none"}),
-              make_checkered(670, 1020, 0, 10, background),
+              make_checkered(670, inlay_height, 0, 10, background),
 
-             ] + make_logo(bx + bw/2.0, 50, 70, 70, back_cover_publisher1, back_cover_publisher2) + [
+             ] + make_logo(bx + bw/2.0, 40, 70, 70, back_cover_publisher1, back_cover_publisher2) + [
 
-             ] + make_title_box(bx + bw - sw - 18, 209, sw + 18, sh + 14, r, hr, o, "black") + \
-                 make_title_box(bx, 209, sw + 18, sh + 14, r, hr, o, "black") + [
+             ] + make_title_box(bx + bw - sw - 18, 199, sw + 18, sh + 14, r, hr, o, "black") + \
+                 make_title_box(bx, 199, sw + 18, sh + 14, r, hr, o, "black") + [
 
               #Image((35.333, 0, 450, 0), "images/2014-11-30-loading.png", scale = 0.85, follow = True),
-              Image((bx + 9, 209 + 9, sw, 0), "images/2014-11-30-action.png", scale = scale),
+              Image((bx + 9, 199 + 9, sw, 0), "images/2014-11-30-action.png", scale = scale),
               #Image((35.333, 25, 450, 0), "images/2014-11-30-basement.png", scale = 0.85, follow = True),
-              Image((bx + bw - sw - 9, 209 + 9, sw, 0), "images/2014-11-30-basement.png", scale = scale),
+              Image((bx + bw - sw - 9, 199 + 9, sw, 0), "images/2014-11-30-basement.png", scale = scale),
 
-             ] + make_title_box(bx, 452, bw, 468, r, hr, o) + [
+             ] + make_title_box(bx, 445, bw, 465, r, hr, o) + [
 
-              TextBox((bx, 486, bw, 0),
+              TextBox((bx, 479, bw, 0),
                       [Text(back_cover_centred,
                             u"Copyright \u00a9 2014 David Boddie\n"
                             u"An Infukor production for Retro Software\n"
@@ -1238,23 +1249,23 @@ if __name__ == "__main__":
         
         file_name = "%s-inlay.svg" % platform.replace(" ", "-")
         
-        page_rects = [((0, 0, 670, 1020), False),
-                      ((670, 0, 670, 1020), False),
-                      ((670*2, 0, 670, 1020), False),
-                      ((670*3, 0, 120, 1020), False),
-                      ((670*3 + 120, 0, 670, 1020), False)]
+        page_rects = [((0, 0, 670, inlay_height), False),
+                      ((670, 0, 670, inlay_height), False),
+                      ((670*2, 0, 670, inlay_height), False),
+                      ((670*3, 0, 120, inlay_height), False),
+                      ((670*3 + 120, 0, 670, inlay_height), False)]
         
         # A4 paper
         total_size = (2970, 2100)
         
         path = os.path.join(output_dir, file_name)
         dx = (2970 - 670*4 - 120)/2.0
-        dy = (2100 - 1020*2 - 10)/2.0
+        dy = (2100 - inlay_height*2 - 5)/2.0
         
         for i in range(len(page_rects)):
             rect, rev = page_rects[i]
             page_rects[i] = ((rect[0] + dx, rect[1] + dy,) + rect[2:], rev)
-            page_rects.append(((rect[0] + dx, rect[1] + dy + 1020 + 10) + rect[2:], rev))
+            page_rects.append(((rect[0] + dx, rect[1] + dy + inlay_height + 5) + rect[2:], rev))
             pages.append(pages[i])
         
         inlay = Inlay(path, page_rects, total_size)
