@@ -22,7 +22,8 @@ import UEFfile
 
 from tools import makeadf, makedfs, makelevels, makesprites
 
-version = "0.1"
+# Define the version of the game rather than of this script.
+version = "1.0.2"
 
 def system(command):
 
@@ -868,7 +869,7 @@ if __name__ == "__main__":
     
     if make_tape_image:
     
-        u = UEFfile.UEFfile(creator = 'build.py '+version)
+        u = UEFfile.UEFfile(creator = 'build.py for Castle Raider ' + version)
         u.minor = 6
         u.target_machine = "Electron"
         
@@ -892,6 +893,11 @@ if __name__ == "__main__":
         
         # Add a high tone and gap at the end.
         u.chunks += [(0x110, "\xdc\x02"), (0x112, "\xdc\x02")]
+        
+        # Append instructions and short title chunks to the file.
+        README = open("README.txt").read()
+        COPYING = open("COPYING").read()
+        u.chunks += [(0x1, README + "\n\n" + COPYING), (0x9, "Castle Raider " + version)]
         
         # Write the new UEF file.
         try:
