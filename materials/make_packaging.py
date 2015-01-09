@@ -695,7 +695,7 @@ def make_back_flap(r, hr, o, background):
 
 def make_spine(r, hr, o, background):
 
-    sbx = 300
+    sbx = 310
     sbw = 400
     sbh = 60
     
@@ -918,7 +918,7 @@ def inner_instructions_decoration(sx, sy, w, h, offset, size):
         decor.append(Transform([("translate", "%f,%f" % (x, y)), ("rotate", 90)],
                                [TextBox((0, -size * 0.8 + size * 0.65, size * 0.8, size * 0.8),
                                         [Text(font, text[i])])]))
-        y += size * 0.94
+        y += size * 0.96
         i = (i + 1) % len(text)
         
         if y + (size * 1.8) >= h:
@@ -944,7 +944,7 @@ def inner_instructions_decoration(sx, sy, w, h, offset, size):
         decor.append(Transform([("translate", "%f,%f" % (x, y)), ("rotate", 270)],
                                [TextBox((-size * 0.8, size * 0.65, size * 0.8, size * 0.8),
                                         [Text(font, text[i])])]))
-        y -= size * 0.94
+        y -= size * 0.96
         i = (i + 1) % len(text)
         
         if y - size <= 0:
@@ -982,7 +982,7 @@ if __name__ == "__main__":
     hr = 0.5*r
     
     # Inlay/page height
-    inlay_height = 1000
+    inlay_height = 1020
     
     # Background colour
     if platform == "Acorn Electron":
@@ -1012,11 +1012,11 @@ if __name__ == "__main__":
     bw = 550
     bh = bw
     # Title box vertical position and height
-    tby = 70
+    tby = 80
     tbh = 200
     
     # Picture position
-    py = 360
+    py = 370
     
     # Shadow offset and castle position
     o = 0.32 # 1 - 1/(2**0.5)
@@ -1037,9 +1037,9 @@ if __name__ == "__main__":
     
     instructions = [
         Page((670, inlay_height),
-            [TextBox((62, 85, 590, 0), 
+            [TextBox((62, 83, 590, 0), 
                  [Text(title, "Castle Raider")]),
-             TextBox((62, -5, 590, 0),
+             TextBox((62, -3, 590, 0),
                  [Text(regular,
                        "As the sun dips below the ramparts of the old town, the last of the troops file "
                        "in. As they make their way through the narrow, cobbled streets, small groups of "
@@ -1047,28 +1047,28 @@ if __name__ == "__main__":
                        "reputation. The lamps are lit and the merriment spills out onto the streets "
                        "with laughing, singing, pushing and shoving. There will be trouble later, but "
                        "by then you will be long gone.")], follow = True),
-             TextBox((62, 9, 590, 0),
+             TextBox((62, 10, 590, 0),
                  [Text(regular,
                        "It is time for the guard to change, time for the night watch to begin their "
                        "duties, but they are in no hurry; though the outlaws in the countryside know "
                        "the force stationed here will be no threat tonight, they gave them a wide "
                        "berth during their march here. The people in the nearby villages can sleep "
                        "soundly for a change.")], follow = True),
-             TextBox((62, 9, 590, 0),
+             TextBox((62, 10, 590, 0),
                  [Text(regular,
                        "As the members of the night watch slowly begin to take their places on the "
                        "ramparts you take your chance and slip through the open gate, taking refuge in "
                        "the long shadows fleeing the sunset. The few eyes looking in your direction are "
                        "hardly able to make out your form as you wait for the approaching nightfall.")],
                        follow = True),
-             TextBox((62, 9, 590, 0),
+             TextBox((62, 10, 590, 0),
                  [Text(regular,
                        "You recall the stories told when you were young. When the town itself was "
                        "already old, the last of the elders told of a time when it was still a village, "
                        "not much more than a few houses and shelters. The road that ran through it went "
                        "to the castle on the edge of the wasteland that now lies derelict and deserted.")],
                        follow = True),
-             TextBox((62, 9, 590, 0),
+             TextBox((62, 10, 590, 0),
                  [Text(regular,
                        "Night falls quickly in this season at the edge of the kingdom. Memories of "
                        "fireside tales about the king's lost crown and the hidden treasure of the old "
@@ -1077,7 +1077,7 @@ if __name__ == "__main__":
                        "outer gate it suddenly crashes into place, cutting off your exit. It was just "
                        "as well you hadn't planned to return that way.")],
                        follow = True),
-             TextBox((62, 9, 590, 0),
+             TextBox((62, 10, 590, 0),
                  [Text(regular,
                        "Nature has reclaimed parts of the castle, its ruins crumbling in places and "
                        "crawling with creatures that people once knew well to leave alone. To make your "
@@ -1090,7 +1090,7 @@ if __name__ == "__main__":
 
              ] + inner_instructions_decoration(0, 0, 670*2, inlay_height, 7, 48)),
         Page((670, inlay_height),
-             [TextBox((30, 83, 560, 0),
+             [TextBox((30, 85, 560, 0),
                   [Text(subtitle, "Loading the Game\n"),
                    Text(regular, "Insert the cassette in the cassette recorder and type\n")]),
               TextBox((30, -2, 560, 0),
@@ -1106,7 +1106,7 @@ if __name__ == "__main__":
                         "The player must help their character escape the castle, "
                         "ideally with some hidden treasure.")],
                   follow = True),
-              TextBox((30, 7, 560, 0),
+              TextBox((30, 8, 560, 0),
                   [Text(regular,
                         "Your character can roam the castle and its surroundings using the following "
                         "control keys:\n")],
@@ -1128,7 +1128,7 @@ if __name__ == "__main__":
                         "doorways that can be found in various places. While standing in a doorway, "
                         "press the / key to enter.")],
                         follow = True, index = -2),
-              TextBox((30, 7, 560, 0),
+              TextBox((30, 8, 560, 0),
                   [Text(regular,
                         "Alternatively, you may may use an analogue joystick with the following "
                         "controls:\n")],
@@ -1149,7 +1149,7 @@ if __name__ == "__main__":
                         "Select joystick controls by pressing the Fire button on the title page to start "
                         "the game. Press Space to start the game with keyboard controls.")],
                         follow = True, index = -2),
-              TextBox((30, 7, 560, 0),
+              TextBox((30, 8, 560, 0),
                   [Text(regular,
                         "Other keys are used to control features of the game:\n")],
                   follow = True),
@@ -1177,19 +1177,19 @@ if __name__ == "__main__":
                    {"fill": background, "stroke": "none"}),
               make_checkered(670, inlay_height, 0, 10, background),
 
-             ] + make_logo(bx + bw/2.0, 40, 70, 70, back_cover_publisher1, back_cover_publisher2) + [
+             ] + make_logo(bx + bw/2.0, 50, 70, 70, back_cover_publisher1, back_cover_publisher2) + [
 
-             ] + make_title_box(bx + bw - sw - 18, 199, sw + 18, sh + 14, r, hr, o, "black") + \
-                 make_title_box(bx, 199, sw + 18, sh + 14, r, hr, o, "black") + [
+             ] + make_title_box(bx + bw - sw - 18, 209, sw + 18, sh + 14, r, hr, o, "black") + \
+                 make_title_box(bx, 209, sw + 18, sh + 14, r, hr, o, "black") + [
 
               #Image((35.333, 0, 450, 0), "images/2014-11-30-loading.png", scale = 0.85, follow = True),
-              Image((bx + 9, 199 + 9, sw, 0), "images/2014-11-30-action.png", scale = scale),
+              Image((bx + 9, 209 + 9, sw, 0), "images/2014-11-30-action.png", scale = scale),
               #Image((35.333, 25, 450, 0), "images/2014-11-30-basement.png", scale = 0.85, follow = True),
-              Image((bx + bw - sw - 9, 199 + 9, sw, 0), "images/2014-11-30-basement.png", scale = scale),
+              Image((bx + bw - sw - 9, 209 + 9, sw, 0), "images/2014-11-30-basement.png", scale = scale),
 
-             ] + make_title_box(bx, 445, bw, 465, r, hr, o) + [
+             ] + make_title_box(bx, 452, bw, 468, r, hr, o) + [
 
-              TextBox((bx, 479, bw, 0),
+              TextBox((bx, 486, bw, 0),
                       [Text(back_cover_centred,
                             u"Copyright \u00a9 2014 David Boddie\n"
                             u"An Infukor production for Retro Software\n"
@@ -1260,13 +1260,11 @@ if __name__ == "__main__":
         
         path = os.path.join(output_dir, file_name)
         dx = (2970 - 670*4 - 120)/2.0
-        dy = (2100 - inlay_height*2 - 5)/2.0
+        dy = (2100 - inlay_height)/2.0
         
         for i in range(len(page_rects)):
             rect, rev = page_rects[i]
             page_rects[i] = ((rect[0] + dx, rect[1] + dy,) + rect[2:], rev)
-            page_rects.append(((rect[0] + dx, rect[1] + dy + inlay_height + 5) + rect[2:], rev))
-            pages.append(pages[i])
         
         inlay = Inlay(path, page_rects, total_size)
         inlay.open()
