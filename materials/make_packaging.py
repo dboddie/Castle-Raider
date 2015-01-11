@@ -905,7 +905,7 @@ def inner_instructions_decoration(sx, sy, w, h, offset, size):
                                 {"fill": "none", "stroke": "#000000", "stroke-width": 2}))
         decor.append(TextBox((x, y + size * 0.65, size * 0.8, size * 0.8),
                              [Text(font, text[i])]))
-        x += size * 0.9575
+        x += size * 0.9425
         i = (i + 1) % len(text)
         
         if x + (size * 1.8) >= w:
@@ -931,7 +931,7 @@ def inner_instructions_decoration(sx, sy, w, h, offset, size):
         decor.append(Transform([("translate", "%f,%f" % (x, y)), ("rotate", 180)],
                                [TextBox((-size * 0.8, -size * 0.8 + size * 0.65, size * 0.8, size * 0.8),
                                         [Text(font, text[i])])]))
-        x -= size * 0.9575
+        x -= size * 0.9425
         i = (i + 1) % len(text)
         
         if x - size <= 0:
@@ -1036,7 +1036,7 @@ if __name__ == "__main__":
     front_cover = make_front_cover(bx, bw, bh, tby, tbh, py, r, hr, o, background)
     
     instructions = [
-        Page((670, inlay_height),
+        Page((650, inlay_height),
             [TextBox((62, 83, 590, 0), 
                  [Text(title, "Castle Raider")]),
              TextBox((62, -3, 590, 0),
@@ -1089,7 +1089,7 @@ if __name__ == "__main__":
                   follow = True)
 
              ] + inner_instructions_decoration(0, 0, 670*2, inlay_height, 7, 48)),
-        Page((670, inlay_height),
+        Page((650, inlay_height),
              [TextBox((30, 85, 560, 0),
                   [Text(subtitle, "Loading the Game\n"),
                    Text(regular, "Insert the cassette in the cassette recorder and type\n")]),
@@ -1249,11 +1249,11 @@ if __name__ == "__main__":
         
         file_name = "%s-inlay.svg" % platform.replace(" ", "-")
         
-        page_rects = [((0, 0, 670, inlay_height), False),
-                      ((670, 0, 670, inlay_height), False),
-                      ((670*2, 0, 670, inlay_height), False),
-                      ((670*3, 0, 120, inlay_height), False),
-                      ((670*3 + 120, 0, 670, inlay_height), False)]
+        page_rects = [((0, 0, 660, inlay_height), False),
+                      ((660, 0, 660, inlay_height), False),
+                      ((660 + 660, 0, 670, inlay_height), False),
+                      ((660 + 660 + 670, 0, 120, inlay_height), False),
+                      ((660 + 660 + 670 + 120, 0, 670, inlay_height), False)]
         
         # A4 paper
         total_size = (2970, 2100)
