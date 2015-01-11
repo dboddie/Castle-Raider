@@ -905,10 +905,10 @@ def inner_instructions_decoration(sx, sy, w, h, offset, size):
                                 {"fill": "none", "stroke": "#000000", "stroke-width": 2}))
         decor.append(TextBox((x, y + size * 0.65, size * 0.8, size * 0.8),
                              [Text(font, text[i])]))
-        x += size * 0.9425
+        x += size * 0.9275
         i = (i + 1) % len(text)
         
-        if x + (size * 1.8) >= w:
+        if x + (size * 1.9) >= w:
             break
     
     while True:
@@ -931,7 +931,7 @@ def inner_instructions_decoration(sx, sy, w, h, offset, size):
         decor.append(Transform([("translate", "%f,%f" % (x, y)), ("rotate", 180)],
                                [TextBox((-size * 0.8, -size * 0.8 + size * 0.65, size * 0.8, size * 0.8),
                                         [Text(font, text[i])])]))
-        x -= size * 0.9425
+        x -= size * 0.9275
         i = (i + 1) % len(text)
         
         if x - size <= 0:
@@ -1036,7 +1036,7 @@ if __name__ == "__main__":
     front_cover = make_front_cover(bx, bw, bh, tby, tbh, py, r, hr, o, background)
     
     instructions = [
-        Page((650, inlay_height),
+        Page((665, inlay_height),
             [TextBox((62, 83, 590, 0), 
                  [Text(title, "Castle Raider")]),
              TextBox((62, -3, 590, 0),
@@ -1089,35 +1089,35 @@ if __name__ == "__main__":
                   follow = True)
 
              ] + inner_instructions_decoration(0, 0, 670*2, inlay_height, 7, 48)),
-        Page((650, inlay_height),
-             [TextBox((30, 85, 560, 0),
+        Page((635, inlay_height),
+             [TextBox((15, 85, 560, 0),
                   [Text(subtitle, "Loading the Game\n"),
                    Text(regular, "Insert the cassette in the cassette recorder and type\n")]),
-              TextBox((30, -2, 560, 0),
+              TextBox((15, -2, 560, 0),
                   [Text(monospace_quote, 'CHAIN "CASTLE"\n')], follow = True),
-              TextBox((30, -2, 560, 0),
+              TextBox((15, -2, 560, 0),
                   [Text(regular,
                         "then press Return. Press play on the cassette recorder.")],
                         follow = True),
 
-              TextBox((30, 24, 560, 0),
+              TextBox((15, 24, 560, 0),
                   [Text(subtitle, "Playing the Game\n"),
                    Text(regular,
                         "The player must help their character escape the castle, "
                         "ideally with some hidden treasure.")],
                   follow = True),
-              TextBox((30, 8, 560, 0),
+              TextBox((15, 8, 560, 0),
                   [Text(regular,
                         "Your character can roam the castle and its surroundings using the following "
                         "control keys:\n")],
                   follow = True),
-              TextBox((30, 0, 560, 0),
+              TextBox((15, 0, 560, 0),
                   [Text(keys_quote,
                         "Z\n"
                         "X\n"
                         "Return\n"
                         "/")], follow = True),
-              TextBox((30, 0, 560, 0),
+              TextBox((15, 0, 560, 0),
                   [Text(key_descriptions_quote,
                         "left\n"
                         "right\n"
@@ -1128,18 +1128,18 @@ if __name__ == "__main__":
                         "doorways that can be found in various places. While standing in a doorway, "
                         "press the / key to enter.")],
                         follow = True, index = -2),
-              TextBox((30, 8, 560, 0),
+              TextBox((15, 8, 560, 0),
                   [Text(regular,
                         "Alternatively, you may may use an analogue joystick with the following "
                         "controls:\n")],
                   follow = True),
-              TextBox((30, 0, 560, 0),
+              TextBox((15, 0, 560, 0),
                   [Text(keys_quote,
                         "Left\n"
                         "Right\n"
                         "Fire\n"
                         "Down\n")], follow = True),
-              TextBox((30, 0, 560, 0),
+              TextBox((15, 0, 560, 0),
                   [Text(key_descriptions_quote,
                         "left\n"
                         "right\n"
@@ -1149,18 +1149,18 @@ if __name__ == "__main__":
                         "Select joystick controls by pressing the Fire button on the title page to start "
                         "the game. Press Space to start the game with keyboard controls.")],
                         follow = True, index = -2),
-              TextBox((30, 8, 560, 0),
+              TextBox((15, 8, 560, 0),
                   [Text(regular,
                         "Other keys are used to control features of the game:\n")],
                   follow = True),
-              TextBox((30, 0, 560, 0),
+              TextBox((15, 0, 560, 0),
                   [Text(keys_quote,
                         "S\n"
                         "Q\n"
                         "P\n"
                         "O\n"
                         "Escape")], follow = True),
-              TextBox((30, 0, 560, 0),
+              TextBox((15, 0, 560, 0),
                   [Text(key_descriptions_quote,
                         "enable sound effects\n"
                         "disable sound effects\n"
@@ -1168,7 +1168,7 @@ if __name__ == "__main__":
                         "resume the game\n"
                         "quit the game, returning to the title screen\n")],
                   follow = True, index = -2),
-              TextBox((30, 7, 560, 0),
+              TextBox((15, 7, 560, 0),
                   [Text(regular, "Good luck!")], follow = True)
              ]),
         Page((670, inlay_height),
@@ -1247,13 +1247,13 @@ if __name__ == "__main__":
     
         pages = instructions + [spine, front_cover]
         
-        file_name = "%s-inlay.svg" % platform.replace(" ", "-")
+        file_name = "Castle-Raider-%s-inlay.svg" % platform.replace(" ", "-")
         
-        page_rects = [((0, 0, 660, inlay_height), False),
-                      ((660, 0, 660, inlay_height), False),
-                      ((660 + 660, 0, 670, inlay_height), False),
-                      ((660 + 660 + 670, 0, 120, inlay_height), False),
-                      ((660 + 660 + 670 + 120, 0, 670, inlay_height), False)]
+        page_rects = [((0, 0, 665, inlay_height), False),
+                      ((665, 0, 635, inlay_height), False),
+                      ((665 + 635, 0, 670, inlay_height), False),
+                      ((665 + 635 + 670, 0, 120, inlay_height), False),
+                      ((665 + 635 + 670 + 120, 0, 670, inlay_height), False)]
         
         # A4 paper
         total_size = (2970, 2100)
