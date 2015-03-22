@@ -15,8 +15,7 @@
 
 show_bank1:
 
-    lda #19
-    jsr $fff4
+    .invoke bank_vsync
 
     lda #$00
     sta $fe02
@@ -30,8 +29,7 @@ show_bank1:
 
 show_bank2:
 
-    lda #19
-    jsr $fff4
+    .invoke bank_vsync
 
     lda #$00
     sta $fe02

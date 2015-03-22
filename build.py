@@ -277,7 +277,7 @@ if __name__ == "__main__":
 
     if not 3 <= len(sys.argv) <= 4:
     
-        sys.stderr.write("Usage: %s -e|-b -t|-a|-d <new UEF, SSD or ADF file> [level file]\n" % sys.argv[0])
+        sys.stderr.write("Usage: %s -e|-b -t|-a|-d|-r <new UEF, ADF, SSD or ROM file> [level file]\n" % sys.argv[0])
         sys.exit(1)
     
     machine_type = sys.argv[1]
@@ -288,6 +288,7 @@ if __name__ == "__main__":
     make_tape_image = sys.argv[2] == "-t"
     make_adfs_image = sys.argv[2] == "-a"
     make_dfs_image = sys.argv[2] == "-d"
+    make_rom_image = sys.argv[2] == "-r"
     out_file = sys.argv[3]
     
     if len(sys.argv) == 4:
@@ -295,7 +296,9 @@ if __name__ == "__main__":
     else:
         level_file = sys.argv[4]
     
-    # Memory map
+    make_loader = not make_rom_image
+    
+    # Memory maps
     memory_map = {
         "working area": 0xb00,
         "code start": 0x0e00,
@@ -303,9 +306,24 @@ if __name__ == "__main__":
         "tile sprites": 0x2aa0 + 0xc0 + 0x20,
         "character and object sprites": 0x2de0 + 0xc0 + 0x20,
         "bank 1 (panel)": 0x3000,
+        "panel address": 0x3000,
         "(loader code)": 0x3500,
         "bank 2": 0x5800
         }
+    
+    if make_rom_image:
+        rom_code_start = 0x8000
+        rom_data_start = 0x9518
+        rom_tile_sprites = rom_data_start + memory_map["tile sprites"] - memory_map["data start"]
+        rom_char_sprites = rom_tile_sprites + memory_map["character and object sprites"] - memory_map["tile sprites"]
+        rom_char_sprites_length = 0x30c0 - memory_map["character and object sprites"]
+        
+        memory_map["code start"] = rom_code_start
+        memory_map["data start"] = rom_data_start
+        memory_map["tile sprites"] = rom_tile_sprites
+        memory_map["character and object sprites"] = rom_char_sprites
+        memory_map["panel address"] = rom_char_sprites + rom_char_sprites_length
+        memory_map["title data address"] = memory_map["panel address"] + 0x500
     
     code_start = memory_map["code start"]
     
@@ -366,13 +384,24 @@ if __name__ == "__main__":
     # Initial displacements for the rows.
     initial_row_offsets           = row_indices + 0x10
     
-    # Store the in-game text data and other routines above the working data.
-    # The generated file is loaded in the game loader.
-    title_data_address = initial_row_offsets + 0x10
-    
-    in_game_data_labels, in_game_data_details, title_data_routines = \
-        encode_in_game_data_and_routines(title_data_address)
-    working_end = in_game_data_details["working_end"]
+    if make_rom_image:
+        # Store the in-game text data and other routines above the working data.
+        # The generated file is loaded in the game loader.
+        title_data_address = memory_map["title data address"]
+        
+        in_game_data_labels, in_game_data_details, title_data_routines = \
+            encode_in_game_data_and_routines(title_data_address)
+        
+        working_end = initial_row_offsets + 0x10
+    else:
+        # Store the in-game text data and other routines above the working data.
+        # The generated file is loaded in the game loader.
+        title_data_address = initial_row_offsets + 0x10
+        
+        in_game_data_labels, in_game_data_details, title_data_routines = \
+            encode_in_game_data_and_routines(title_data_address)
+        
+        working_end = in_game_data_details["working_end"]
     
     # Permanent data
     
@@ -449,7 +478,7 @@ if __name__ == "__main__":
         makesprites.read_sprites(char_sprites, char_area_address + len(char_data))
     char_data += player_data
     
-    panel_address = 0x3000
+    panel_address = memory_map["panel address"]
     panel, offsets = makesprites.read_sprites(["images/panel.png"], panel_address)
     #panel, hidden_offsets = add_hidden_data(panel, (3 * 0x140) + 0x10)
     
@@ -682,18 +711,21 @@ if __name__ == "__main__":
              monster_right_offset,
              monster_right_max_offset)
     
-    constants_oph += (in_game_data_labels % in_game_data_details) + "\n"
+    constants_oph += (in_game_data_labels % in_game_data_details) + "\n\n"
     
-    #constants_oph += (
-    #    ".alias completed_text_start            $%x\n"
-    #    ".alias completed_text_finish           %i\n"
-    #    ".alias no_treasures_text_start         $%x\n"
-    #    ".alias no_treasures_text_finish        %i\n"
-    #    ".alias crown_text_start                $%x\n"
-    #    ".alias crown_text_finish               %i\n"
-    #    ".alias treasure_text_start             $%x\n"
-    #    ".alias treasure_text_finish            %i\n"
-    #    ) % hidden_offsets
+    if machine_type == "-e":
+        constants_oph += (
+            ".macro bank_vsync\n"
+            "    lda #19\n"
+            "    jsr $fff4\n"
+            )
+        if make_rom_image:
+            constants_oph += (
+                "    lda #19\n"
+                "    jsr $fff4\n"
+            )
+        
+        constants_oph += ".macend\n"
     
     scenery_rows = 16
     extra_rows = 7
@@ -748,85 +780,92 @@ if __name__ == "__main__":
     elif machine_type == "-b":
         shutil.copy2("bbc.oph", "bank_routines.oph")
     
-    system("ophis code.oph -o CODE")
+    if make_rom_image:
+        system("ophis romcode.oph -o CODE")
+    else:
+        system("ophis tdcode.oph -o CODE")
+    
     code = open("CODE").read()
     os.remove("CODE")
-    
     code_size = len(code)
-    code_load_address = 0x5800 - len(code)
     
-    loader_start = 0x3500
+    if make_loader:
     
-    marker_info = [(levels_address, level_data),
-                   (panel_address, panel),
-                   (code_load_address, code)]
-    markers = ""
-    n = 0
-    
-    for address, data in marker_info:
-    
-        ptr = 64
-        while ptr < len(data):
+        code_load_address = 0x5800 - len(code)
+        loader_start = 0x3500
         
-            low = (address + ptr) & 0xff
-            high = (address + ptr) >> 8
-            markers += chr(low) + chr(high) + data[ptr]
-            ptr += 128
-            n += 1
-    
-    markers = chr(n) + markers
-    
-    extras_oph = constants_oph + (
-        "; Additional definitions for the loader\n\n"
-        ".alias code_start_address              $%02x\n"
-        ".alias code_load_low                   $%02x\n"
-        ".alias code_load_high                  $%02x\n"
-        ".alias code_length_low                 $%02x\n"
-        ".alias code_length_high                $%02x\n"
-        ".alias code_end_low                    $%02x\n"
-        ".alias code_end_high                   $%02x\n"
-        "\n"
-        ".alias markers_length                  $%02x\n"
-        "\n"
-        ) % ((code_start,) + address_length_end(code_load_address, code) + \
-             (len(markers),))
-    
-    open("loader-constants.oph", "w").write(extras_oph)
-    
-    system("ophis loader.oph -o LOADER")
-    loader_code = open("LOADER").read() + markers + title_data
-    os.remove("LOADER")
-    
-    bootloader_start = 0xe00
-    bootloader_code = ("\r\x00\x0a\x0d*FX 229,1"
-                       "\r\x00\x14\x0f*RUN LOADER\r\xff\x0a\x14\x00")
-    
-    files = [("CASTLE", bootloader_start, bootloader_start, bootloader_code),
-             ("LOADER", loader_start, loader_start, loader_code),
-             ("ROUTINE", title_data_address, title_data_address,
-                          title_data_routines),
-             ("SPRITES", sprite_area_address, sprite_area_address,
-                         sprite_data + char_data),
-             ("LEVELS", levels_address, levels_address, level_data),
-             ("PANEL", panel_address, panel_address, panel),
-             ("CODE", code_load_address, code_load_address, code)]
-    
-    loader_size = len(loader_code)
-    print
-    print "%i bytes (%04x) of loader code" % (loader_size, loader_size)
-    
-    print "%i bytes (%04x) of code" % (code_size, code_size)
-    print
+        marker_info = [(levels_address, level_data),
+                       (panel_address, panel),
+                       (code_load_address, code)]
+        markers = ""
+        n = 0
+        
+        for address, data in marker_info:
+        
+            ptr = 64
+            while ptr < len(data):
+            
+                low = (address + ptr) & 0xff
+                high = (address + ptr) >> 8
+                markers += chr(low) + chr(high) + data[ptr]
+                ptr += 128
+                n += 1
+        
+        markers = chr(n) + markers
+        
+        extras_oph = constants_oph + (
+            "; Additional definitions for the loader\n\n"
+            ".alias code_start_address              $%02x\n"
+            ".alias code_load_low                   $%02x\n"
+            ".alias code_load_high                  $%02x\n"
+            ".alias code_length_low                 $%02x\n"
+            ".alias code_length_high                $%02x\n"
+            ".alias code_end_low                    $%02x\n"
+            ".alias code_end_high                   $%02x\n"
+            "\n"
+            ".alias markers_length                  $%02x\n"
+            "\n"
+            ) % ((code_start,) + address_length_end(code_load_address, code) + \
+                 (len(markers),))
+        
+        open("loader-constants.oph", "w").write(extras_oph)
+        
+        system("ophis loader.oph -o LOADER")
+        loader_code = open("LOADER").read() + markers + title_data
+        os.remove("LOADER")
+        
+        bootloader_start = 0xe00
+        bootloader_code = ("\r\x00\x0a\x0d*FX 229,1"
+                           "\r\x00\x14\x0f*RUN LOADER\r\xff\x0a\x14\x00")
+        
+        files = [("CASTLE", bootloader_start, bootloader_start, bootloader_code),
+                 ("LOADER", loader_start, loader_start, loader_code),
+                 ("ROUTINE", title_data_address, title_data_address,
+                              title_data_routines),
+                 ("SPRITES", sprite_area_address, sprite_area_address,
+                             sprite_data + char_data),
+                 ("LEVELS", levels_address, levels_address, level_data),
+                 ("PANEL", panel_address, panel_address, panel),
+                 ("CODE", code_load_address, code_load_address, code)]
+        
+        loader_size = len(loader_code)
+        print
+        print "%i bytes (%04x) of loader code" % (loader_size, loader_size)
+        
+        print "%i bytes (%04x) of code" % (code_size, code_size)
+        print
     
     # Calculate the amount of space used for the loader and pre-relocated main
     # game code.
     
-    loader_finish = loader_start + loader_size
-    print "LOADER runs from %04x to %04x" % (loader_start, loader_finish)
+    if make_loader:
     
-    code_load_finish = code_load_address + code_size
-    print "CODE runs from %04x to %04x" % (code_load_address, code_load_finish)
-    print
+        loader_finish = loader_start + loader_size
+        print "LOADER runs from %04x to %04x" % (loader_start, loader_finish)
+        
+        code_load_finish = code_load_address + code_size
+        print "CODE runs from %04x to %04x" % (code_load_address, code_load_finish)
+        print
     
     # Calculate the amount of working space used.
     # 0xcfb is the start of a block of memory used for palette operations.
@@ -850,7 +889,9 @@ if __name__ == "__main__":
         sys.stderr.write("CODE overruns following data by %i bytes.\n" % (code_finish - data_start))
         sys.exit(1)
     else:
-        print "(%i bytes free)" % (data_start - code_finish)
+        code_padding = (data_start - code_finish)
+        print "(%i bytes free)" % code_padding
+        code += "\x00" * code_padding
     
     levels_finish = levels_address + len(level_data)
     print "LEVELS  runs from %04x to %04x" % (levels_address, levels_finish),
@@ -859,7 +900,9 @@ if __name__ == "__main__":
         sys.stderr.write("LEVELS overruns following data by %i bytes.\n" % (levels_finish - sprite_area_address))
         sys.exit(1)
     else:
-        print "(%i bytes free)" % (sprite_area_address - levels_finish)
+        levels_padding = (sprite_area_address - levels_finish)
+        print "(%i bytes free)" % levels_padding
+        level_data += "\x00" * levels_padding
     
     char_area_finish = sprite_area_address + len(sprite_data) + len(char_data)
     print "SPRITES runs from %04x to %04x" % (sprite_area_address, char_area_finish)
@@ -962,10 +1005,28 @@ if __name__ == "__main__":
         print
         print "Written", out_file
     
+    elif make_rom_image:
+    
+        rom_data = (
+            code + level_data + sprite_data + char_data + panel + \
+            title_data_routines
+            )
+        
+        print "ROM     runs from %x to %x (%i bytes free)" % (
+            memory_map["code start"],
+            memory_map["code start"] + len(rom_data),
+            0x4000 - len(rom_data))
+        
+        open(out_file, "w").write(rom_data)
+        
+        print
+        print "Written", out_file
+    
     # Remove temporary files.
     os.remove("bank_routines.oph")
-    os.remove("constants.oph")
-    os.remove("loader-constants.oph")
+    #os.remove("constants.oph")
+    if make_loader:
+        os.remove("loader-constants.oph")
     os.remove("screen.oph")
     
     # Exit

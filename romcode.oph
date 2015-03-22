@@ -1,0 +1,244 @@
+; Copyright (C) 2015 David Boddie <david@boddie.org.uk>
+;
+; This program is free software: you can redistribute it and/or modify
+; it under the terms of the GNU General Public License as published by
+; the Free Software Foundation, either version 3 of the License, or
+; (at your option) any later version.
+;
+; This program is distributed in the hope that it will be useful,
+; but WITHOUT ANY WARRANTY; without even the implied warranty of
+; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+; GNU General Public License for more details.
+;
+; You should have received a copy of the GNU General Public License
+; along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+.org $8000
+rom_start:
+jmp language_entry
+jmp service_entry
+
+; ROM type
+.byte $c2       ; 6502 code (2), language ($40), service ($80)
+
+copyright_offset:
+.byte [copyright_string - rom_start - 1]
+
+; Version
+.byte 1
+
+; Title string
+.byte "Castle Raider", 0
+
+; Version string
+.byte "1.0.2", 0
+
+copyright_string:
+.byte "(C) 2015 David Boddie", 0
+
+; Second processor relocation address
+.byte 0, $80, 0, 0
+
+language_entry:
+
+    jmp castle_code
+
+service_entry:
+
+    cmp #4
+    beq service_command
+
+    service_entry_exit:
+    rts
+
+rom_name: .byte "CASTLE", 13
+
+service_command:
+
+    tya                         ; push Y and X registers onto the stack
+    pha
+    txa
+    pha
+
+    ldx #0
+    service_command_loop:
+    
+        lda ($f2),y
+        cmp rom_name,x
+        bne service_command_exit
+        inx
+        iny
+        cpx #7
+        bne service_command_loop
+    
+    jsr castle_code
+    lda #0
+    rts
+    
+    service_command_exit:
+    pla                         ; pop Y and X registers off the stack
+    tax
+    pla
+    tay
+    lda #4                      ; restore A
+    rts
+
+set_core_palette:
+
+    lda #2
+    sta $70
+    lda #2
+    sta $71
+    jsr set_palette
+
+    lda #3
+    sta $70
+    lda #3
+    sta $71         ; drop through into the subroutine
+
+set_palette:
+                    ; $70=logical colour
+                    ; $71=physical colour
+    lda $70
+    sta $cfb
+    lda $71
+    sta $cfc
+    lda #0
+    sta $cfd
+    sta $cfe
+    sta $cff
+
+    lda #$c         
+    ldx #$fb
+    ldy #$0c
+    jsr $fff1
+    rts
+
+copy_panel:
+
+    lda #top_panel_address_low
+    sta $70
+    lda #top_panel_address_high
+    sta $71
+    lda #$00
+    sta $72
+    lda #$58
+    sta $73
+    lda #$00
+    sta $74
+    lda #$30
+    sta $75
+
+    ldy #0
+
+    copy_top_panel_loop:
+
+        lda ($70),y
+        sta ($72),y
+        sta ($74),y
+
+        inc $70
+        lda $70
+        cmp #0
+        bne copy_top_panel_loop_next1
+        inc $71
+        copy_top_panel_loop_next1:
+        clc
+
+        inc $72
+        lda $72
+        cmp #0
+        bne copy_top_panel_loop_next2
+        inc $73
+        copy_top_panel_loop_next2:
+        clc
+
+        inc $74
+        lda $74
+        cmp #0
+        bne copy_top_panel_loop_next3
+        inc $75
+        copy_top_panel_loop_next3:
+        clc
+
+        lda $73
+        cmp #$5d
+        bne copy_top_panel_loop
+
+    clc
+    rts
+
+define_envelopes:
+
+    ; Define ENVELOPEs.
+    lda #0
+    sta $70
+    define_envelopes_loop:
+
+        ldx $70
+        lda envelopes_high,x
+        tay
+        lda envelopes_low,x
+        tax
+        lda #8
+        jsr $fff1
+
+        inc $70
+        lda $70
+        cmp #6
+        bne define_envelopes_loop
+
+    clc
+    rts
+
+envelopes_low:  .byte <demise_envelope, <item_envelope, <jump_envelope
+                .byte <door_envelope, <portal_envelope, <music_envelope
+envelopes_high: .byte >demise_envelope, >item_envelope, >jump_envelope
+                .byte >door_envelope, >portal_envelope, >music_envelope
+
+demise_envelope:    .byte 1,130,252,250,0,15,15,0,126,0,0,130,126,126
+item_envelope:      .byte 2,130,10,254,2,6,2,2,126,0,0,130,126,126
+jump_envelope:      .byte 3,129,20,10,5,2,4,4,126,0,0,130,126,126
+door_envelope:      .byte 4,129,4,0,252,1,1,1,126,0,0,130,126,126
+portal_envelope:    .byte 5,132,16,12,20,1,1,1,126,0,0,130,126,126
+music_envelope:     .byte 6,130,1,255,0,2,2,0,126,0,0,130,126,126
+
+castle_code:
+
+    lda #22
+    jsr $ffee
+    lda #5
+    jsr $ffee
+
+    lda #23         ; disable flashing cursor
+    jsr $ffee
+    lda #1
+    jsr $ffee
+    ldx #7
+    cursor_loop:
+        lda #0
+        jsr $ffee
+        dex
+        bpl cursor_loop
+
+    jsr set_core_palette
+    jsr define_envelopes
+    jsr copy_panel
+
+    ; Store table addresses in zero page locations for convenient access.
+    lda #tile_visibility_low
+    sta $82
+    lda #tile_visibility_high
+    sta $83
+
+    lda #special_tile_numbers_low
+    sta $84
+    lda #special_tile_numbers_high
+    sta $85
+
+    lda #monster_positions_low
+    sta $86
+    lda #monster_positions_high
+    sta $87
+
+.include "code.oph"
