@@ -52,7 +52,7 @@ play_music: ; X=offset,Y=end
         and #$f0                ; Read the high four bits and shift them right
         lsr                     ; by two bits to get a value that is a multiple
         lsr                     ; of four.
-        sta [note_buffer + 4]
+        sta note_buffer_pitch
 
         jsr play_music_note
 
@@ -60,7 +60,7 @@ play_music: ; X=offset,Y=end
         and #$0f                ; Read the low four bits and shift them left
         asl                     ; by two bits to get a value that is a multiple
         asl                     ; of four.
-        sta [note_buffer + 4]
+        sta note_buffer_pitch
 
         jsr play_music_note
 
@@ -81,14 +81,7 @@ play_music_note:
     ldy #>note_buffer
     jsr $fff1
 
-    play_music_note_wait:   ; Don't add more notes until there is space
-    lda #128                ; in the sound buffer. This shouldn't really be
-    ldx #250                ; needed.
-    ldy #255
-    jsr $fff4
-    cpx #0
-    beq play_music_note_wait
-    
+    clc
     rts
 
 .alias C4 $1
@@ -103,11 +96,9 @@ play_music_note:
 .alias short 4
 .alias long 8
 
-note_buffer:
-note_buffer_channel:   .byte 1,0
-note_buffer_amplitude: .byte 6,0 ; 240,255
-note_buffer_pitch:     .byte 0,0
-note_buffer_length:    .byte short,0
+; Either include space in the program code for a note buffer, to reside in RAM,
+; or define a place in RAM where code in ROM can store note information.
+.invoke allocate_note_buffer
 
 notes:
 .byte $13, $18, $58, $1a, $6a, $3c, $8c, $5d

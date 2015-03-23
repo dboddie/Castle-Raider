@@ -444,17 +444,17 @@ switch_characters:
     ldx #95
     switch_characters_left_loop:
 
-        ldy player_left1,x
-        lda player_left_alt1,x
-        sta player_left1,x
+        ldy player1_left1,x
+        lda player2_left1,x
+        sta player1_left1,x
         tya
-        sta player_left_alt1,x
+        sta player2_left1,x
 
-        ldy player_right1,x
-        lda player_right_alt1,x
-        sta player_right1,x
+        ldy player1_right1,x
+        lda player2_right1,x
+        sta player1_right1,x
         tya
-        sta player_right_alt1,x
+        sta player2_right1,x
 
         dex
         bpl switch_characters_left_loop

@@ -188,6 +188,14 @@ define_envelopes:
         cmp #6
         bne define_envelopes_loop
 
+    ; Also initialise values in the music buffer.
+    ldx #7
+    define_sound_loop:
+        lda sound_buffer_values,x
+        sta note_buffer,x
+        dex
+        bpl define_sound_loop
+    
     clc
     rts
 
@@ -202,6 +210,105 @@ jump_envelope:      .byte 3,129,20,10,5,2,4,4,126,0,0,130,126,126
 door_envelope:      .byte 4,129,4,0,252,1,1,1,126,0,0,130,126,126
 portal_envelope:    .byte 5,132,16,12,20,1,1,1,126,0,0,130,126,126
 music_envelope:     .byte 6,130,1,255,0,2,2,0,126,0,0,130,126,126
+
+sound_buffer_values:   .byte 1,0, 6,0, 0,0, short,0
+
+plot_characters:
+
+    lda #$60                        ; direction offset
+    sta $74
+
+    ldy #0
+    jsr plot_character
+
+    lda #0                          ; direction offset
+    sta $74
+
+    ldy #1
+    ; Fall through into the following routine.
+
+plot_character:
+
+    lda #<player1_left1
+    adc $74                         ; add direction offset
+    sta $70
+    lda #>player1_left1
+    adc #0
+    sta $71
+
+    lda #$20
+    sta $72
+    lda #$6b
+    sta $73
+
+    cpy #1
+    bne plot_character_plot
+
+    clc
+    lda $70
+    adc #$c0                        ; plot sprites for the second character
+    sta $70
+    lda $71
+    adc #0
+    sta $71
+
+    lda $72
+    adc #$70                        ; plot 7 characters to the right
+    sta $72
+    lda $73
+    adc #0
+    sta $73
+
+    plot_character_plot:
+    clc
+    jmp plot8x24_y0
+
+copy_character: ; A=1,2
+
+    ; Copy the sprites for the selected character into RAM.
+    ldx #95
+
+    cmp #2
+    beq copy_character2_loop
+
+    copy_character1_loop:
+
+        lda player1_left1,x
+        sta player_left1,x
+
+        lda player1_right1,x
+        sta player_right1,x
+
+        dex
+        bpl copy_character1_loop
+
+    clc
+    rts
+
+    copy_character2_loop:
+
+        lda player2_left1,x
+        sta player_left1,x
+
+        lda player2_right1,x
+        sta player_right1,x
+
+        dex
+        bpl copy_character2_loop
+
+    clc
+    rts
+
+character_message_text:
+.byte 17, 2                         ; COLOUR 2
+.byte 31, 0, 12                     ; TAB(0, 12)
+.byte " Choose a character"
+.byte 31, 6, 19                     ; TAB(6, 19)
+.byte 17, 3                         ; COLOUR 3
+.byte 49                            ; "1"
+.byte 31, 13, 19                    ; TAB(13, 19)
+.byte 50                            ; "2"
+character_message_text_end:
 
 castle_code:
 
@@ -240,5 +347,62 @@ castle_code:
     sta $86
     lda #monster_positions_high
     sta $87
+
+main:
+
+    lda #21                 ; Flush the buffer for sound channel 1 to prevent
+    ldx #5                  ; a continuous beep on boot-up.
+    jsr $fff4
+
+    jsr clear_banks
+    lda #2
+    jsr change_palette
+
+    jsr plot_title
+
+    jsr show_bank2          ; Show bank 2 since this is where the output of OS
+                            ; calls will appear.
+
+    jsr print_title_text
+
+    main_before_game:
+        jsr space_or_fire
+        bcs main_before_game
+
+    clc
+    sta using_joystick
+
+    jsr clear_banks
+    jsr show_bank2
+    
+    clc
+    jsr plot_characters
+
+    ldx #0
+    show_character_message_loop:
+        lda character_message_text,x
+        jsr $ffee
+        inx
+        cpx #[character_message_text_end - character_message_text]
+        bne show_character_message_loop
+
+    choose_character_loop:
+
+        ldx #207                    ; 1
+        jsr check_key
+        bne check_character_2
+
+        lda #1
+        jmp character_chosen
+
+        check_character_2:
+        ldx #206                    ; 2
+        jsr check_key
+        bne choose_character_loop
+
+        lda #2
+    
+    character_chosen:
+    jsr copy_character
 
 .include "code.oph"

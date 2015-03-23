@@ -17,26 +17,7 @@
 
 ; See the end of the file for included routines.
 
-main:
-
-    jsr clear_banks
-    lda #2
-    jsr change_palette
-
-    jsr plot_title
-
-    jsr show_bank2          ; Show bank 2 since this is where the output of OS
-                            ; calls will appear.
-
-    jsr print_title_text
-
-    main_before_game:
-        jsr space_or_fire
-        bcs main_before_game
-
-    main_init:
-    clc
-    sta using_joystick
+main_init:
 
     ; Set character's initial position and status.
 

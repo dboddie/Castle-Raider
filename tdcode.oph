@@ -14,4 +14,25 @@
 ; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 .org $0e00
+
+main:
+
+    jsr clear_banks
+    lda #2
+    jsr change_palette
+
+    jsr plot_title
+
+    jsr show_bank2          ; Show bank 2 since this is where the output of OS
+                            ; calls will appear.
+
+    jsr print_title_text
+
+    main_before_game:
+        jsr space_or_fire
+        bcs main_before_game
+
+    clc
+    sta using_joystick
+
 .include "code.oph"

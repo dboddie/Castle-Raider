@@ -23,7 +23,7 @@ import UEFfile
 from tools import makeadf, makedfs, makelevels, makesprites
 
 # Define the version of the game rather than of this script.
-version = "1.0.2"
+version = "1.0.3"
 
 def system(command):
 
@@ -312,8 +312,14 @@ if __name__ == "__main__":
         }
     
     if make_rom_image:
+    
+        # Keep the working area at 0xb00.
+        # Use memory at 0xe00 for sound data.
+        memory_map["sound buffer"] = 0xe00
+        memory_map["player sprites"] = 0xf00
+        
         rom_code_start = 0x8000
-        rom_data_start = 0x9518
+        rom_data_start = 0x9600
         rom_tile_sprites = rom_data_start + memory_map["tile sprites"] - memory_map["data start"]
         rom_char_sprites = rom_tile_sprites + memory_map["character and object sprites"] - memory_map["tile sprites"]
         rom_char_sprites_length = 0x30c0 - memory_map["character and object sprites"]
@@ -477,6 +483,20 @@ if __name__ == "__main__":
     player_data, player_sprite_offsets = \
         makesprites.read_sprites(char_sprites, char_area_address + len(char_data))
     char_data += player_data
+    
+    if make_rom_image:
+        # For the ROM version, we copy the selected character sprites into RAM.
+        # Incude aliases to memory locations in RAM before the addresses of the
+        # sprites in ROM.
+        player_sprite_offsets = \
+            range(memory_map["player sprites"],
+                  memory_map["player sprites"] + (0x30 * 4), 0x30) + \
+            player_sprite_offsets
+    else:
+        # For the other versions, the first set of sprites is used after a swap
+        # is performed in the loader, so the addresses to use are the same as
+        # those for the first character.
+        player_sprite_offsets = player_sprite_offsets[:4] + player_sprite_offsets
     
     panel_address = memory_map["panel address"]
     panel, offsets = makesprites.read_sprites(["images/panel.png"], panel_address)
@@ -666,10 +686,14 @@ if __name__ == "__main__":
         ".alias player_left2                    $%04x\n"
         ".alias player_right1                   $%04x\n"
         ".alias player_right2                   $%04x\n"
-        ".alias player_left_alt1                $%04x\n"
-        ".alias player_left_alt2                $%04x\n"
-        ".alias player_right_alt1               $%04x\n"
-        ".alias player_right_alt2               $%04x\n\n"
+        ".alias player1_left1                   $%04x\n"
+        ".alias player1_left2                   $%04x\n"
+        ".alias player1_right1                  $%04x\n"
+        ".alias player1_right2                  $%04x\n\n"
+        ".alias player2_left1                   $%04x\n"
+        ".alias player2_left2                   $%04x\n"
+        ".alias player2_right1                  $%04x\n"
+        ".alias player2_right2                  $%04x\n\n"
         ) % tuple(player_sprite_offsets)
     
     s = 0
@@ -711,10 +735,13 @@ if __name__ == "__main__":
              monster_right_offset,
              monster_right_max_offset)
     
-    constants_oph += (in_game_data_labels % in_game_data_details) + "\n\n"
+    constants_oph += (in_game_data_labels % in_game_data_details) + "\n"
+    
+    # Define version-specific code for Electron vsync handling.
     
     if machine_type == "-e":
         constants_oph += (
+            "; Macro for code to wait for a vsync event, used in electron.oph.\n\n"
             ".macro bank_vsync\n"
             "    lda #19\n"
             "    jsr $fff4\n"
@@ -725,7 +752,34 @@ if __name__ == "__main__":
                 "    jsr $fff4\n"
             )
         
-        constants_oph += ".macend\n"
+        constants_oph += ".macend\n\n"
+    
+    # Define a sound buffer for musical note handling, with different versions
+    # for code in RAM and ROM.
+    
+    constants_oph += "; Macro for handling a sound buffer for musical notes.\n"
+    
+    if make_rom_image:
+        note_buffer = memory_map["sound buffer"]
+        constants_oph += (
+            ".macro allocate_note_buffer\n"
+            "    .alias note_buffer $%x\n"
+            "    .alias note_buffer_channel $%x\n"
+            "    .alias note_buffer_amplitude $%x\n"
+            "    .alias note_buffer_pitch $%x\n"
+            "    .alias note_buffer_length $%x\n"
+            ".macend\n\n"
+            ) % ((note_buffer,) + tuple(range(note_buffer, note_buffer + 8, 2)))
+    else:
+        constants_oph += (
+            ".macro allocate_note_buffer\n"
+            "    note_buffer:\n"
+            "    note_buffer_channel:   .byte 1,0\n"
+            "    note_buffer_amplitude: .byte 6,0 ; 240,255\n"
+            "    note_buffer_pitch:     .byte 0,0\n"
+            "    note_buffer_length:    .byte short,0\n"
+            ".macend\n\n"
+            )
     
     scenery_rows = 16
     extra_rows = 7
