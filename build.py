@@ -301,6 +301,7 @@ if __name__ == "__main__":
     # Memory maps
     memory_map = {
         "working area": 0xb00,
+        "palette start": 0xcfb,
         "code start": 0x0e00,
         "data start": 0x2150 + 0x20 + 6 + 6,
         "tile sprites": 0x2aa0 + 0xc0 + 0x20,
@@ -313,10 +314,14 @@ if __name__ == "__main__":
     
     if make_rom_image:
     
-        # Keep the working area at 0xb00.
-        # Use memory at 0xe00 for sound data.
-        memory_map["sound buffer"] = 0xe00
-        memory_map["player sprites"] = 0xf00
+        # Put the working area at 0xe00.
+        memory_map["working area"] = 0xe00
+        # 0xffb is the start of a block of memory used for palette operations.
+        memory_map["palette start"] = 0xefb
+        
+        # Use memory at 0x1000 for sound data.
+        memory_map["sound buffer"] = 0x1000
+        memory_map["player sprites"] = 0x1100
         
         rom_code_start = 0x8000
         rom_data_start = 0x9600
@@ -781,6 +786,11 @@ if __name__ == "__main__":
             ".macend\n\n"
             )
     
+    # Palette area
+    constants_oph += (
+        ".alias palette_start                   $%x\n"
+        ) % memory_map["palette start"]
+    
     scenery_rows = 16
     extra_rows = 7
     top_char_row, top_monster_row, top_row = 0, 0, 0
@@ -922,10 +932,9 @@ if __name__ == "__main__":
         print
     
     # Calculate the amount of working space used.
-    # 0xcfb is the start of a block of memory used for palette operations.
     
-    working_free = 0xcfb - working_end
-    print "Working data area runs from 0b00 to %04x" % working_end,
+    working_free = memory_map["palette start"] - working_end
+    print "Working data area runs from %04x to %04x" % (memory_map["working area"], working_end),
     if working_free < 0:
         print
         sys.stderr.write("Working data area overruns following data by %i bytes.\n" % -working_free)

@@ -249,13 +249,13 @@ set_palette:
                     ; $70=logical colour
                     ; $71=physical colour
     lda $70
-    sta $cfb
+    sta palette_start
     lda $71
-    sta $cfc
+    sta [palette_start + 1]
     lda #0
-    sta $cfd
-    sta $cfe
-    sta $cff
+    sta [palette_start + 2]
+    sta [palette_start + 3]
+    sta [palette_start + 4]
 
     lda #$c         
     ldx #$fb
