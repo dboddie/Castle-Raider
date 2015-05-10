@@ -75,6 +75,11 @@ Loading the Game from Disk
 
 Insert the disk and press Shift-Break. The game should now load.
 
+Loading the Game from ROM Cartridge
+
+Ensure that the computer is switched off. Insert the ROM cartridge and switch
+the computer on. The game should load automatically.
+
 
 Playing the Game
 

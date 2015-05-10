@@ -1063,6 +1063,9 @@ if __name__ == "__main__":
             memory_map["code start"] + len(rom_data),
             0x4000 - len(rom_data))
         
+        if len(rom_data) < 16384:
+            rom_data += "\x00" * (16384 - len(rom_data))
+        
         open(out_file, "w").write(rom_data)
         
         print
