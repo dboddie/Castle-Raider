@@ -18,6 +18,10 @@
 .include "loader-constants.oph"
 
 main:
+    lda #229        ; Disable the Escape key.
+    ldx #1
+    jsr $fff4
+
     lda #22
     jsr $ffee
     lda #5

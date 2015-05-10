@@ -742,23 +742,6 @@ if __name__ == "__main__":
     
     constants_oph += (in_game_data_labels % in_game_data_details) + "\n"
     
-    # Define version-specific code for Electron vsync handling.
-    
-    if machine_type == "-e":
-        constants_oph += (
-            "; Macro for code to wait for a vsync event, used in electron.oph.\n\n"
-            ".macro bank_vsync\n"
-            "    lda #19\n"
-            "    jsr $fff4\n"
-            )
-        if make_rom_image:
-            constants_oph += (
-                "    lda #19\n"
-                "    jsr $fff4\n"
-            )
-        
-        constants_oph += ".macend\n\n"
-    
     # Define a sound buffer for musical note handling, with different versions
     # for code in RAM and ROM.
     

@@ -41,6 +41,14 @@ copyright_string:
 
 language_entry:
 
+    cmp #1
+    beq is_language
+    rts
+
+    is_language:
+    ldx #255
+    txs
+    cli
     jmp castle_code
 
 service_entry:
@@ -312,12 +320,20 @@ character_message_text_end:
 
 castle_code:
 
-    lda #22
+    lda #229                ; Disable the Escape key.
+    ldx #1
+    jsr $fff4
+
+    lda #21                 ; Flush the buffer for sound channel 1 to prevent
+    ldx #5                  ; a continuous beep on boot-up.
+    jsr $fff4
+
+    lda #22                 ; Change to MODE 5.
     jsr $ffee
     lda #5
     jsr $ffee
 
-    lda #23         ; disable flashing cursor
+    lda #23                 ; Disable the flashing cursor.
     jsr $ffee
     lda #1
     jsr $ffee
@@ -349,10 +365,6 @@ castle_code:
     sta $87
 
 main:
-
-    lda #21                 ; Flush the buffer for sound channel 1 to prevent
-    ldx #5                  ; a continuous beep on boot-up.
-    jsr $fff4
 
     jsr clear_banks
     lda #2
