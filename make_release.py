@@ -43,9 +43,10 @@ if __name__ == "__main__":
     system(build_py + " -e -d " + os.path.join(release_dir, "CastleRaider-%s-Electron.ssd" % version))
     system(build_py + " -e -r " + os.path.join(release_dir, "CastleRaider-%s-Electron.rom" % version))
     
-    # Make cassette and DFS versions for the BBC Micro.
+    # Make cassette, DFS and ROM versions for the BBC Micro.
     system(build_py + " -b -t " + os.path.join(release_dir, "CastleRaider-%s-BBC.uef" % version))
     system(build_py + " -b -d " + os.path.join(release_dir, "CastleRaider-%s-BBC.ssd" % version))
+    system(build_py + " -b -r " + os.path.join(release_dir, "CastleRaider-%s-BBC.rom" % version))
     
     # Copy the instructions and license files into the archive.
     shutil.copy2("README.txt", os.path.join(release_dir, "README.txt"))
