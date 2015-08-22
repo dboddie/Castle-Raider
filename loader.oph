@@ -540,7 +540,7 @@ copyright_text:
             .byte "GNU GPL v.3 or later"
 copyright_text_end:
 title_text: .byte 28,0,19,19,8, 17,129, 12, 17,3, 10
-            .byte "     Controls", 13,10,10, 26
+            .byte "      Controls", 13,10,10, 26
             .byte 28,0,19,19,11, 17,130, 12
             .byte 10, 17,0
             .byte " Z ", 17,1, "     Left", 17,0, "  left", 13,10,10
