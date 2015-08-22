@@ -23,7 +23,7 @@ import UEFfile
 from tools import makeadf, makedfs, makelevels, makesprites
 
 # Define the version of the game rather than of this script.
-version = "1.0.3"
+version = "1.0.4"
 
 def system(command):
 
@@ -303,7 +303,7 @@ if __name__ == "__main__":
         "working area": 0xb00,
         "palette start": 0xcfb,
         "code start": 0x0e00,
-        "data start": 0x2150 + 0x20 + 6 + 6,
+        "data start": 0x2162,
         "tile sprites": 0x2aa0 + 0xc0 + 0x20,
         "character and object sprites": 0x2de0 + 0xc0 + 0x20,
         "bank 1 (panel)": 0x3000,

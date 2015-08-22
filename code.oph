@@ -144,10 +144,13 @@ main_init:
                                          ; skip past the movement checks.
         main_loop_allow_movement:
 
-            clc                     ; Check for horizontal input. Note that it
+            clc                     
+            lda player_lost
+            bne completed_check     ; Check for horizontal input. Note that it
             jsr player_move         ; might still be forbidden by the jumping
                                     ; counter or falling flag.
 
+            completed_check:
             lda scroll_offset_low
             cmp #finish_scroll_offset_low
             bne main_loop_check_monsters
@@ -273,9 +276,8 @@ player_move:
     jsr read_joystick_axis
     bcc player_move_check_joystick_vertical
 
-    cmp #1
-    beq player_move_checked_left
-    bne player_move_checked_right
+    bne player_move_checked_left    ; A=1 (left)
+    beq player_move_checked_right   ; A=0 (right)
 
     player_move_check_joystick_vertical:
 
@@ -283,9 +285,8 @@ player_move:
     jsr read_joystick_axis
     bcc player_move_check_jump
 
-    cmp #1
-    beq player_move_checked_jump
-    jmp player_enter
+    bne player_move_check_jump  ; up (A=1) input, check the button instead
+    jmp player_enter            ; down (A=0) input means enter portal
 
     player_move_check_keys:
 

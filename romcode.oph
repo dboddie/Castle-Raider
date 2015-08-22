@@ -31,7 +31,7 @@ copyright_offset:
 .byte "Castle Raider", 0
 
 ; Version string
-.byte "1.0.3", 0
+.byte "1.0.4", 0
 
 copyright_string:
 .byte "(C) 2015 David Boddie", 0
