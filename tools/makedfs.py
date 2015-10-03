@@ -105,7 +105,7 @@ class Catalogue(Utilities):
         # Write the number of files and the disk cycle.
         self.disk_cycle += 1
         self._write(0x104, self._write_unsigned_byte(self.disk_cycle))
-        self._write(0x105, len(files) * 8)
+        self._write(0x105, self._write_unsigned_byte(len(files) * 8))
         
         extra = (self.sectors >> 8) & 0x03
         extra = extra | (self.boot_option << 4)
