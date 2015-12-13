@@ -159,7 +159,7 @@ class LevelWidget(QWidget):
         
             src = makelevels.portals_order[i]
             index = 128 + i
-            dest = makelevels.portals_order[0]
+            dest = makelevels.portals_order[i]
             colour = "green"
             self.portals[src] = (index, dest, colour)
     

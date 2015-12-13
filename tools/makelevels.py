@@ -222,7 +222,7 @@ def create_level_data(levels, tiles, special, portals):
         previous_axis = axis
     
     if monster_offset < len(level[0]):
-        monster_data.append((previous_monster, previous_y, len(level[0]) - monster_offset, axis))
+        monster_data.append((previous_monster, previous_y, len(level[0]) - monster_offset, previous_axis))
     
     # For portal locations that span multiple cells, find the lowest, middle
     # location of the portal.
