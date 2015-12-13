@@ -142,7 +142,7 @@ class LevelWidget(QWidget):
         
         # Define default special tiles.
         
-        for i in range(32):
+        for i in range(16):
         
             ch = makelevels.special_order[i]
             tile = "I"

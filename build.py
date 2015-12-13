@@ -275,7 +275,7 @@ def add_hidden_data(panel, start):
 
 if __name__ == "__main__":
 
-    if not 3 <= len(sys.argv) <= 4:
+    if not 4 <= len(sys.argv) <= 5:
     
         sys.stderr.write("Usage: %s -e|-b -t|-a|-d|-r <new UEF, ADF, SSD or ROM file> [level file]\n" % sys.argv[0])
         sys.exit(1)
