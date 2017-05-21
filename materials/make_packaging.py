@@ -986,7 +986,7 @@ if __name__ == "__main__":
     
     # Background colour
     if platform == "Acorn Electron":
-        background = "#509040"
+        background = "#50c040"
         box_background = "#ffffff"
         box_shadow = "#ffb060"
         logo_background = "#ffffc0"
@@ -1037,9 +1037,9 @@ if __name__ == "__main__":
     
     instructions = [
         Page((665, inlay_height),
-            [TextBox((62, 83, 590, 0), 
+            [TextBox((62, 83, 558, 0), 
                  [Text(title, "Castle Raider")]),
-             TextBox((62, -3, 590, 0),
+             TextBox((62, -3, 558, 0),
                  [Text(regular,
                        "As the sun dips below the ramparts of the old town, the last of the troops file "
                        "in. As they make their way through the narrow, cobbled streets, small groups of "
@@ -1047,28 +1047,28 @@ if __name__ == "__main__":
                        "reputation. The lamps are lit and the merriment spills out onto the streets "
                        "with laughing, singing, pushing and shoving. There will be trouble later, but "
                        "by then you will be long gone.")], follow = True),
-             TextBox((62, 10, 590, 0),
+             TextBox((62, 10, 558, 0),
                  [Text(regular,
-                       "It is time for the guard to change, time for the night watch to begin their "
-                       "duties, but they are in no hurry; though the outlaws in the countryside know "
+                       "It is time for the guard to change, "
+                       "but they are in no hurry; though the outlaws in the countryside know "
                        "the force stationed here will be no threat tonight, they gave them a wide "
                        "berth during their march here. The people in the nearby villages can sleep "
                        "soundly for a change.")], follow = True),
-             TextBox((62, 10, 590, 0),
+             TextBox((62, 10, 558, 0),
                  [Text(regular,
                        "As the members of the night watch slowly begin to take their places on the "
                        "ramparts you take your chance and slip through the open gate, taking refuge in "
                        "the long shadows fleeing the sunset. The few eyes looking in your direction are "
                        "hardly able to make out your form as you wait for the approaching nightfall.")],
                        follow = True),
-             TextBox((62, 10, 590, 0),
+             TextBox((62, 10, 558, 0),
                  [Text(regular,
                        "You recall the stories told when you were young. When the town itself was "
                        "already old, the last of the elders told of a time when it was still a village, "
                        "not much more than a few houses and shelters. The road that ran through it went "
                        "to the castle on the edge of the wasteland that now lies derelict and deserted.")],
                        follow = True),
-             TextBox((62, 10, 590, 0),
+             TextBox((62, 10, 558, 0),
                  [Text(regular,
                        "Night falls quickly in this season at the edge of the kingdom. Memories of "
                        "fireside tales about the king's lost crown and the hidden treasure of the old "
@@ -1077,7 +1077,7 @@ if __name__ == "__main__":
                        "outer gate it suddenly crashes into place, cutting off your exit. It was just "
                        "as well you hadn't planned to return that way.")],
                        follow = True),
-             TextBox((62, 10, 590, 0),
+             TextBox((62, 10, 558, 0),
                  [Text(regular,
                        "Nature has reclaimed parts of the castle, its ruins crumbling in places and "
                        "crawling with creatures that people once knew well to leave alone. To make your "
@@ -1215,32 +1215,32 @@ if __name__ == "__main__":
         ]
     
     defs = ('<linearGradient id="box-background" x1="20%" y1="0%" x2="80%" y2="100%">\n'
-            '  <stop offset="0%" stop-color="#4040a0" />\n'
-            '  <stop offset="40%" stop-color="#000000" />\n'
+            '  <stop offset="0%" stop-color="#9090f0" />\n'
+            '  <stop offset="55%" stop-color="#000000" />\n'
             '</linearGradient>\n'
             '<linearGradient id="hills" x1="0%" y1="0%" x2="100%" y2="100%">\n'
-            '  <stop offset="20%" stop-color="#003000" />\n'
-            '  <stop offset="100%" stop-color="#001000" />\n'
+            '  <stop offset="20%" stop-color="#009000" />\n'
+            '  <stop offset="100%" stop-color="#006000" />\n'
             '</linearGradient>\n'
             '<linearGradient id="distant-hills" x1="0%" y1="0%" x2="0%" y2="100%">\n'
-            '  <stop offset="20%" stop-color="#002000" />\n'
-            '  <stop offset="100%" stop-color="#000000" />\n'
+            '  <stop offset="20%" stop-color="#008000" />\n'
+            '  <stop offset="100%" stop-color="#004000" />\n'
             '</linearGradient>\n'
             '<linearGradient id="walls" x1="0%" y1="0%" x2="0%" y2="100%">\n'
-            '  <stop offset="0%" stop-color="#603030" />\n'
-            '  <stop offset="100%" stop-color="#502020" />\n'
+            '  <stop offset="0%" stop-color="#b88888" />\n'
+            '  <stop offset="100%" stop-color="#a87878" />\n'
             '</linearGradient>\n'
             '<linearGradient id="dark-walls" x1="0%" y1="0%" x2="0%" y2="100%">\n'
-            '  <stop offset="0%" stop-color="#401010" />\n'
-            '  <stop offset="100%" stop-color="#301010" />\n'
+            '  <stop offset="0%" stop-color="#906060" />\n'
+            '  <stop offset="100%" stop-color="#806060" />\n'
             '</linearGradient>\n'
             '<linearGradient id="path" x1="100%" y1="0%" x2="0%" y2="100%">\n'
-            '  <stop offset="0%" stop-color="#303030" />\n'
-            '  <stop offset="100%" stop-color="#404040" />\n'
+            '  <stop offset="0%" stop-color="#808080" />\n'
+            '  <stop offset="100%" stop-color="#909090" />\n'
             '</linearGradient>\n'
             '<linearGradient id="lit-window" x1="10%" y1="0%" x2="0%" y2="100%">\n'
             '  <stop offset="50%" stop-color="#00000" />\n'
-            '  <stop offset="100%" stop-color="#de8600" />\n'
+            '  <stop offset="100%" stop-color="#feb700" />\n'
             '</linearGradient>\n')
     
     if inlay:
