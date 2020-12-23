@@ -3,7 +3,7 @@
 """
 UEFfile.py - Handle UEF archives.
 
-Copyright (c) 2001-2010, David Boddie <david@boddie.org.uk>
+Copyright (c) 2001-2013, David Boddie <david@boddie.org.uk>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -34,8 +34,8 @@ if sys.platform == 'RISCOS':
 else:
     suffix = '.'
 
-version = '0.20'
-date = '2010-10-24'
+version = '0.30'
+date = '2019-04-07'
     
     
 class UEFfile:
@@ -373,7 +373,7 @@ class UEFfile:
 
         else:   # 0x102
 
-            if UEF_major == 0 and UEF_minor < 9:
+            if self.major == 0 and self.minor < 9:
 
                 # For UEF file versions earlier than 0.9, the number of
                 # excess bits to be ignored at the end of the stream is
@@ -455,10 +455,20 @@ class UEFfile:
         else:
             last = 0
 
-        return (name, load, exec_addr, block[a+19:-2], block_number, last)
+        # Try to cope with UEFs that contain junk data at the end of blocks.
+        rest = block[a+19:][:258]
+        in_crc = self.crc(rest[:-2])
+        if in_crc != self.str2num(2, rest[-2:]):
+            print "Warning: block %x of file %s has mismatching CRC." % (
+                block_number, repr(name))
+
+        data = rest[:-2]
+
+        return (name, load, exec_addr, data, block_number, last)
 
 
-    def write_block(self, block, name, load, exe, n):
+    def write_block(self, block, name, load, exe, n, last = 0, flags = 0):
+    
         """Write data to a string as a file data block in preparation to be written
         as chunk data to a UEF file."""
 
@@ -478,18 +488,15 @@ class UEFfile:
         out = out + self.number(2, len(block))
 
         # Block flag (last block)
-        if len(block) == 256:
-            out = out + self.number(1, 0)
-            last = 0
+        if flags:
+            out = out + self.number(1, flags)
+        elif last:
+            out = out + self.number(1, 128)
         else:
-            out = out + self.number(1, 128) # shouldn't be needed 
-            last = 1 
+            out = out + self.number(1, 0)
 
         # Next address
-        out = out + self.number(2, 0)
-
-        # Unknown
-        out = out + self.number(2, 0)
+        out = out + self.number(4, 0)
 
         # Header CRC
         out = out + self.number(2, self.crc(out[1:]))
@@ -499,7 +506,7 @@ class UEFfile:
         # Block CRC
         out = out + self.number(2, self.crc(block))
 
-        return out, last
+        return out
 
 
     def get_leafname(self, path):
@@ -746,8 +753,11 @@ class UEFfile:
         new_chunks = []
     
         # Write block details
-        while 1:
-            block, last = self.write_block(data[:256], name, load, exe, block_number)
+        while True:
+        
+            last = (len(data) <= 256)
+            block = self.write_block(data[:256], name, load, exe, block_number,
+                                     last)
 
             # Remove the leading 256 bytes as they have been encoded
             data = data[256:]
@@ -761,7 +771,7 @@ class UEFfile:
             # Write the block to the list of new chunks
             new_chunks.append((0x100, block))
 
-            if last == 1:
+            if last:
                 break
 
             # Increment the block number
@@ -771,11 +781,13 @@ class UEFfile:
         return new_chunks
 
 
-    def import_files(self, file_position, info):
+    def import_files(self, file_position, info, gap = False):
         """
-        Import a file into the UEF file at the specified location in the
-        list of contents.
-        positions is a positive integer or zero
+        Import a file, or series of files, into the UEF file at the specified
+        file position in the list of contents. Each file will be preceded by
+        a gap, if enabled.
+        
+        file_position is a positive integer or zero
 
         To insert one file, info can be a sequence:
 
@@ -826,7 +838,12 @@ class UEFfile:
 
         for name, load, exe, data in info:
 
-            inserted_chunks = inserted_chunks + self.create_chunks(name, load, exe, data)
+            if gap:
+                inserted_chunks += [(0x112, "\xdc\x05"),
+                                    (0x110, "\xdc\x05"),
+                                    (0x100, "\xdc")]
+            
+            inserted_chunks += self.create_chunks(name, load, exe, data)
 
         # Insert the chunks in the list at the specified position
         self.chunks = self.chunks[:position] + inserted_chunks + self.chunks[position:]
@@ -863,7 +880,7 @@ class UEFfile:
 
     def export_files(self, file_positions):
         """
-        Given a file's location in the list of contents, returns its name,
+        Given a file's location of the list of contents, returns its name,
         load and execution addresses, and the data contained in the file.
         If positions is an integer then return a tuple
 
