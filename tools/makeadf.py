@@ -36,7 +36,7 @@ class Catalogue(Utilities):
         # itself and the first directory catalogue.
         self.free_space = [(7, 1273)]
         self.level3_sector = 0
-        self.disc_size = 1280
+        self.disc_size = 320 * self.sector_size
         self.disc_id = 0
         self.boot_option = 0
     
@@ -121,7 +121,7 @@ class Catalogue(Utilities):
         self._write(base + self.sector_size - 2, chr(3 * len(self.free_space)))
         
         self.checksum1 = self._checksum(1)
-        self._write(base + self.sector_size - 1, chr(self.checksum0))
+        self._write(base + self.sector_size - 1, chr(self.checksum1))
     
     def read(self, offset = 512):
     
@@ -214,8 +214,11 @@ class Catalogue(Utilities):
         
         for file in files:
         
-            name = self._pad(file.name, 10, " ")
-            self._write(head + p, name)
+            name = map(ord, self._pad(file.name, 10, " "))
+            # Readable, publicly readable
+            name[0] |= 0x80
+            name[5] |= 0x80
+            self._write(head + p, "".join(map(chr, name)))
             
             if isinstance(file, File):
                 load = file.load_address
@@ -296,11 +299,11 @@ class Catalogue(Utilities):
         i = 254
         while i >= 0:
             if v > 255:
-                v = (v + 1) % 255
+                v = (v + 1) & 255
             v += ord(self._read((sector * self.sector_size) + i))
             i -= 1
         
-        return v % 255
+        return v & 255
 
 
 class Disk:
