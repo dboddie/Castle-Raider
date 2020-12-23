@@ -822,10 +822,24 @@ if __name__ == "__main__":
     open("constants.oph", "w").write(constants_oph)
     open("screen.oph", "w").write(screen_oph)
     
+    retro_loader = None
+    
     if machine_type == "-e":
         shutil.copy2("electron.oph", "bank_routines.oph")
+        if make_adfs_image:
+            retro_loader = "loader_E3A"
+        elif make_dfs_image:
+            retro_loader = "loader_E5D"
+        elif make_tape_image:
+            retro_loader = "loader_E5D"
     elif machine_type == "-b":
         shutil.copy2("bbc.oph", "bank_routines.oph")
+        if make_adfs_image:
+            retro_loader = "loader_C3A"
+        elif make_dfs_image:
+            retro_loader = "loader_B5D"
+        elif make_tape_image:
+            retro_loader = "loader_B5D"
     
     if make_rom_image:
         system("ophis romcode.oph -o CODE")
@@ -881,19 +895,36 @@ if __name__ == "__main__":
         loader_code = open("LOADER").read() + markers + title_data
         os.remove("LOADER")
         
-        bootloader_start = 0xe00
-        bootloader_code = ("\r\x00\x0a\x0d*FX 229,1"
-                           "\r\x00\x14\x0f*RUN LOADER\r\xff\x0a\x14\x00")
+        files = []
         
-        files = [("CASTLE", bootloader_start, bootloader_start, bootloader_code),
-                 ("LOADER", loader_start, loader_start, loader_code),
-                 ("ROUTINE", title_data_address, title_data_address,
-                              title_data_routines),
-                 ("SPRITES", sprite_area_address, sprite_area_address,
-                             sprite_data + char_data),
-                 ("LEVELS", levels_address, levels_address, level_data),
-                 ("PANEL", panel_address, panel_address, panel),
-                 ("CODE", code_load_address, code_load_address, code)]
+        if retro_loader:
+            if not make_tape_image:
+                boot_data = 'CHAIN "RETRO"\r'
+                files.append(("!BOOT", 0, 0, boot_data))
+            
+            if retro_loader.endswith("D"):
+                files.append(("RETRO", 0x1900, 0x8023, open(os.path.join("resources", retro_loader), "rb").read()))
+            else:
+                files.append(("RETRO", 0x1d00, 0x8023, open(os.path.join("resources", retro_loader), "rb").read()))
+        
+        elif make_tape_image:
+            bootloader_start = 0xe00
+            bootloader_code = ("\r\x00\x0a\x0d*FX 229,1"
+                               "\r\x00\x14\x0f*RUN LOADER\r\xff\x0a\x14\x00")
+            
+            files.append(("CASTLE", bootloader_start, bootloader_start, bootloader_code))
+        else:
+            boot_data = '*RUN LOADER\r'
+            files.append(("!BOOT", 0, 0, boot_data))
+        
+        files += [("LOADER", loader_start, loader_start, loader_code),
+                  ("ROUTINE", title_data_address, title_data_address,
+                               title_data_routines),
+                  ("SPRITES", sprite_area_address, sprite_area_address,
+                              sprite_data + char_data),
+                  ("LEVELS", levels_address, levels_address, level_data),
+                  ("PANEL", panel_address, panel_address, panel),
+                  ("CODE", code_load_address, code_load_address, code)]
         
         loader_size = len(loader_code)
         print
@@ -962,31 +993,12 @@ if __name__ == "__main__":
         u.minor = 6
         u.target_machine = "Electron"
         
-        u.import_files(0, files)
-        
-        # Insert a gap before each file.
-        offset = 0
-        for f in u.contents:
-        
-            # Insert a gap and some padding before the file.
-            gap_padding = [(0x112, "\xdc\x05"), (0x110, "\xdc\x05"), (0x100, "\xdc")]
-            u.chunks = u.chunks[:f["position"] + offset] + \
-                       gap_padding + u.chunks[f["position"] + offset:]
-    
-            # Each time we insert a gap, the position of the file changes, so we
-            # need to update its position and last position. This isn't really
-            # necessary because we won't read the contents list again.
-            offset += len(gap_padding)
-            f["position"] += offset
-            f["last position"] += offset
-        
-        # Add a high tone and gap at the end.
-        u.chunks += [(0x110, "\xdc\x02"), (0x112, "\xdc\x02")]
+        u.import_files(0, files, gap=True)
         
         # Append instructions and short title chunks to the file.
-        README = open("README.txt").read()
-        COPYING = open("COPYING").read()
-        u.chunks += [(0x1, README + "\n\n" + COPYING), (0x9, "Castle Raider " + version)]
+        #README = open("README.txt").read()
+        #COPYING = open("COPYING").read()
+        #u.chunks += [(0x1, README + "\n\n" + COPYING), (0x9, "Castle Raider " + version)]
         
         # Write the new UEF file.
         try:
@@ -1004,6 +1016,7 @@ if __name__ == "__main__":
         disk.new()
         
         catalogue = disk.catalogue()
+        catalogue.boot_option = 3
         
         disk_files = []
         for name, load, exec_, data in files:
@@ -1029,14 +1042,11 @@ if __name__ == "__main__":
         disk.new()
         
         catalogue = disk.catalogue()
-        catalogue.boot_option = 2
+        catalogue.boot_option = 3
         
         disk_files = []
+        
         for name, load, exec_, data in files:
-            if name == "LOADER":
-                name = "!BOOT"
-            elif name == "CASTLE":
-                continue
             disk_files.append(makedfs.File("$." + name, data, load, exec_, len(data)))
         
         COPYING = open("COPYING").read().replace("\n", "\r\n")
