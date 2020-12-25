@@ -1,5 +1,6 @@
 To Do
 
-Update the game completed effect, text and music.
-Polish the display panel and loader.
-Fix music on the Electron disk and BBC Micro versions.
+Fix the disappearing monster bug where monsters don't spawn if the number
+already tracked is at the limit.
+Fix item collection when the player's character lands vertically on an object.
+This fails to clear the key in the room before the final exit.
