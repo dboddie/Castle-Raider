@@ -16,8 +16,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 __author__ = "David Boddie <david@boddie.org.uk>"
-__date__ = "2014-04-06"
-__version__ = "0.1"
+__date__ = "2020-11-24"
+__version__ = "0.2"
 __license__ = "GNU General Public License (version 3 or later)"
 
 import StringIO
@@ -147,6 +147,7 @@ class Catalogue(Utilities):
             length = self._read_unsigned_word(self._read(head + p + 18, 4))
             
             inddiscadd = self.sector_size * self._str2num(self._read(head + p + 22, 3))
+            print(name, hex(inddiscadd))
             
             olddirobseq = self._read_unsigned_byte(self._read(head + p + 25))
             
@@ -212,9 +213,9 @@ class Catalogue(Utilities):
         p = p + 5
         i = 1
         
-        for file in files:
+        for file in sorted(files, cmp=self._cmp):
         
-            name = map(ord, self._pad(file.name, 10, " "))
+            name = map(ord, self._pad(file.name, 10, "\x00"))
             # Readable, publicly readable
             name[0] |= 0x80
             name[5] |= 0x80
@@ -258,13 +259,13 @@ class Catalogue(Utilities):
         
         # Write the directory name, its parent and any title given.
         
-        dir_name = self._pad(self._safe(dir_name), 10, " ")
+        dir_name = self._pad(self._safe(dir_name), 10, "\x00")
         self._write(tail + self.sector_size - 52, dir_name)
         
         self._write(tail + self.sector_size - 42,
                     self._num2str(3, parent_address / self.sector_size))
         
-        dir_title = self._pad(self._safe(dir_title), 19, " ")
+        dir_title = self._pad(self._safe(dir_title), 19, "\x00")
         self._write(tail + self.sector_size - 39, dir_title)
         
         endseq = dir_seq
@@ -304,6 +305,9 @@ class Catalogue(Utilities):
             i -= 1
         
         return v & 255
+    
+    def _cmp(self, a, b):
+        return cmp(a.name.lower(), b.name.lower())
 
 
 class Disk:
@@ -330,4 +334,10 @@ class Disk:
     def catalogue(self):
     
         sector_size = self.SectorSizes[self.format]
-        return self.Catalogues[self.format](self.file)
+        self.catalogue = self.Catalogues[self.format](self.file)
+        return self.catalogue
+
+    def save(self, file_name):
+    
+        self.file.seek(0, 0)
+        open(file_name, "wb").write(self.file.read())
