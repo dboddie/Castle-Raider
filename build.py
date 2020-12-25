@@ -1026,7 +1026,7 @@ if __name__ == "__main__":
         disk_files.append(makeadf.File("COPYING", COPYING, 0x0000, 0x0000, len(COPYING)))
         
         dir_address = catalogue.sector_size * 2
-        catalogue.write("$", "Castle Raider", disk_files, dir_address, dir_address)
+        catalogue.write("$", "CastleRaider", disk_files, dir_address, dir_address)
         catalogue.write_free_space()
         
         disk.file.seek(0, 0)
