@@ -38,8 +38,9 @@ if __name__ == "__main__":
     
     build_py = os.path.join(os.curdir, "build.py")
     
-    # Make cassette, DFS and ROM versions for the Electron.
+    # Make cassette, ADFS, DFS and ROM versions for the Electron.
     system(build_py + " -e -t " + os.path.join(release_dir, "CastleRaider-%s-Electron.uef" % version))
+    system(build_py + " -e -a " + os.path.join(release_dir, "CastleRaider-%s-Electron.adf" % version))
     system(build_py + " -e -d " + os.path.join(release_dir, "CastleRaider-%s-Electron.ssd" % version))
     system(build_py + " -e -r " + os.path.join(release_dir, "CastleRaider-%s-Electron.rom" % version))
     
@@ -47,6 +48,9 @@ if __name__ == "__main__":
     system(build_py + " -b -t " + os.path.join(release_dir, "CastleRaider-%s-BBC.uef" % version))
     system(build_py + " -b -d " + os.path.join(release_dir, "CastleRaider-%s-BBC.ssd" % version))
     system(build_py + " -b -r " + os.path.join(release_dir, "CastleRaider-%s-BBC.rom" % version))
+
+    # Make the ADFS version for the Master Compact.
+    system(build_py + " -b -a " + os.path.join(release_dir, "CastleRaider-%s-Compact.adf" % version))
     
     # Copy the instructions and license files into the archive.
     shutil.copy2("README.txt", os.path.join(release_dir, "README.txt"))
