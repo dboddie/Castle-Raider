@@ -17,7 +17,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-import Image
+from PIL import Image
 
 palette = {"\x00\x00\x00": 0,
            "\xff\x00\x00": 1,
@@ -36,7 +36,7 @@ palette_rgb = {(0, 0, 0): 0,
 def read_png(path):
 
     im = Image.open(path).convert("RGB")
-    s = im.tostring()
+    s = im.tobytes()
     
     data = []
     a = 0
