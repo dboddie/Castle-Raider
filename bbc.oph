@@ -49,8 +49,15 @@ palette_entry:    .byte $00
 
 change_palette:         ; A=colour value (0-7)
 
-    sta palette_entry
-    ldx #5
+    tax
+    lda #19
+    jsr $ffee
+    lda #2
+    jsr $ffee
+    txa
+    jsr $ffee
+
+    ldx #2
     change_palette_loop:
         lda palette_sequence,x
         jsr $ffee
