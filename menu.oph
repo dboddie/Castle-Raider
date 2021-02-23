@@ -10,6 +10,8 @@ menu_code:
         cpx #[menu_pre_text_end - menu_pre_text]
         bne menu_pre_loop
 
+    jsr menu_cursor_off
+
     lda #<menu_title_data
     sta $90
     lda #>menu_title_data
@@ -59,10 +61,12 @@ menu_load_1:        ; Jungle Journey
     lda #6
     jsr $ffee
 
-    lda #210
-    ldx #1          ; Disable sound
-    ldy #0
-    jsr $fff4
+    jsr menu_cursor_off
+
+    lda #214
+    ldx #0          ; Set the bell duration to 0
+    ldy #0          ; Ideally, we would just disable sound, but this seems to
+    jsr $fff4       ; cause problems with ENVELOPEs during loading.
 
     lda #17
     jsr $ffee
@@ -79,15 +83,31 @@ menu_run_jungle:
 .byte "RUN JUNGLE", 13
 
 menu_load_2:        ; Castle Raider (this ROM)
-
     jmp castle_code
 
+menu_cursor_off:
+
+    ldx #0
+    menu_cursor_off_loop:
+    lda menu_cursor_text,x
+    jsr $ffee
+    inx
+
+    cpx #[menu_cursor_text_end - menu_cursor_text]
+    bne menu_cursor_off_loop
+
+    rts
+
 menu_pre_text:
-.byte 22,1, 23,1,0,0,0,0,0,0,0,0
+.byte 22,1
 .byte 19,1,0,0,0,0
 .byte 19,2,0,0,0,0
 .byte 19,3,0,0,0,0
 menu_pre_text_end:
+
+menu_cursor_text:
+.byte 23,1,0,0,0,0,0,0,0,0
+menu_cursor_text_end:
 
 menu_post_text:
 .byte 19,1,1,0,0,0
