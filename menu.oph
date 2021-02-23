@@ -54,6 +54,11 @@ menu_wait:
 
 menu_load_1:        ; Jungle Journey
 
+    lda #22         ; MODE 6
+    jsr $ffee
+    lda #6
+    jsr $ffee
+
     lda #141        ; *ROM
     jsr $fff4
     ldx #<menu_run_jungle
