@@ -1,0 +1,83 @@
+menu_code:
+
+    ldx #0
+
+    menu_pre_loop:
+        lda menu_pre_text,x
+        jsr $ffee
+        inx
+
+        cpx #[menu_pre_text_end - menu_pre_text]
+        bne menu_pre_loop
+
+    lda #<menu_title_data
+    sta $90
+    lda #>menu_title_data
+    sta $91
+
+    lda #<menu_title_dest_address
+    sta $92
+    lda #>menu_title_dest_address
+    sta $93
+
+    lda #<menu_title_dest_end
+    sta $94
+    lda #>menu_title_dest_end
+    sta $95
+
+    jsr decompress
+
+    menu_post_loop:
+        lda menu_post_text,x
+        jsr $ffee
+        inx
+
+        cpx #[menu_post_text_end - menu_post_text]
+        bne menu_post_loop
+
+menu_wait:
+    lda #121
+    ldx #0
+    jsr $fff4
+
+    cpx #$ff
+    beq menu_wait
+
+    cpx #$30
+    beq menu_load_1
+    cpx #$31
+    beq menu_load_2
+    cpx #$70
+    bne menu_wait
+
+    rts
+
+menu_load_1:        ; Jungle Journey
+
+    lda #141        ; *ROM
+    jsr $fff4
+    ldx #<menu_run_jungle
+    ldy #>menu_run_jungle
+    jmp $fff7
+
+menu_run_jungle:
+.byte "RUN JUNGLE", 13
+
+menu_load_2:        ; Castle Raider (this ROM)
+
+    jmp castle_code
+
+menu_pre_text:
+.byte 22,1, 23,1,0,0,0,0,0,0,0,0
+.byte 19,1,0,0,0,0
+.byte 19,2,0,0,0,0
+.byte 19,3,0,0,0,0
+menu_pre_text_end:
+
+menu_post_text:
+.byte 19,1,1,0,0,0
+.byte 19,2,2,0,0,0
+.byte 19,3,3,0,0,0
+menu_post_text_end:
+
+.include "routines/dp_decode.oph"

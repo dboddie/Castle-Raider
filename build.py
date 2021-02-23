@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import os, shutil, stat, struct, sys
 import UEFfile
 
-from tools import makeadf, makedfs, makelevels, makesprites
+from tools import distance_pair, makeadf, makedfs, makelevels, makesprites
 
 # Define the version of the game rather than of this script.
 version = "1.0.4"
@@ -275,26 +275,32 @@ def add_hidden_data(panel, start):
 
 if __name__ == "__main__":
 
-    if not 4 <= len(sys.argv) <= 5:
+    args = sys.argv[:]
+    
+    menu = "-m" in args
+    if menu:
+        args.remove("-m")
+
+    if not 4 <= len(args) <= 5:
     
         sys.stderr.write("Usage: %s -e|-b -t|-a|-d|-r <new UEF, ADF, SSD or ROM file> [level file]\n" % sys.argv[0])
         sys.exit(1)
     
-    machine_type = sys.argv[1]
+    machine_type = args[1]
     if machine_type not in ("-e", "-b"):
         sys.stderr.write("Please specify a valid machine type.\n")
         sys.exit(1)
     
-    make_tape_image = sys.argv[2] == "-t"
-    make_adfs_image = sys.argv[2] == "-a"
-    make_dfs_image = sys.argv[2] == "-d"
-    make_rom_image = sys.argv[2] == "-r"
-    out_file = sys.argv[3]
+    make_tape_image = args[2] == "-t"
+    make_adfs_image = args[2] == "-a"
+    make_dfs_image = args[2] == "-d"
+    make_rom_image = args[2] == "-r"
+    out_file = args[3]
     
-    if len(sys.argv) == 4:
+    if len(args) == 4:
         level_file = "levels/default.txt"
     else:
-        level_file = sys.argv[4]
+        level_file = args[4]
     
     make_loader = not make_rom_image
     
@@ -325,6 +331,7 @@ if __name__ == "__main__":
         
         rom_code_start = 0x8000
         rom_data_start = 0x9600
+        if menu: rom_data_start += 0x1000
         rom_tile_sprites = rom_data_start + memory_map["tile sprites"] - memory_map["data start"]
         rom_char_sprites = rom_tile_sprites + memory_map["character and object sprites"] - memory_map["tile sprites"]
         rom_char_sprites_length = 0x30c0 - memory_map["character and object sprites"]
@@ -842,6 +849,29 @@ if __name__ == "__main__":
             retro_loader = "loader_B5D"
     
     if make_rom_image:
+        # Write the configuration file for the ROM code assembly.
+        if menu:
+            # Convert the PNG to screen data and compress it with the palette data.
+            title_sprite = makesprites.read_sprite(makesprites.read_png("images/multirom.png"))
+            data_list = "".join(map(chr, distance_pair.compress(map(ord, title_sprite))))
+            
+            title_dest_addr = 0x4400
+            title_dest_end = title_dest_addr + len(title_sprite)
+            
+            f = open("config.oph", "w")
+            f.write(
+                ".alias config_start_code menu_code\n"
+                ".alias menu_title_dest_address $%x\n"
+                ".alias menu_title_dest_end $%x\n\n"
+                '.include "menu.oph"\n\n'
+                "menu_title_data:\n%s\n" % (title_dest_addr, title_dest_end, encode_data(data_list))
+                )
+            f.close()
+        else:
+            open("config.oph", "w").write(
+                ".alias config_start_code castle_code\n"
+                )
+
         system("ophis romcode.oph -o CODE")
     else:
         system("ophis tdcode.oph -o CODE")

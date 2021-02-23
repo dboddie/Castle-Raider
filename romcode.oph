@@ -14,12 +14,13 @@
 ; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 .org $8000
+
 rom_start:
-jmp language_entry
+.byte 0, 0, 0   ; jmp language_entry
 jmp service_entry
 
 ; ROM type
-.byte $c2       ; 6502 code (2), language ($40), service ($80)
+.byte $82       ; 6502 code (2), language ($40), service ($80)
 
 copyright_offset:
 .byte [copyright_string - rom_start - 1]
@@ -39,17 +40,17 @@ copyright_string:
 ; Second processor relocation address
 .byte 0, $80, 0, 0
 
-language_entry:
-
-    cmp #1
-    beq is_language
-    rts
-
-    is_language:
-    ldx #255
-    txs
-    cli
-    jmp castle_code
+;language_entry:
+;
+;    cmp #1
+;    beq is_language
+;    rts
+;
+;    is_language:
+;    ldx #255
+;    txs
+;    cli
+;    jmp config_start_code       ; The language entry point is configurable
 
 service_entry:
 
@@ -79,7 +80,7 @@ service_command:
         cpx #7
         bne service_command_loop
     
-    jsr castle_code
+    jsr config_start_code       ; The service entry point is configurable
     lda #0
     rts
     
@@ -417,4 +418,8 @@ main:
     character_chosen:
     jsr copy_character
 
+; Include the main game code.
 .include "code.oph"
+
+; Include configuration options.
+.include "config.oph"
