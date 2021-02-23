@@ -59,6 +59,16 @@ menu_load_1:        ; Jungle Journey
     lda #6
     jsr $ffee
 
+    lda #210
+    ldx #1          ; Disable sound
+    ldy #0
+    jsr $fff4
+
+    lda #17
+    jsr $ffee
+    lda #0          ; COLOUR 0
+    jsr $ffee
+
     lda #141        ; *ROM
     jsr $fff4
     ldx #<menu_run_jungle
