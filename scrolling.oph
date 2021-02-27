@@ -292,7 +292,7 @@ scroll_right:   ; Scroll the screen right by decreasing the initial row offsets
         lda ($76),y             ; Load the tile type for the current span.
         sta initial_row_tiles,x ; Store the tile type.
 
-        ldy #1                  ; Record the number of tiles left in the current
+        iny                     ; Record the number of tiles left in the current
         lda ($76),y             ; span minus 1 (n - 1).
         sta initial_row_offsets,x
         sta max_row_offsets,x   ; This is also the span's maximum offset for
@@ -393,7 +393,7 @@ scroll_left:    ; Scroll the screen left by increasing the initial row offsets
         lda ($76),y             ; Load the tile type for span p' minus 1 and
         sta initial_row_tiles,x ; store it as the initial tile type.
 
-        ldy #1                  ; Load the number of tiles in span p' minus 1
+        iny                     ; Load the number of tiles in span p' minus 1
         lda ($76),y             ; (n - 1) and store this value as the maximum
         sta max_row_offsets,x   ; row offset for the previous span
 

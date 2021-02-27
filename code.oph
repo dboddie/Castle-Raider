@@ -37,8 +37,8 @@ main_init:
     sta player_lives
     sta check_monster_tile
     sta monster_movement_offset
+    tax                         ; X=0 (add life in plot_life)
 
-    ldx #0
     init_lives_loop:
 
         jsr plot_life
@@ -1020,20 +1020,18 @@ player_demise:
     lda player_lost         ; Don't allow the routine to be entered if it has
     bne player_demise_exit  ; just been called.
 
-    lda #1
-    sta player_lost
-    tax                 ; X=1
+    ldx #1              ; set lost flag and X=1 to remove life in plot_life
+    stx player_lost     ; call below
 
     dec player_lives
     lda player_lives
     jsr plot_life
 
-    lda #0
-    sta player_jumping
-    sta player_falling
+    ldx #0
+    stx player_jumping
+    stx player_falling
 
-    ldx #0                          ; demise sound
-    jsr play_sound
+    jsr play_sound                  ; demise sound (X=0)
 
     player_demise_exit:
     sec
