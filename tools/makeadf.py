@@ -36,7 +36,7 @@ class Catalogue(Utilities):
         # itself and the first directory catalogue.
         self.free_space = [(7, 1273)]
         self.level3_sector = 0
-        self.disc_size = 320 * self.sector_size
+        self.disc_size = 320 * int(1024/self.sector_size)
         self.disc_id = 0
         self.boot_option = 0
     
@@ -147,7 +147,6 @@ class Catalogue(Utilities):
             length = self._read_unsigned_word(self._read(head + p + 18, 4))
             
             inddiscadd = self.sector_size * self._str2num(self._read(head + p + 22, 3))
-            print(name, hex(inddiscadd))
             
             olddirobseq = self._read_unsigned_byte(self._read(head + p + 25))
             
